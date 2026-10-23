@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import React, { memo } from 'react';
-import { Pressable as RNPressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { FastPressable } from './FastPressable';
 import { useSettings } from '@/store/settings';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
@@ -31,14 +32,15 @@ export const Chip = memo(function Chip({ label, selected, onPress, icon, small }
   );
   if (!onPress) return content(false);
   return (
-    <RNPressable
+    <FastPressable
+     
       onPress={() => {
         if (hapticsOn) void Haptics.selectionAsync();
         onPress();
       }}
     >
       {({ pressed }) => content(pressed)}
-    </RNPressable>
+    </FastPressable>
   );
 });
 

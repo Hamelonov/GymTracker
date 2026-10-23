@@ -7,7 +7,7 @@ import { exerciseName, exerciseUsage, listExercises } from '@/db/repo/exercises'
 import type { ExerciseRow } from '@/db/schema';
 import { useQuery } from '@/db/version';
 import { MUSCLE_GROUPS, type MuscleGroup } from '@/domain/types';
-import { Chip, EmptyState, Icon, Pressable, Text, fonts, radius, spacing, useColors, type ThemeColors } from '@/ui';
+import { Chip, EmptyState, FastPressable, Icon, Pressable, Text, fonts, radius, spacing, useColors, type ThemeColors } from '@/ui';
 
 export interface ExerciseListProps {
   selectedIds?: Set<string>;
@@ -64,7 +64,7 @@ const Row = memo(function Row({
 }) {
   const c = colors;
   return (
-    <RNPressable onPress={() => onPress(item.exercise)} style={({ pressed }) => [styles.row, selected ? { backgroundColor: c.accentSoft } : null, pressed ? { opacity: 0.7 } : null]}>
+    <FastPressable onPress={() => onPress(item.exercise)} style={({ pressed }) => [styles.row, selected ? { backgroundColor: c.accentSoft } : null, pressed ? { opacity: 0.7 } : null]}>
       <View style={[styles.avatar, { backgroundColor: item.exercise.isCustom ? c.accentSoft : c.surfaceAlt }]}>
         <Text variant="h3">{item.initial}</Text>
       </View>
@@ -81,7 +81,7 @@ const Row = memo(function Row({
           {selected ? <Icon icon={Check} size={14} color={c.bg} strokeWidth={3} /> : null}
         </View>
       ) : null}
-    </RNPressable>
+    </FastPressable>
   );
 });
 

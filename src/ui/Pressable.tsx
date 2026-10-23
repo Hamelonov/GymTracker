@@ -33,6 +33,9 @@ export function Pressable({
 
   const handlePress = useCallback<NonNullable<PressableProps['onPress']>>(
     (e) => {
+      // onPress fires on release, but React Native delays press-out by up to
+      // 130 ms; reset the press look right now instead of waiting for it.
+      scale.set(1);
       const now = Date.now();
       if (now - lastPress.current < debounceMs) return;
       lastPress.current = now;
@@ -43,7 +46,7 @@ export function Pressable({
       }
       onPress?.(e);
     },
-    [debounceMs, haptic, hapticsOn, onPress],
+    [debounceMs, haptic, hapticsOn, onPress, scale],
   );
 
   return (
@@ -55,7 +58,8 @@ export function Pressable({
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        scale.set(withTiming(1, { duration: 100, easing: Easing.out(Easing.quad) }));
+        // Snap back immediately so nothing visual lags behind the action.
+        scale.set(1);
         onPressOut?.(e);
       }}
       style={[style, animated]}

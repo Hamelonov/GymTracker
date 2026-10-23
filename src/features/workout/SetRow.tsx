@@ -192,6 +192,7 @@ export const SetRow = memo(function SetRow({ set, index, fields, units, showRpe,
       ) : null}
       {!readOnly && !hideCheck ? (
         <RNPressable
+         
           onPress={() => {
             if (hapticsOn) void Haptics.impactAsync(set.completed ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
             onToggle();

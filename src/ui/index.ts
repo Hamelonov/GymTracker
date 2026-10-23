@@ -3,6 +3,7 @@ export * from './Card';
 export * from './Chip';
 export * from './Dialog';
 export * from './EmptyState';
+export * from './FastPressable';
 export * from './Icon';
 export * from './IconButton';
 export * from './Input';
