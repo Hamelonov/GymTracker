@@ -47,6 +47,8 @@ export default function HomeTab() {
   const [folderName, setFolderName] = useState('');
   const workout = useActiveWorkout((s) => s.workout);
   const session = useActiveWorkout((s) => s.session);
+  // Only once the workout screen has been left; never while it is opening.
+  const showBanner = useActiveWorkout((s) => !!s.workout && s.minimized && s.session.mode === 'new');
   const routines = useQuery(() => listRoutines(), []);
   const folders = useQuery(() => listFolders(), []);
   const exIds = useMemo(() => [...new Set(routines.flatMap((r) => r.exerciseIds))], [routines]);
@@ -97,7 +99,7 @@ export default function HomeTab() {
 
   return (
     <Screen header={{ title: t('home.title'), large: true }} contentStyle={{ paddingBottom: 120 }}>
-      {workout && session.mode === 'new' ? (
+      {showBanner ? (
         <Pressable onPress={() => push('/workout/active')} haptic="light">
           <Card style={[styles.banner, { backgroundColor: c.accent }]}>
             <View style={[styles.dot, { backgroundColor: c.black }]} />
@@ -106,7 +108,7 @@ export default function HomeTab() {
                 {t('home.inProgress')}
               </Text>
               <Text variant="caption" color="onAccent" style={{ opacity: 0.7 }}>
-                {workout.name}
+                {workout?.name}
               </Text>
             </View>
             <Text variant="bodyMedium" color="onAccent">

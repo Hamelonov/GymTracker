@@ -84,18 +84,18 @@ function Navigation() {
       <Stack
         screenOptions={{
           headerShown: false,
-          animation: 'slide_from_right',
-          animationDuration: 200,
+          // Android-native durations: ios_from_right is 200 ms, slide_from_* is 400 ms.
+          animation: 'ios_from_right',
           contentStyle: { backgroundColor: colors.bg },
         }}
       >
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="workout/active" options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom', gestureEnabled: false }} />
+        <Stack.Screen name="workout/active" options={{ presentation: 'fullScreenModal', animation: 'fade_from_bottom', gestureEnabled: false }} />
         <Stack.Screen name="workout/summary" options={{ presentation: 'fullScreenModal', animation: 'fade' }} />
-        <Stack.Screen name="exercise/picker" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="exercise/edit" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="routine/edit" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="measurements/log" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="exercise/picker" options={{ presentation: 'modal', animation: 'fade_from_bottom' }} />
+        <Stack.Screen name="exercise/edit" options={{ presentation: 'modal', animation: 'fade_from_bottom' }} />
+        <Stack.Screen name="routine/edit" options={{ presentation: 'modal', animation: 'fade_from_bottom' }} />
+        <Stack.Screen name="measurements/log" options={{ presentation: 'modal', animation: 'fade_from_bottom' }} />
       </Stack>
       <ToastHost />
       <DialogHost />
