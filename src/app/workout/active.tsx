@@ -7,7 +7,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { ensureNotificationPermission } from '@/lib/notifications';
-import { exerciseDescription, exerciseName, getExercisesByIds, lastPerformances } from '@/db/repo/exercises';
+import { exerciseDescription, exerciseName, getExercisesByIds, lastPerformances, updateExercise } from '@/db/repo/exercises';
 import { getRoutine, routineInputFromWorkout, updateRoutine } from '@/db/repo/routines';
 import { saveWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
@@ -49,6 +49,7 @@ export default function ActiveWorkoutScreen() {
   const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
   const [nameDraft, setNameDraft] = useState('');
   const [noteDraft, setNoteDraft] = useState('');
+  const [descDraft, setDescDraft] = useState<string | null>(null);
   const startRest = useRestTimer((s) => s.start);
   useEffect(() => {
     if (settings.restNotifications) void ensureNotificationPermission();
@@ -333,32 +334,54 @@ export default function ActiveWorkoutScreen() {
         </View>
       </Sheet>
 
-      {/* Description (fixed, read-only here) */}
-      <Sheet visible={sheet.kind === 'description'} onClose={() => setSheet({ kind: 'none' })} title={t('workout.description')}>
+      {/* Description: the exercise's permanent note, editable in place */}
+      <Sheet
+        visible={sheet.kind === 'description'}
+        onClose={() => {
+          setDescDraft(null);
+          setSheet({ kind: 'none' });
+        }}
+        title={t('workout.description')}
+      >
         {current ? (
           <View>
             <Text variant="caption" color="muted" style={{ marginBottom: spacing.sm }}>
               {exerciseName(exMap.get(current.exerciseId) ?? { nameEn: '', nameRu: '', isCustom: true }, i18n.language)}
             </Text>
-            {(() => {
-              const row = exMap.get(current.exerciseId);
-              const text = row ? exerciseDescription(row, i18n.language) : '';
-              return text ? (
-                <Text style={{ lineHeight: 22 }}>{text}</Text>
-              ) : (
-                <Text color="faint">{t('workout.noDescription')}</Text>
-              );
-            })()}
-            <Button
-              title={t('common.edit')}
-              variant="secondary"
-              full
-              onPress={() => {
-                setSheet({ kind: 'none' });
-                push({ pathname: '/exercise/edit', params: { id: current.exerciseId } });
-              }}
-              style={{ marginTop: spacing.lg }}
-            />
+            {descDraft != null ? (
+              <>
+                <Input value={descDraft} onChangeText={setDescDraft} placeholder={t('exercise.descriptionPlaceholder')} multiline autoFocus />
+                <Button
+                  title={t('common.save')}
+                  size="lg"
+                  full
+                  onPress={() => {
+                    updateExercise(current.exerciseId, { description: descDraft });
+                    setDescDraft(null);
+                    setSheet({ kind: 'none' });
+                  }}
+                  style={{ marginTop: spacing.lg }}
+                />
+              </>
+            ) : (
+              <>
+                {(() => {
+                  const row = exMap.get(current.exerciseId);
+                  const text = row ? exerciseDescription(row, i18n.language) : '';
+                  return text ? <Text style={{ lineHeight: 22 }}>{text}</Text> : <Text color="faint">{t('workout.noDescription')}</Text>;
+                })()}
+                <Button
+                  title={t('common.edit')}
+                  variant="secondary"
+                  full
+                  onPress={() => {
+                    const row = exMap.get(current.exerciseId);
+                    setDescDraft(row ? exerciseDescription(row, i18n.language) : '');
+                  }}
+                  style={{ marginTop: spacing.lg }}
+                />
+              </>
+            )}
           </View>
         ) : null}
       </Sheet>

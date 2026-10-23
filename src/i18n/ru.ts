@@ -119,7 +119,7 @@ const ru = {
     exerciseNote: 'Заметка за сегодня',
     exerciseNotePlaceholder: 'Как пошло сегодня? Техника, ощущения, боль…',
     description: 'Описание',
-    noDescription: 'Описания нет. Добавь его на странице упражнения.',
+    noDescription: 'Описания пока нет. Нажми «Изменить», чтобы добавить.',
     restTimer: 'Таймер отдыха',
     restOff: 'Выкл',
     restDefault: 'По умолчанию ({{sec}})',

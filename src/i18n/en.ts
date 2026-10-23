@@ -110,7 +110,7 @@ const en = {
     exerciseNote: 'Session note',
     exerciseNotePlaceholder: 'How did this feel today? Technique, cues, pain…',
     description: 'Description',
-    noDescription: 'No description. Add one from the exercise page.',
+    noDescription: 'No description yet. Tap Edit to add one.',
     restTimer: 'Rest timer',
     restOff: 'Off',
     restDefault: 'Default ({{sec}})',
