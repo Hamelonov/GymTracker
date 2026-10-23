@@ -29,6 +29,10 @@ export function Sheet({ visible, onClose, title, children, flush }: SheetProps) 
   const insets = useSafeAreaInsets();
   const [mounted, setMounted] = useState(visible);
   if (visible && !mounted) setMounted(true);
+  // Keep the last rendered content while sliding out: parents usually drop the
+  // content the moment they close the sheet, which would collapse it mid-slide.
+  const [shown, setShown] = useState<React.ReactNode>(children);
+  if (visible && shown !== children) setShown(children);
 
   const translateY = useSharedValue(OFFSCREEN);
   const backdrop = useSharedValue(0);
@@ -111,7 +115,7 @@ export function Sheet({ visible, onClose, title, children, flush }: SheetProps) 
               {title}
             </Text>
           ) : null}
-          <View style={flush ? null : styles.content}>{children}</View>
+          <View style={flush ? null : styles.content}>{shown}</View>
         </Animated.View>
       </View>
     </Modal>
