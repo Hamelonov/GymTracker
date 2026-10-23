@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { type LayoutChangeEvent, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { Pressable } from './Pressable';
+import { type LayoutChangeEvent, Pressable as RNPressable, StyleSheet, View } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
 import { radius } from './tokens';
@@ -18,21 +17,19 @@ export function Segmented<T extends string>({ options, value, onChange }: Segmen
   const index = Math.max(0, options.findIndex((o) => o.value === value));
   const segW = width / Math.max(1, options.length);
   const indicator = useAnimatedStyle(() => ({
-    transform: [{ translateX: withSpring(index * segW, { damping: 24, stiffness: 300 }) }],
+    transform: [{ translateX: withTiming(index * segW, { duration: 160, easing: Easing.out(Easing.cubic) }) }],
     width: segW,
   }));
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width - 6);
   return (
     <View style={[styles.track, { backgroundColor: c.surfaceAlt }]} onLayout={onLayout}>
-      {width > 0 ? (
-        <Animated.View style={[styles.indicator, { backgroundColor: c.bg }, indicator]} />
-      ) : null}
+      {width > 0 ? <Animated.View style={[styles.indicator, { backgroundColor: c.bg }, indicator]} /> : null}
       {options.map((o) => (
-        <Pressable key={o.value} onPress={() => onChange(o.value)} haptic="selection" scaleTo={1} style={styles.seg}>
+        <RNPressable key={o.value} onPress={() => onChange(o.value)} style={styles.seg}>
           <Text variant="caption" color={o.value === value ? c.text : c.textMuted}>
             {o.label}
           </Text>
-        </Pressable>
+        </RNPressable>
       ))}
     </View>
   );

@@ -6,7 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { addDays, format } from 'date-fns';
 import { getExercisesByIds } from '@/db/repo/exercises';
 import { createFolder, deleteFolder, deleteRoutine, duplicateRoutine, getRoutine, listFolders, listRoutines, moveRoutineToFolder, renameFolder } from '@/db/repo/routines';
-import { listWorkouts, workoutDays } from '@/db/repo/workouts';
+import { workoutDays, workoutStartTimes } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import { dateLocale, dayKey, weekStart } from '@/domain/dates';
 import { RoutineCard } from '@/features/routines/RoutineCard';
@@ -53,8 +53,8 @@ export default function HomeTab() {
   const exMap = useQuery(() => getExercisesByIds(exIds), [exIds.join(',')]);
   const ws = weekStart(now);
   const days = useQuery(() => workoutDays(ws.getTime(), addDays(ws, 7).getTime()), [ws.getTime()]);
-  const recent = useQuery(() => listWorkouts({ limit: 200 }), []);
-  const streak = useMemo(() => weekStreak(recent.map((w) => w.startedAt), now), [recent, now]);
+  const starts = useQuery(() => workoutStartTimes(), []);
+  const streak = useMemo(() => weekStreak(starts, now), [starts, now]);
   const weekCount = [...days.values()].reduce((a, b) => a + b, 0);
 
   const ensureNoActive = async () => {

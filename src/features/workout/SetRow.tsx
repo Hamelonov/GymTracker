@@ -117,7 +117,7 @@ export const SetRow = memo(function SetRow({ set, index, fields, units, showRpe,
   );
 
   const row = (
-    <Animated.View style={[styles.row, bgStyle]} layout={LinearTransition.springify().damping(24)}>
+    <Animated.View style={[styles.row, bgStyle]} layout={LinearTransition.duration(160)}>
       <Pressable onPress={onTypePress} disabled={readOnly} style={[styles.setNo, { backgroundColor: set.type === 'normal' ? c.surfaceAlt : c.text }]} haptic="selection">
         <Text variant="caption" color={set.type === 'normal' ? c.text : c.bg} tabular>
           {set.type === 'normal' ? String(index + 1) : typeLabel(set.type)}

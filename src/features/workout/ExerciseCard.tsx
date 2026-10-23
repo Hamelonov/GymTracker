@@ -58,7 +58,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   const typeLabel = (type: SetType) => t(`workout.setTypeShort.${type}`);
 
   return (
-    <Animated.View layout={LinearTransition.springify().damping(24)} style={[styles.card, { backgroundColor: c.surface }]}>
+    <Animated.View layout={LinearTransition.duration(160)} style={[styles.card, { backgroundColor: c.surface }]}>
       {supersetColor ? <View style={[styles.supersetBar, { backgroundColor: supersetColor }]} /> : null}
       <View style={styles.header}>
         <Pressable style={styles.titleWrap} onPress={() => exercise && push({ pathname: '/exercise/[id]', params: { id: exercise.id } })}>
@@ -98,7 +98,7 @@ export const ExerciseCard = memo(function ExerciseCard({
             </Text>
           </Pressable>
           {showDescription ? (
-            <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(120)} style={[styles.descBody, { backgroundColor: c.surfaceAlt }]}>
+            <Animated.View entering={FadeIn.duration(120)} exiting={FadeOut.duration(100)} style={[styles.descBody, { backgroundColor: c.surfaceAlt }]}>
               <Text variant="caption" color="text" style={{ lineHeight: 18 }}>
                 {description}
               </Text>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { BackHandler, Modal, Pressable as RNPressable, StyleSheet, View, KeyboardAvoidingView, Platform } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import { BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable as RNPressable, StyleSheet, View } from 'react-native';
+import Animated, { Easing, FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
@@ -15,6 +15,10 @@ export interface SheetProps {
   flush?: boolean;
 }
 
+const EASE = Easing.out(Easing.cubic);
+const IN_MS = 200;
+const OUT_MS = 150;
+
 /** Bottom sheet modal with backdrop. Uses the native Modal so it overlays navigation. */
 export function Sheet({ visible, onClose, title, children, flush }: SheetProps) {
   const c = useColors();
@@ -24,7 +28,7 @@ export function Sheet({ visible, onClose, title, children, flush }: SheetProps) 
 
   useEffect(() => {
     if (visible) return undefined;
-    const t = setTimeout(() => setMounted(false), 220);
+    const t = setTimeout(() => setMounted(false), OUT_MS + 20);
     return () => clearTimeout(t);
   }, [visible]);
 
@@ -42,7 +46,7 @@ export function Sheet({ visible, onClose, title, children, flush }: SheetProps) 
     <Modal transparent visible statusBarTranslucent navigationBarTranslucent animationType="none" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         {visible ? (
-          <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(180)} style={StyleSheet.absoluteFill}>
+          <Animated.View entering={FadeIn.duration(IN_MS)} exiting={FadeOut.duration(OUT_MS)} style={StyleSheet.absoluteFill}>
             <RNPressable style={[styles.flex, { backgroundColor: c.overlay }]} onPress={onClose} />
           </Animated.View>
         ) : null}
@@ -50,12 +54,9 @@ export function Sheet({ visible, onClose, title, children, flush }: SheetProps) 
           <View style={styles.flex} pointerEvents="none" />
           {visible ? (
             <Animated.View
-              entering={SlideInDown.springify().damping(22).stiffness(260)}
-              exiting={SlideOutDown.duration(200)}
-              style={[
-                styles.sheet,
-                { backgroundColor: c.bg, paddingBottom: insets.bottom + spacing.lg },
-              ]}
+              entering={SlideInDown.duration(IN_MS).easing(EASE)}
+              exiting={SlideOutDown.duration(OUT_MS).easing(Easing.in(Easing.cubic))}
+              style={[styles.sheet, { backgroundColor: c.bg, paddingBottom: insets.bottom + spacing.lg }]}
             >
               <View style={[styles.handle, { backgroundColor: c.borderStrong }]} />
               {title ? (

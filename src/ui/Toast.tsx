@@ -60,8 +60,8 @@ export function ToastHost({ bottomOffset = 0 }: { bottomOffset?: number }) {
     <View pointerEvents="box-none" style={[styles.host, { bottom: insets.bottom + bottomOffset + spacing.lg }]}>
       <Animated.View
         key={current.id}
-        entering={FadeInDown.duration(200)}
-        exiting={FadeOutDown.duration(160)}
+        entering={FadeInDown.duration(160)}
+        exiting={FadeOutDown.duration(120)}
         style={[styles.toast, { backgroundColor: c.text }]}
       >
         <Text variant="bodyMedium" color={c.bg} style={styles.msg} numberOfLines={2}>

@@ -327,6 +327,16 @@ export function workoutToActive(w: WorkoutDetail): ActiveWorkout {
   };
 }
 
+/** Start timestamps of every workout, newest first. Cheap input for streak math. */
+export function workoutStartTimes(): number[] {
+  return db
+    .select({ startedAt: workouts.startedAt })
+    .from(workouts)
+    .orderBy(desc(workouts.startedAt))
+    .all()
+    .map((r) => r.startedAt);
+}
+
 export function workoutDays(from: number, to: number): Map<string, number> {
   const rows = db
     .select({ startedAt: workouts.startedAt })

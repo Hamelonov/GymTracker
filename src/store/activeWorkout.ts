@@ -77,7 +77,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
       return {
         workout: null,
         session: { mode: 'new' },
-        minimized: false,
+        minimized: true,
         startEmpty: (name) =>
           set({
             workout: { id: newId(), name, startedAt: Date.now(), routineId: null, notes: '', exercises: [] },

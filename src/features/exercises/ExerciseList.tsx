@@ -1,13 +1,13 @@
 import { FlashList } from '@shopify/flash-list';
 import { Check, Plus, Search, X } from 'lucide-react-native';
-import React, { useMemo, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable as RNPressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { exerciseName, exerciseUsage, listExercises } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import { useQuery } from '@/db/version';
 import { MUSCLE_GROUPS, type MuscleGroup } from '@/domain/types';
-import { Chip, EmptyState, Icon, Pressable, Text, fonts, radius, spacing, useColors } from '@/ui';
+import { Chip, EmptyState, Icon, Pressable, Text, fonts, radius, spacing, useColors, type ThemeColors } from '@/ui';
 
 export interface ExerciseListProps {
   selectedIds?: Set<string>;
@@ -16,6 +16,23 @@ export interface ExerciseListProps {
   header?: React.ReactNode;
   bottomPadding?: number;
   excludeIds?: Set<string>;
+}
+
+interface Item {
+  exercise: ExerciseRow;
+  name: string;
+  subtitle: string;
+  initial: string;
+}
+
+const collators = new Map<string, Intl.Collator>();
+function collator(lang: string): Intl.Collator {
+  let c = collators.get(lang);
+  if (!c) {
+    c = new Intl.Collator(lang, { sensitivity: 'base' });
+    collators.set(lang, c);
+  }
+  return c;
 }
 
 export function ExerciseAvatar({ exercise, size = 44 }: { exercise: ExerciseRow; size?: number }) {
@@ -31,6 +48,43 @@ export function ExerciseAvatar({ exercise, size = 44 }: { exercise: ExerciseRow;
   );
 }
 
+/** One row. Plain RN Pressable: the list renders many of these and must stay cheap. */
+const Row = memo(function Row({
+  item,
+  selected,
+  selectable,
+  colors,
+  onPress,
+}: {
+  item: Item;
+  selected: boolean;
+  selectable: boolean;
+  colors: ThemeColors;
+  onPress: (e: ExerciseRow) => void;
+}) {
+  const c = colors;
+  return (
+    <RNPressable onPress={() => onPress(item.exercise)} style={({ pressed }) => [styles.row, selected ? { backgroundColor: c.accentSoft } : null, pressed ? { opacity: 0.7 } : null]}>
+      <View style={[styles.avatar, { backgroundColor: item.exercise.isCustom ? c.accentSoft : c.surfaceAlt }]}>
+        <Text variant="h3">{item.initial}</Text>
+      </View>
+      <View style={styles.rowBody}>
+        <Text variant="bodyMedium" numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text variant="caption" color="muted" numberOfLines={1}>
+          {item.subtitle}
+        </Text>
+      </View>
+      {selectable ? (
+        <View style={[styles.check, { borderColor: selected ? c.text : c.borderStrong, backgroundColor: selected ? c.text : 'transparent' }]}>
+          {selected ? <Icon icon={Check} size={14} color={c.bg} strokeWidth={3} /> : null}
+        </View>
+      ) : null}
+    </RNPressable>
+  );
+});
+
 export function ExerciseList({ selectedIds, onPress, onCreate, header, bottomPadding = 0, excludeIds }: ExerciseListProps) {
   const c = useColors();
   const { t, i18n } = useTranslation();
@@ -38,31 +92,58 @@ export function ExerciseList({ selectedIds, onPress, onCreate, header, bottomPad
   const [muscle, setMuscle] = useState<MuscleGroup | null>(null);
   const all = useQuery(() => listExercises(), []);
   const usage = useQuery(() => exerciseUsage(), []);
+  const lang = i18n.language;
+
+  // Precompute display strings and the default order once per data/language change.
+  const items = useMemo<Item[]>(() => {
+    const cmp = collator(lang);
+    const list = all.map((e) => {
+      const name = exerciseName(e, lang);
+      const u = usage.get(e.id);
+      return {
+        exercise: e,
+        name,
+        initial: name.slice(0, 1).toUpperCase(),
+        subtitle: `${t(`muscles.${e.muscleGroup}`)} · ${t(`equipment.${e.equipment}`)}${u ? ` · ${u.count}×` : ''}`,
+      };
+    });
+    list.sort((a, b) => {
+      const ua = usage.get(a.exercise.id)?.count ?? 0;
+      const ub = usage.get(b.exercise.id)?.count ?? 0;
+      if (ua !== ub) return ub - ua;
+      return cmp.compare(a.name, b.name);
+    });
+    return list;
+  }, [all, usage, lang, t]);
 
   const data = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const lang = i18n.language;
-    const rows = all.filter((e) => {
+    const filtered = items.filter((it) => {
+      const e = it.exercise;
       if (excludeIds?.has(e.id)) return false;
       if (muscle && e.muscleGroup !== muscle && !e.secondaryMuscles.includes(muscle)) return false;
       if (!q) return true;
       return e.nameEn.toLowerCase().includes(q) || e.nameRu.toLowerCase().includes(q);
     });
-    rows.sort((a, b) => {
-      const ua = usage.get(a.id)?.count ?? 0;
-      const ub = usage.get(b.id)?.count ?? 0;
-      if (q) return exerciseName(a, lang).localeCompare(exerciseName(b, lang), lang);
-      if (ua !== ub) return ub - ua;
-      return exerciseName(a, lang).localeCompare(exerciseName(b, lang), lang);
-    });
-    return rows;
-  }, [all, query, muscle, usage, excludeIds, i18n.language]);
+    if (q) {
+      const cmp = collator(lang);
+      filtered.sort((a, b) => cmp.compare(a.name, b.name));
+    }
+    return filtered;
+  }, [items, query, muscle, excludeIds, lang]);
+
+  const selectable = selectedIds != null;
+  const renderItem = useCallback(
+    ({ item }: { item: Item }) => <Row item={item} selected={selectedIds?.has(item.exercise.id) ?? false} selectable={selectable} colors={c} onPress={onPress} />,
+    [selectedIds, selectable, c, onPress],
+  );
 
   return (
     <FlashList
       data={data}
-      keyExtractor={(e) => e.id}
+      keyExtractor={(it) => it.exercise.id}
       keyboardShouldPersistTaps="handled"
+      extraData={selectedIds}
       contentContainerStyle={{ paddingBottom: bottomPadding + spacing.xxl }}
       ListHeaderComponent={
         <View>
@@ -80,9 +161,9 @@ export function ExerciseList({ selectedIds, onPress, onCreate, header, bottomPad
               returnKeyType="search"
             />
             {query ? (
-              <Pressable onPress={() => setQuery('')} hitSlop={10}>
+              <RNPressable onPress={() => setQuery('')} hitSlop={10}>
                 <Icon icon={X} size={18} color="muted" />
-              </Pressable>
+              </RNPressable>
             ) : null}
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
@@ -92,7 +173,7 @@ export function ExerciseList({ selectedIds, onPress, onCreate, header, bottomPad
             ))}
           </ScrollView>
           {onCreate ? (
-            <Pressable onPress={onCreate} style={[styles.create, { borderColor: c.border }]} haptic="light">
+            <Pressable onPress={onCreate} style={styles.create} haptic="light">
               <View style={[styles.createIcon, { backgroundColor: c.accent }]}>
                 <Icon icon={Plus} size={18} color="onAccent" strokeWidth={2.5} />
               </View>
@@ -102,29 +183,7 @@ export function ExerciseList({ selectedIds, onPress, onCreate, header, bottomPad
         </View>
       }
       ListEmptyComponent={<EmptyState icon={Search} title={t('common.noResults')} />}
-      renderItem={({ item }) => {
-        const selected = selectedIds?.has(item.id) ?? false;
-        const u = usage.get(item.id);
-        return (
-          <Pressable onPress={() => onPress(item)} scaleTo={0.985} haptic="selection" style={[styles.row, selected ? { backgroundColor: c.accentSoft } : null]}>
-            <ExerciseAvatar exercise={item} />
-            <View style={styles.rowBody}>
-              <Text variant="bodyMedium" numberOfLines={1}>
-                {exerciseName(item, i18n.language)}
-              </Text>
-              <Text variant="caption" color="muted" numberOfLines={1}>
-                {t(`muscles.${item.muscleGroup}`)} · {t(`equipment.${item.equipment}`)}
-                {u ? ` · ${u.count}×` : ''}
-              </Text>
-            </View>
-            {selectedIds ? (
-              <View style={[styles.check, { borderColor: selected ? c.text : c.borderStrong, backgroundColor: selected ? c.text : 'transparent' }]}>
-                {selected ? <Icon icon={Check} size={14} color={c.bg} strokeWidth={3} /> : null}
-              </View>
-            ) : null}
-          </Pressable>
-        );
-      }}
+      renderItem={renderItem}
     />
   );
 }
@@ -157,6 +216,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.lg,
   },
+  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   rowBody: { flex: 1 },
   check: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
 });

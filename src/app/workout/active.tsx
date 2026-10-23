@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { push } from '@/lib/nav';
 import { ArrowDown, ArrowUp, ChevronDown, Link, Plus, Replace, Trash2, Unlink } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -50,6 +50,12 @@ export default function ActiveWorkoutScreen() {
   useEffect(() => {
     if (settings.restNotifications) void ensureNotificationPermission();
   }, [settings.restNotifications]);
+  useFocusEffect(
+    useCallback(() => {
+      store().setMinimized(false);
+      return () => store().setMinimized(true);
+    }, [store]),
+  );
 
   const exerciseIds = useMemo(() => workout?.exercises.map((e) => e.exerciseId) ?? [], [workout?.exercises]);
   const exMap = useQuery(() => getExercisesByIds(exerciseIds), [exerciseIds.join(',')]);

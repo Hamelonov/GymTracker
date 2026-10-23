@@ -6,7 +6,6 @@ import {
   Inter_800ExtraBold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -15,8 +14,7 @@ import React, { useEffect, useMemo } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import migrations from '../../drizzle/migrations';
-import { db } from '@/db/client';
+import { useDbReady } from '@/db/migrate';
 import { seedExercises } from '@/db/seed';
 import { initI18n, setLanguage } from '@/i18n';
 import { configureNotifications } from '@/lib/notifications';
@@ -26,6 +24,11 @@ import { DialogHost, Text, ThemeProvider, ToastHost, useTheme } from '@/ui';
 void SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ fade: true, duration: 250 });
 
+const perf = (label: string) => {
+  if (__DEV__) console.log(`[perf] ${label} at ${Math.round(performance.now())}ms`);
+};
+perf('root layout evaluated');
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -34,7 +37,7 @@ export default function RootLayout() {
     Inter_700Bold,
     Inter_800ExtraBold,
   });
-  const { success, error } = useMigrations(db, migrations);
+  const { success, error } = useDbReady();
   const language = useSettings((s) => s.language);
 
   useMemo(() => initI18n(language), []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -49,7 +52,16 @@ export default function RootLayout() {
 
   const ready = fontsLoaded && (success || !!error);
   useEffect(() => {
-    if (ready) void SplashScreen.hideAsync();
+    if (fontsLoaded) perf('fonts loaded');
+  }, [fontsLoaded]);
+  useEffect(() => {
+    if (success) perf('migrations done');
+  }, [success]);
+  useEffect(() => {
+    if (ready) {
+      perf('ready, hiding splash');
+      void SplashScreen.hideAsync();
+    }
   }, [ready]);
 
   if (!ready) return null;
