@@ -350,7 +350,7 @@ export default function ActiveWorkoutScreen() {
             </Text>
             {descDraft != null ? (
               <>
-                <Input value={descDraft} onChangeText={setDescDraft} placeholder={t('exercise.descriptionPlaceholder')} multiline autoFocus />
+                <Input value={descDraft} onChangeText={setDescDraft} placeholder={t('exercise.descriptionPlaceholder')} multiline />
                 <Button
                   title={t('common.save')}
                   size="lg"
@@ -393,7 +393,7 @@ export default function ActiveWorkoutScreen() {
             <Text variant="caption" color="muted" style={{ marginBottom: spacing.sm }}>
               {exerciseName(exMap.get(current.exerciseId) ?? { nameEn: '', nameRu: '', isCustom: true }, i18n.language)}
             </Text>
-            <Input value={noteDraft} onChangeText={setNoteDraft} placeholder={t('workout.exerciseNotePlaceholder')} multiline autoFocus />
+            <Input value={noteDraft} onChangeText={setNoteDraft} placeholder={t('workout.exerciseNotePlaceholder')} multiline />
             {lastNotes.get(current.exerciseId) && !noteDraft ? (
               <Pressable onPress={() => setNoteDraft(lastNotes.get(current.exerciseId) ?? '')} style={{ marginTop: spacing.md }} haptic="selection">
                 <Text variant="caption" color="muted">
