@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "GymTracker",
+    "slug": "gymtracker",
+    "version": "0.1.0",
+    "scheme": "gymtracker",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFD400"
+    },
+    "android": {
+      "package": "io.github.hamelonov.gymtracker",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#FFD400",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.VIBRATE",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-localization",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#FFD400",
+          "imageWidth": 160
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#FFD400"
+        }
+      ],
+      "./plugins/withShortObjectPaths.js"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
