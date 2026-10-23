@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Plus } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,9 +16,9 @@ export default function ExercisesTab() {
       <Header
         title={t('exercise.library')}
         large
-        right={<IconButton icon={Plus} variant="accent" onPress={() => router.push('/exercise/edit')} haptic="light" />}
+        right={<IconButton icon={Plus} variant="accent" onPress={() => push('/exercise/edit')} haptic="light" />}
       />
-      <ExerciseList onPress={(e) => router.push({ pathname: '/exercise/[id]', params: { id: e.id } })} />
+      <ExerciseList onPress={(e) => push({ pathname: '/exercise/[id]', params: { id: e.id } })} />
     </View>
   );
 }

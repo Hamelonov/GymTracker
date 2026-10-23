@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Plus } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,7 +37,7 @@ export default function ExercisePickerScreen() {
       <Header title={mode === 'replace' ? t('workout.replaceExercise') : t('workout.addExercises')} back="close" />
       <ExerciseList
         selectedIds={mode === 'replace' ? undefined : selectedSet}
-        onCreate={() => router.push({ pathname: '/exercise/edit', params: { pick: mode === 'replace' ? '0' : '1' } })}
+        onCreate={() => push({ pathname: '/exercise/edit', params: { pick: mode === 'replace' ? '0' : '1' } })}
         bottomPadding={selected.length > 0 ? 90 : 0}
         onPress={(e) => {
           if (mode === 'replace') {

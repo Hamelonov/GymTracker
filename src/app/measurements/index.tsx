@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Plus } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +25,7 @@ export default function MeasurementsScreen() {
   const latest = useQuery(() => latestMeasurements(), []);
   const units = { weight: settings.weightUnit, length: settings.measurementUnit } as const;
   return (
-    <Screen header={{ back: true, title: t('measurements.title'), right: <IconButton icon={Plus} variant="accent" onPress={() => router.push('/measurements/log')} haptic="light" /> }}>
+    <Screen header={{ back: true, title: t('measurements.title'), right: <IconButton icon={Plus} variant="accent" onPress={() => push('/measurements/log')} haptic="light" /> }}>
       <Card padded={false} style={{ marginTop: spacing.sm }}>
         {MEASUREMENT_TYPES.map((type, i) => {
           const m = latest.get(type);
@@ -40,7 +40,7 @@ export default function MeasurementsScreen() {
                   </Text>
                 }
                 chevron
-                onPress={() => router.push({ pathname: '/measurements/[type]', params: { type } })}
+                onPress={() => push({ pathname: '/measurements/[type]', params: { type } })}
                 style={{ paddingHorizontal: spacing.lg }}
               />
             </View>

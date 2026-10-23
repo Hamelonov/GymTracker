@@ -1,4 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Pencil, Play } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -35,12 +36,12 @@ export default function RoutineDetailScreen() {
       useActiveWorkout.getState().clear();
     }
     useActiveWorkout.getState().startFromRoutine(r);
-    router.push('/workout/active');
+    push('/workout/active');
   };
 
   return (
     <Screen
-      header={{ back: true, title: r.name, subtitle: r.lastPerformedAt ? t('home.lastPerformed', { date: formatRelativeDay(r.lastPerformedAt, i18n.language, t) }) : t('home.neverPerformed'), right: <IconButton icon={Pencil} variant="filled" onPress={() => router.push({ pathname: '/routine/edit', params: { id: r.id } })} /> }}
+      header={{ back: true, title: r.name, subtitle: r.lastPerformedAt ? t('home.lastPerformed', { date: formatRelativeDay(r.lastPerformedAt, i18n.language, t) }) : t('home.neverPerformed'), right: <IconButton icon={Pencil} variant="filled" onPress={() => push({ pathname: '/routine/edit', params: { id: r.id } })} /> }}
       footer={<Button title={t('home.startRoutine')} size="lg" full icon={<Icon icon={Play} size={20} color="onAccent" strokeWidth={2.5} />} onPress={start} />}
     >
       {r.notes ? (
@@ -52,7 +53,7 @@ export default function RoutineDetailScreen() {
         const ex = exMap.get(e.exerciseId);
         const fields = setFieldsFor(ex?.type ?? 'weight_reps');
         return (
-          <Pressable key={e.id} onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: e.exerciseId } })} scaleTo={0.985}>
+          <Pressable key={e.id} onPress={() => push({ pathname: '/exercise/[id]', params: { id: e.exerciseId } })} scaleTo={0.985}>
             <Card raised style={{ marginBottom: spacing.md }}>
               <Text variant="h3">{ex ? exerciseName(ex, i18n.language) : '…'}</Text>
               {e.supersetGroup != null ? (

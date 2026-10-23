@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { push } from '@/lib/nav';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, Switch, View } from 'react-native';
@@ -116,8 +116,8 @@ export default function SettingsScreen() {
 
       <SectionTitle title={t('settings.data')} />
       <Card padded={false}>
-        <ListItem title={t('profile.data')} chevron onPress={() => router.push('/settings/data')} style={{ paddingHorizontal: spacing.lg }} />
-        <ListItem title={t('settings.about')} chevron onPress={() => router.push('/settings/about')} style={{ paddingHorizontal: spacing.lg }} />
+        <ListItem title={t('profile.data')} chevron onPress={() => push('/settings/data')} style={{ paddingHorizontal: spacing.lg }} />
+        <ListItem title={t('settings.about')} chevron onPress={() => push('/settings/about')} style={{ paddingHorizontal: spacing.lg }} />
       </Card>
     </Screen>
   );

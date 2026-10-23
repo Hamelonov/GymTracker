@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Calculator, ChartLine, Database, Info, Ruler, Scale, Settings } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -42,7 +42,7 @@ export default function ProfileTab() {
                 </View>
               }
               chevron
-              onPress={() => router.push(r.href as never)}
+              onPress={() => push(r.href as never)}
               style={{ paddingHorizontal: spacing.lg }}
             />
           </View>

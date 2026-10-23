@@ -1,5 +1,5 @@
 import { addDays, subMonths } from 'date-fns';
-import { router } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Trophy } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -142,7 +142,7 @@ export default function StatsScreen() {
           </Text>
         ) : (
           top.map((e) => (
-            <ListItem key={e.exerciseId} title={exerciseName(e, i18n.language)} right={<Text variant="caption" color="muted">{e.count}×</Text>} chevron onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: e.exerciseId } })} style={{ paddingHorizontal: spacing.lg }} />
+            <ListItem key={e.exerciseId} title={exerciseName(e, i18n.language)} right={<Text variant="caption" color="muted">{e.count}×</Text>} chevron onPress={() => push({ pathname: '/exercise/[id]', params: { id: e.exerciseId } })} style={{ paddingHorizontal: spacing.lg }} />
           ))
         )}
       </Card>
@@ -155,7 +155,7 @@ export default function StatsScreen() {
           </Text>
         ) : (
           records.map((r) => (
-            <Pressable key={r.exerciseId} onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: r.exerciseId } })} style={styles.recordRow}>
+            <Pressable key={r.exerciseId} onPress={() => push({ pathname: '/exercise/[id]', params: { id: r.exerciseId } })} style={styles.recordRow}>
               <Icon icon={Trophy} size={16} color="accent" />
               <Text variant="bodyMedium" style={{ flex: 1 }} numberOfLines={1}>
                 {exerciseName(r, i18n.language)}

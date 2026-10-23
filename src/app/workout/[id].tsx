@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Ellipsis, Pencil, Repeat, Save, Trash2, Trophy } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -45,7 +46,7 @@ export default function WorkoutDetailScreen() {
     setMenu(false);
     if (!(await ensureNoActive())) return;
     useActiveWorkout.getState().startFromActive(workoutToActive(w), { mode: 'edit', workoutId: w.id, finishedAt: w.finishedAt });
-    router.push('/workout/active');
+    push('/workout/active');
   };
 
   const repeat = async () => {
@@ -67,14 +68,14 @@ export default function WorkoutDetailScreen() {
       },
       { mode: 'new' },
     );
-    router.push('/workout/active');
+    push('/workout/active');
   };
 
   const saveAsRoutine = () => {
     setMenu(false);
     const rid = createRoutine(routineInputFromWorkout(workoutToActive(w)));
     toast(t('routine.saved'));
-    router.push({ pathname: '/routine/[id]', params: { id: rid } });
+    push({ pathname: '/routine/[id]', params: { id: rid } });
   };
 
   const remove = async () => {
@@ -102,7 +103,7 @@ export default function WorkoutDetailScreen() {
         const fields = setFieldsFor(e.exercise.type);
         return (
           <Card key={e.id} raised style={{ marginBottom: spacing.md }}>
-            <Pressable onPress={() => router.push({ pathname: '/exercise/[id]', params: { id: e.exerciseId } })}>
+            <Pressable onPress={() => push({ pathname: '/exercise/[id]', params: { id: e.exerciseId } })}>
               <Text variant="h3">{exerciseName(e.exercise, i18n.language)}</Text>
             </Pressable>
             {e.note ? (

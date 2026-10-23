@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { push } from '@/lib/nav';
 import { BookOpen, Ellipsis, Link, Plus, StickyNote, Timer } from 'lucide-react-native';
 import React, { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -61,7 +61,7 @@ export const ExerciseCard = memo(function ExerciseCard({
     <Animated.View layout={LinearTransition.springify().damping(24)} style={[styles.card, { backgroundColor: c.surface }]}>
       {supersetColor ? <View style={[styles.supersetBar, { backgroundColor: supersetColor }]} /> : null}
       <View style={styles.header}>
-        <Pressable style={styles.titleWrap} onPress={() => exercise && router.push({ pathname: '/exercise/[id]', params: { id: exercise.id } })}>
+        <Pressable style={styles.titleWrap} onPress={() => exercise && push({ pathname: '/exercise/[id]', params: { id: exercise.id } })}>
           <Text variant="h3" numberOfLines={2}>
             {name}
           </Text>

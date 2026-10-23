@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Copy, Dumbbell, Folder, FolderInput, FolderPlus, Pencil, Play, Plus, Trash2 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -70,7 +70,7 @@ export default function HomeTab() {
   const startEmpty = async () => {
     if (!(await ensureNoActive())) return;
     useActiveWorkout.getState().startEmpty(workoutNameFor(t, Date.now()));
-    router.push('/workout/active');
+    push('/workout/active');
   };
 
   const startRoutine = async (id: string) => {
@@ -78,7 +78,7 @@ export default function HomeTab() {
     const r = getRoutine(id);
     if (!r) return;
     useActiveWorkout.getState().startFromRoutine(r);
-    router.push('/workout/active');
+    push('/workout/active');
   };
 
   const current = sheet.kind === 'routineMenu' || sheet.kind === 'move' ? routines.find((r) => r.id === sheet.id) : undefined;
@@ -91,14 +91,14 @@ export default function HomeTab() {
       exercises={exMap}
       onStart={() => startRoutine(r.id)}
       onMenu={() => setSheet({ kind: 'routineMenu', id: r.id })}
-      onPress={() => router.push({ pathname: '/routine/[id]', params: { id: r.id } })}
+      onPress={() => push({ pathname: '/routine/[id]', params: { id: r.id } })}
     />
   );
 
   return (
     <Screen header={{ title: t('home.title'), large: true }} contentStyle={{ paddingBottom: 120 }}>
       {workout && session.mode === 'new' ? (
-        <Pressable onPress={() => router.push('/workout/active')} haptic="light">
+        <Pressable onPress={() => push('/workout/active')} haptic="light">
           <Card style={[styles.banner, { backgroundColor: c.accent }]}>
             <View style={[styles.dot, { backgroundColor: c.black }]} />
             <View style={{ flex: 1 }}>
@@ -154,12 +154,12 @@ export default function HomeTab() {
         right={
           <View style={{ flexDirection: 'row', gap: spacing.xs }}>
             <IconButton icon={FolderPlus} size={18} onPress={() => { setFolderName(''); setSheet({ kind: 'folder' }); }} haptic="selection" />
-            <IconButton icon={Plus} size={18} variant="filled" onPress={() => router.push('/routine/edit')} haptic="selection" />
+            <IconButton icon={Plus} size={18} variant="filled" onPress={() => push('/routine/edit')} haptic="selection" />
           </View>
         }
       />
       {routines.length === 0 ? (
-        <EmptyState icon={Dumbbell} title={t('home.noRoutines')} hint={t('home.noRoutinesHint')} action={<Button title={t('home.newRoutine')} variant="secondary" onPress={() => router.push('/routine/edit')} />} />
+        <EmptyState icon={Dumbbell} title={t('home.noRoutines')} hint={t('home.noRoutinesHint')} action={<Button title={t('home.newRoutine')} variant="secondary" onPress={() => push('/routine/edit')} />} />
       ) : null}
       {folders.map((f) => {
         const inFolder = routines.filter((r) => r.folderId === f.id);
@@ -185,7 +185,7 @@ export default function HomeTab() {
         {current ? (
           <View style={styles.menu}>
             <ListItem title={t('home.startRoutine')} left={<Icon icon={Play} />} onPress={() => { setSheet({ kind: 'none' }); void startRoutine(current.id); }} />
-            <ListItem title={t('common.edit')} left={<Icon icon={Pencil} />} onPress={() => { setSheet({ kind: 'none' }); router.push({ pathname: '/routine/edit', params: { id: current.id } }); }} />
+            <ListItem title={t('common.edit')} left={<Icon icon={Pencil} />} onPress={() => { setSheet({ kind: 'none' }); push({ pathname: '/routine/edit', params: { id: current.id } }); }} />
             <ListItem title={t('common.duplicate')} left={<Icon icon={Copy} />} onPress={() => { duplicateRoutine(current.id, `${current.name} (2)`); setSheet({ kind: 'none' }); }} />
             {folders.length > 0 ? <ListItem title={t('home.moveToFolder')} left={<Icon icon={FolderInput} />} onPress={() => setSheet({ kind: 'move', id: current.id })} /> : null}
             <ListItem

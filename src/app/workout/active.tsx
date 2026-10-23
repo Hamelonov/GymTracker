@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { push } from '@/lib/nav';
 import { ArrowDown, ArrowUp, ChevronDown, Link, Plus, Replace, Trash2, Unlink } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,9 +12,9 @@ import { getRoutine, routineInputFromWorkout, updateRoutine } from '@/db/repo/ro
 import { saveWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import type { SetType } from '@/domain/types';
-import { formatDuration } from '@/domain/units';
+import { formatDuration, formatWeight } from '@/domain/units';
 import { countWorkingSets, totalVolume } from '@/domain/volume';
-import { useElapsed } from '@/features/workout/ActiveWorkoutBar';
+import { ElapsedTimer } from '@/features/workout/ElapsedTimer';
 import { ExerciseCard } from '@/features/workout/ExerciseCard';
 import { RestTimerBar } from '@/features/workout/RestTimerBar';
 import { useActiveWorkout } from '@/store/activeWorkout';
@@ -43,7 +44,6 @@ export default function ActiveWorkoutScreen() {
   const session = useActiveWorkout((s) => s.session);
   const store = useActiveWorkout.getState;
   const settings = useSettings();
-  const elapsed = useElapsed(session.mode === 'new' ? workout?.startedAt : null);
   const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
   const [nameDraft, setNameDraft] = useState('');
   const startRest = useRestTimer((s) => s.start);
@@ -159,9 +159,13 @@ export default function ActiveWorkoutScreen() {
           <Text variant="h3" numberOfLines={1} align="center">
             {workout.name || t('workout.defaultName')}
           </Text>
-          <Text variant="caption" color="muted" tabular>
-            {session.mode === 'new' ? formatDuration(elapsed) : formatDateTime(workout.startedAt, i18n.language)}
-          </Text>
+          {session.mode === 'new' ? (
+            <ElapsedTimer startedAt={workout.startedAt} variant="caption" color="muted" />
+          ) : (
+            <Text variant="caption" color="muted">
+              {formatDateTime(workout.startedAt, i18n.language)}
+            </Text>
+          )}
         </Pressable>
         <Button title={session.mode === 'new' ? t('workout.finish') : t('common.save')} size="sm" onPress={() => setSheet({ kind: 'finish' })} disabled={completedSets.length === 0} />
       </View>
@@ -169,8 +173,8 @@ export default function ActiveWorkoutScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 140 }]} showsVerticalScrollIndicator={false}>
           <View style={[styles.stats, { backgroundColor: c.surface }]}>
-            <Stat label={t('workout.duration')} value={session.mode === 'new' ? formatDuration(elapsed) : formatDuration(Math.round((session.finishedAt - workout.startedAt) / 1000))} />
-            <Stat label={t('workout.volume')} value={`${Math.round(settings.weightUnit === 'kg' ? volume : volume / 0.45359237)} ${settings.weightUnit}`} />
+            <StatTimer label={t('workout.duration')} startedAt={workout.startedAt} fixedSeconds={session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000)} />
+            <Stat label={t('workout.volume')} value={formatWeight(Math.round(settings.weightUnit === 'kg' ? volume : volume / 0.45359237) * (settings.weightUnit === 'kg' ? 1 : 0.45359237), settings.weightUnit)} />
             <Stat label={t('workout.setsDone')} value={String(setsDone)} />
           </View>
 
@@ -201,7 +205,7 @@ export default function ActiveWorkoutScreen() {
             full
             variant={workout.exercises.length === 0 ? 'primary' : 'secondary'}
             icon={<Icon icon={Plus} size={20} color={workout.exercises.length === 0 ? 'onAccent' : 'text'} strokeWidth={2.5} />}
-            onPress={() => router.push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
+            onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
             style={{ marginTop: spacing.sm }}
           />
           {session.mode === 'new' ? (
@@ -227,7 +231,7 @@ export default function ActiveWorkoutScreen() {
       <Sheet visible={sheet.kind === 'menu'} onClose={() => setSheet({ kind: 'none' })} title={current ? exerciseName(exMap.get(current.exerciseId) ?? { nameEn: '', nameRu: '', isCustom: true }, i18n.language) : undefined} flush>
         {current ? (
           <View style={styles.menu}>
-            <ListItem title={t('workout.replaceExercise')} left={<Icon icon={Replace} />} onPress={() => { setSheet({ kind: 'none' }); router.push({ pathname: '/exercise/picker', params: { mode: 'replace', target: current.id } }); }} />
+            <ListItem title={t('workout.replaceExercise')} left={<Icon icon={Replace} />} onPress={() => { setSheet({ kind: 'none' }); push({ pathname: '/exercise/picker', params: { mode: 'replace', target: current.id } }); }} />
             <ListItem
               title={current.supersetGroup == null ? t('workout.createSuperset') : t('workout.removeFromSuperset')}
               left={<Icon icon={current.supersetGroup == null ? Link : Unlink} />}
@@ -332,8 +336,8 @@ export default function ActiveWorkoutScreen() {
       <Sheet visible={sheet.kind === 'finish'} onClose={() => setSheet({ kind: 'none' })} title={t('workout.finishTitle')}>
         <Card style={{ marginBottom: spacing.lg }}>
           <View style={styles.statsRow}>
-            <Stat label={t('workout.duration')} value={session.mode === 'new' ? formatDuration(elapsed) : formatDuration(Math.round((session.finishedAt - workout.startedAt) / 1000))} />
-            <Stat label={t('workout.volume')} value={`${Math.round(settings.weightUnit === 'kg' ? volume : volume / 0.45359237)} ${settings.weightUnit}`} />
+            <StatTimer label={t('workout.duration')} startedAt={workout.startedAt} fixedSeconds={session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000)} />
+            <Stat label={t('workout.volume')} value={formatWeight(Math.round(settings.weightUnit === 'kg' ? volume : volume / 0.45359237) * (settings.weightUnit === 'kg' ? 1 : 0.45359237), settings.weightUnit)} />
             <Stat label={t('workout.setsDone')} value={String(setsDone)} />
           </View>
         </Card>
@@ -349,6 +353,17 @@ export default function ActiveWorkoutScreen() {
 function KeepAwake() {
   useKeepAwake('workout');
   return null;
+}
+
+function StatTimer({ label, startedAt, fixedSeconds }: { label: string; startedAt: number; fixedSeconds?: number }) {
+  return (
+    <View style={styles.stat}>
+      <Text variant="label" color="muted">
+        {label.toUpperCase()}
+      </Text>
+      <ElapsedTimer startedAt={startedAt} fixedSeconds={fixedSeconds} variant="h3" />
+    </View>
+  );
 }
 
 function Stat({ label, value }: { label: string; value: string }) {

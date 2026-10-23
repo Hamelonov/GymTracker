@@ -1,4 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Plus, Ruler, Trash2 } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -35,7 +36,7 @@ export default function MeasurementTypeScreen() {
   const first = rows[rows.length - 1];
   const change = latest && first && rows.length > 1 ? latest.value - first.value : null;
   return (
-    <Screen header={{ back: true, title: t(`measurements.types.${type}`), right: <IconButton icon={Plus} variant="accent" onPress={() => router.push({ pathname: '/measurements/log', params: { type } })} haptic="light" /> }}>
+    <Screen header={{ back: true, title: t(`measurements.types.${type}`), right: <IconButton icon={Plus} variant="accent" onPress={() => push({ pathname: '/measurements/log', params: { type } })} haptic="light" /> }}>
       {rows.length === 0 ? (
         <EmptyState icon={Ruler} title={t('measurements.noData')} />
       ) : (

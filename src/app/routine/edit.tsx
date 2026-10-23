@@ -1,4 +1,5 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { push } from '@/lib/nav';
 import { ArrowDown, ArrowUp, Ellipsis, Link, Plus, Timer, Trash2, Unlink } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -158,7 +159,7 @@ export default function RoutineEditScreen() {
         full
         variant={draft.exercises.length === 0 ? 'primary' : 'secondary'}
         icon={<Icon icon={Plus} size={20} color={draft.exercises.length === 0 ? 'onAccent' : 'text'} strokeWidth={2.5} />}
-        onPress={() => router.push({ pathname: '/exercise/picker', params: { mode: 'routine', token } })}
+        onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'routine', token } })}
       />
 
       <Sheet visible={sheet.kind === 'menu'} onClose={() => setSheet({ kind: 'none' })} flush>

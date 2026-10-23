@@ -1,25 +1,50 @@
-// Expo config plugin: keeps CMake object-file paths under the Windows MAX_PATH
-// limit (260 chars). Without it the native build fails on Windows with
-// "ninja: error: ... Filename longer than 260 characters".
-const { withAppBuildGradle } = require('expo/config-plugins');
+// Expo config plugin for the Android build: keeps CMake object-file paths under the Windows MAX_PATH limit (260 chars);
+//     without it the native build fails on Windows with "Filename longer than
+//     260 characters" (app) or "mkdir(...): No such file or directory" (libraries);
+const { withAppBuildGradle, withProjectBuildGradle } = require('expo/config-plugins');
 
-const MARKER = '// gymtracker: short object paths';
-const BLOCK = `
+const MARKER = '// gymtracker: build tweaks';
+const CMAKE_ARG = '-DCMAKE_OBJECT_PATH_MAX=255';
+
+const APP_BLOCK = `
     ${MARKER}
     externalNativeBuild {
       cmake {
-        arguments "-DCMAKE_OBJECT_PATH_MAX=255"
+        arguments "${CMAKE_ARG}"
       }
     }
 `;
 
-module.exports = function withShortObjectPaths(config) {
+const ROOT_BLOCK = `
+${MARKER}
+subprojects { sp ->
+  sp.plugins.withId('com.android.library') {
+    sp.android.defaultConfig.externalNativeBuild.cmake.arguments.add("${CMAKE_ARG}")
+  }
+}
+`;
+
+function withApp(config) {
   return withAppBuildGradle(config, (cfg) => {
     if (cfg.modResults.language !== 'groovy') return cfg;
-    let src = cfg.modResults.contents;
+    const src = cfg.modResults.contents;
     if (src.includes(MARKER)) return cfg;
-    src = src.replace(/defaultConfig \{\n/, (m) => m + BLOCK);
-    cfg.modResults.contents = src;
+    let out = src.replace(/defaultConfig \{\n/, (m) => m + APP_BLOCK);
+    cfg.modResults.contents = out;
     return cfg;
   });
+}
+
+function withRoot(config) {
+  return withProjectBuildGradle(config, (cfg) => {
+    if (cfg.modResults.language !== 'groovy') return cfg;
+    const src = cfg.modResults.contents;
+    if (src.includes(MARKER)) return cfg;
+    cfg.modResults.contents = src + ROOT_BLOCK;
+    return cfg;
+  });
+}
+
+module.exports = function withShortObjectPaths(config) {
+  return withRoot(withApp(config));
 };

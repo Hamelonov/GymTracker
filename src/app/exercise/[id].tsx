@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Archive, ArchiveRestore, Ellipsis, Pencil, Trash2, Trophy } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -113,7 +114,7 @@ export default function ExerciseDetailScreen() {
               {t('exercise.descriptionHint')}
             </Text>
           </Card>
-          <Button title={t('common.edit')} variant="secondary" full icon={<Icon icon={Pencil} size={16} />} onPress={() => router.push({ pathname: '/exercise/edit', params: { id: ex.id } })} style={{ marginTop: spacing.md }} />
+          <Button title={t('common.edit')} variant="secondary" full icon={<Icon icon={Pencil} size={16} />} onPress={() => push({ pathname: '/exercise/edit', params: { id: ex.id } })} style={{ marginTop: spacing.md }} />
           {history.length > 0 ? (
             <Text variant="caption" color="muted" align="center" style={{ marginTop: spacing.lg }}>
               {t('exercise.timesPerformed', { count: history.length })}
@@ -132,7 +133,7 @@ export default function ExerciseDetailScreen() {
           <EmptyState icon={Trophy} title={t('exercise.noHistory')} hint={t('exercise.noHistoryHint')} />
         ) : (
           history.map((h) => (
-            <Pressable key={h.workoutId} onPress={() => router.push({ pathname: '/workout/[id]', params: { id: h.workoutId } })} scaleTo={0.985}>
+            <Pressable key={h.workoutId} onPress={() => push({ pathname: '/workout/[id]', params: { id: h.workoutId } })} scaleTo={0.985}>
               <Card raised style={{ marginBottom: spacing.md }}>
                 <View style={styles.histHeader}>
                   <Text variant="bodyMedium" numberOfLines={1} style={{ flex: 1 }}>
@@ -181,7 +182,7 @@ export default function ExerciseDetailScreen() {
         ) : (
           <View style={styles.recordGrid}>
             {records.map((r) => (
-              <Pressable key={r.type} onPress={() => r.workoutId && router.push({ pathname: '/workout/[id]', params: { id: r.workoutId } })} style={[styles.record, { backgroundColor: c.surface }]} scaleTo={0.97}>
+              <Pressable key={r.type} onPress={() => r.workoutId && push({ pathname: '/workout/[id]', params: { id: r.workoutId } })} style={[styles.record, { backgroundColor: c.surface }]} scaleTo={0.97}>
                 <View style={styles.recordTop}>
                   <Icon icon={Trophy} size={14} color="accent" />
                   <Text variant="label" color="muted">
@@ -202,7 +203,7 @@ export default function ExerciseDetailScreen() {
 
       <Sheet visible={menu} onClose={() => setMenu(false)} flush>
         <View style={{ paddingHorizontal: spacing.sm }}>
-          <ListItem title={t('exercise.edit')} left={<Icon icon={Pencil} />} onPress={() => { setMenu(false); router.push({ pathname: '/exercise/edit', params: { id: ex.id } }); }} />
+          <ListItem title={t('exercise.edit')} left={<Icon icon={Pencil} />} onPress={() => { setMenu(false); push({ pathname: '/exercise/edit', params: { id: ex.id } }); }} />
           <ListItem
             title={ex.archived ? t('exercise.unarchive') : t('exercise.archive')}
             left={<Icon icon={ex.archived ? ArchiveRestore : Archive} />}

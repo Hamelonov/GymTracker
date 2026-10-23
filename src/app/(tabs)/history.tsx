@@ -1,6 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { addDays, addMonths, endOfMonth, getDay, startOfMonth } from 'date-fns';
-import { router } from 'expo-router';
+import { push } from '@/lib/nav';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -96,7 +96,7 @@ export default function HistoryTab() {
         ListEmptyComponent={mode === 'list' ? <EmptyState icon={Calendar} title={t('history.empty')} hint={t('history.emptyHint')} /> : null}
         renderItem={({ item }) => (
           <View style={{ paddingHorizontal: spacing.lg }}>
-            <WorkoutCard workout={item} onPress={() => router.push({ pathname: '/workout/[id]', params: { id: item.id } })} />
+            <WorkoutCard workout={item} onPress={() => push({ pathname: '/workout/[id]', params: { id: item.id } })} />
           </View>
         )}
       />

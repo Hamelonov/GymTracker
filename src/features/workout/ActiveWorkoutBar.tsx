@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { push } from '@/lib/nav';
 import { ChevronUp, Timer } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -48,7 +48,7 @@ export function ActiveWorkoutBar({ bottom }: { bottom: number }) {
   const done = workout.exercises.reduce((a, e) => a + e.sets.filter((s) => s.completed).length, 0);
   return (
     <Animated.View entering={FadeInDown.duration(220)} exiting={FadeOutDown.duration(180)} style={[styles.wrap, { bottom: bottom + spacing.sm }]} pointerEvents="box-none">
-      <Pressable onPress={() => router.push('/workout/active')} haptic="light" style={[styles.bar, { backgroundColor: c.text }]}>
+      <Pressable onPress={() => push('/workout/active')} haptic="light" style={[styles.bar, { backgroundColor: c.text }]}>
         <View style={[styles.dot, { backgroundColor: c.accent }]} />
         <View style={styles.body}>
           <Text variant="caption" color={c.bg} numberOfLines={1}>
