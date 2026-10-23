@@ -24,11 +24,6 @@ import { DialogHost, Text, ThemeProvider, ToastHost, useTheme } from '@/ui';
 void SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ fade: true, duration: 150 });
 
-const perf = (label: string) => {
-  if (__DEV__) console.log(`[perf] ${label} at ${Math.round(performance.now())}ms`);
-};
-perf('root layout evaluated');
-
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
@@ -52,16 +47,7 @@ export default function RootLayout() {
 
   const ready = fontsLoaded && (success || !!error);
   useEffect(() => {
-    if (fontsLoaded) perf('fonts loaded');
-  }, [fontsLoaded]);
-  useEffect(() => {
-    if (success) perf('migrations done');
-  }, [success]);
-  useEffect(() => {
-    if (ready) {
-      perf('ready, hiding splash');
-      void SplashScreen.hideAsync();
-    }
+    if (ready) void SplashScreen.hideAsync();
   }, [ready]);
 
   if (!ready) return null;

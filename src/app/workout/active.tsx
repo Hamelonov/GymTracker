@@ -442,9 +442,6 @@ export default function ActiveWorkoutScreen() {
       {/* Finish */}
       <Sheet visible={sheet.kind === 'finish'} onClose={() => setSheet({ kind: 'none' })} title={t('workout.finishTitle')}>
         <WorkoutStats startedAt={workout.startedAt} durationSec={session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000)} exerciseCount={workout.exercises.length} setCount={setsDone} style={{ marginBottom: spacing.lg }} />
-        <Text color="muted" style={{ marginBottom: spacing.lg }}>
-          {t('workout.finishHint')}
-        </Text>
         <Button title={t('workout.finishAndSave')} size="lg" full onPress={finish} haptic="success" />
       </Sheet>
     </View>
