@@ -168,13 +168,11 @@ export default function ActiveWorkoutScreen() {
           <Text variant="h3" numberOfLines={1} align="center">
             {workout.name || t('workout.defaultName')}
           </Text>
-          {session.mode === 'new' ? (
-            <ElapsedTimer startedAt={workout.startedAt} variant="caption" color="muted" />
-          ) : (
+          {session.mode === 'edit' ? (
             <Text variant="caption" color="muted">
               {formatDateTime(workout.startedAt, i18n.language)}
             </Text>
-          )}
+          ) : null}
         </Pressable>
         <Button title={session.mode === 'new' ? t('workout.finish') : t('common.save')} size="sm" onPress={() => setSheet({ kind: 'finish' })} disabled={completedSets.length === 0} />
       </View>
@@ -183,7 +181,7 @@ export default function ActiveWorkoutScreen() {
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 140 }]} showsVerticalScrollIndicator={false}>
           <View style={[styles.stats, { backgroundColor: c.surface }]}>
             <StatTimer label={t('workout.duration')} startedAt={workout.startedAt} fixedSeconds={session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000)} />
-            <Stat label={t('workout.volume')} value={formatWeight(Math.round(settings.weightUnit === 'kg' ? volume : volume / 0.45359237) * (settings.weightUnit === 'kg' ? 1 : 0.45359237), settings.weightUnit)} />
+            <Stat label={t('history.exercisesDone')} value={String(workout.exercises.length)} />
             <Stat label={t('workout.setsDone')} value={String(setsDone)} />
           </View>
 
