@@ -10,12 +10,12 @@ import { deleteWorkout, getWorkout, workoutToActive } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import { formatDateTime } from '@/domain/dates';
 import { setFieldsFor } from '@/domain/types';
-import { formatDuration, formatWeight } from '@/domain/units';
 import { formatSetValues } from '@/features/workout/format';
+import { WorkoutStats } from '@/features/workout/WorkoutStats';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
 import { useSettings } from '@/store/settings';
-import { Card, Icon, IconButton, ListItem, Pressable, Screen, Sheet, Text, confirm, radius, spacing, toast, useColors } from '@/ui';
+import { Card, Icon, IconButton, ListItem, Pressable, Screen, Sheet, Text, confirm, spacing, toast, useColors } from '@/ui';
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -87,12 +87,7 @@ export default function WorkoutDetailScreen() {
 
   return (
     <Screen header={{ back: true, title: w.name, subtitle: formatDateTime(w.startedAt, i18n.language), right: <IconButton icon={Ellipsis} variant="filled" onPress={() => setMenu(true)} haptic="selection" /> }}>
-      <View style={[styles.stats, { backgroundColor: c.surface }]}>
-        <Stat label={t('workout.duration')} value={formatDuration(w.durationSec)} />
-        <Stat label={t('workout.volume')} value={formatWeight(w.volumeKg, settings.weightUnit)} />
-        <Stat label={t('workout.setsDone')} value={String(w.setCount)} />
-        {w.prCount > 0 ? <Stat label={t('workout.prs')} value={String(w.prCount)} accent /> : null}
-      </View>
+      <WorkoutStats durationSec={w.durationSec} exerciseCount={w.exercises.length} setCount={w.setCount} prCount={w.prCount} style={{ marginBottom: spacing.lg }} />
       {w.notes ? (
         <Text color="muted" style={{ marginBottom: spacing.lg }}>
           {w.notes}
@@ -152,21 +147,7 @@ export default function WorkoutDetailScreen() {
   );
 }
 
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <View style={{ flex: 1, gap: 4 }}>
-      <Text variant="label" color="muted">
-        {label.toUpperCase()}
-      </Text>
-      <Text variant="h3" color={accent ? 'accent' : 'text'} tabular>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  stats: { flexDirection: 'row', borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   setNo: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   prWrap: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 4 },

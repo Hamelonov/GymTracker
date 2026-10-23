@@ -24,6 +24,7 @@ export interface SaveResult {
   prs: { exerciseId: string; setIndex: number; hits: PrHit[] }[];
   volumeKg: number;
   setCount: number;
+  exerciseCount: number;
   durationSec: number;
 }
 
@@ -135,7 +136,8 @@ export function saveWorkout(w: ActiveWorkout, finishedAt: number, opts: { existi
 
   if (opts.existingId) rebuildRecords(exerciseIds);
   bumpDb();
-  return { workoutId, prs, volumeKg, setCount, durationSec };
+  const exerciseCount = w.exercises.filter((e) => e.sets.some((s) => s.completed)).length;
+  return { workoutId, prs, volumeKg, setCount, exerciseCount, durationSec };
 }
 
 /** Recompute personal records for the given exercises from scratch (after edits/deletes). */

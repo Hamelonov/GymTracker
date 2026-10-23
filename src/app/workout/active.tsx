@@ -12,9 +12,9 @@ import { getRoutine, routineInputFromWorkout, updateRoutine } from '@/db/repo/ro
 import { saveWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import type { SetType } from '@/domain/types';
-import { formatDuration, formatWeight } from '@/domain/units';
-import { countWorkingSets, totalVolume } from '@/domain/volume';
-import { ElapsedTimer } from '@/features/workout/ElapsedTimer';
+import { formatDuration } from '@/domain/units';
+import { countWorkingSets } from '@/domain/volume';
+import { WorkoutStats } from '@/features/workout/WorkoutStats';
 import { ExerciseCard } from '@/features/workout/ExerciseCard';
 import { RestTimerBar } from '@/features/workout/RestTimerBar';
 import { useActiveWorkout } from '@/store/activeWorkout';
@@ -22,7 +22,7 @@ import { useLastSave } from '@/store/lastSave';
 import { useRestTimer } from '@/store/restTimer';
 import { useSettings } from '@/store/settings';
 import { formatDateTime } from '@/domain/dates';
-import { Button, Card, Icon, Input, ListItem, Pressable, Sheet, Text, confirm, radius, spacing, toast, useColors } from '@/ui';
+import { Button, Icon, Input, ListItem, Pressable, Sheet, Text, confirm, radius, spacing, toast, useColors } from '@/ui';
 
 const SUPERSET_COLORS = ['#F5A524', '#3E63DD', '#30A46C', '#E5484D', '#8E4EC6', '#12A594'];
 const REST_OPTIONS = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300];
@@ -179,7 +179,6 @@ export default function ActiveWorkoutScreen() {
   }
 
   const completedSets = workout.exercises.flatMap((e) => e.sets.filter((s) => s.completed));
-  const volume = totalVolume(completedSets);
   const setsDone = countWorkingSets(completedSets);
   const supersetColor = (group: number | null) => (group == null ? null : SUPERSET_COLORS[(group - 1) % SUPERSET_COLORS.length] ?? null);
   const current = sheet.kind !== 'none' && 'activeId' in sheet ? workout.exercises.find((e) => e.id === sheet.activeId) : undefined;
@@ -206,11 +205,7 @@ export default function ActiveWorkoutScreen() {
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 140 }]} showsVerticalScrollIndicator={false}>
-          <View style={[styles.stats, { backgroundColor: c.surface }]}>
-            <StatTimer label={t('workout.duration')} startedAt={workout.startedAt} fixedSeconds={session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000)} />
-            <Stat label={t('history.exercisesDone')} value={String(workout.exercises.length)} />
-            <Stat label={t('workout.setsDone')} value={String(setsDone)} />
-          </View>
+          <WorkoutStats startedAt={workout.startedAt} durationSec={session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000)} exerciseCount={workout.exercises.length} setCount={setsDone} style={{ marginBottom: spacing.md }} />
 
           {workout.exercises.map((item) => (
             <ExerciseCard
@@ -446,13 +441,7 @@ export default function ActiveWorkoutScreen() {
 
       {/* Finish */}
       <Sheet visible={sheet.kind === 'finish'} onClose={() => setSheet({ kind: 'none' })} title={t('workout.finishTitle')}>
-        <Card style={{ marginBottom: spacing.lg }}>
-          <View style={styles.statsRow}>
-            <StatTimer label={t('workout.duration')} startedAt={workout.startedAt} fixedSeconds={session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000)} />
-            <Stat label={t('workout.volume')} value={formatWeight(Math.round(settings.weightUnit === 'kg' ? volume : volume / 0.45359237) * (settings.weightUnit === 'kg' ? 1 : 0.45359237), settings.weightUnit)} />
-            <Stat label={t('workout.setsDone')} value={String(setsDone)} />
-          </View>
-        </Card>
+        <WorkoutStats startedAt={workout.startedAt} durationSec={session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000)} exerciseCount={workout.exercises.length} setCount={setsDone} style={{ marginBottom: spacing.lg }} />
         <Text color="muted" style={{ marginBottom: spacing.lg }}>
           {t('workout.finishHint')}
         </Text>
@@ -467,38 +456,11 @@ function KeepAwake() {
   return null;
 }
 
-function StatTimer({ label, startedAt, fixedSeconds }: { label: string; startedAt: number; fixedSeconds?: number }) {
-  return (
-    <View style={styles.stat}>
-      <Text variant="label" color="muted">
-        {label.toUpperCase()}
-      </Text>
-      <ElapsedTimer startedAt={startedAt} fixedSeconds={fixedSeconds} variant="h3" />
-    </View>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.stat}>
-      <Text variant="label" color="muted">
-        {label.toUpperCase()}
-      </Text>
-      <Text variant="h3" tabular>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.md },
   headerCenter: { flex: 1, alignItems: 'center' },
   iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  stats: { flexDirection: 'row', borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.md },
-  statsRow: { flexDirection: 'row' },
-  stat: { flex: 1, gap: 4 },
   restWrap: { position: 'absolute', left: spacing.lg, right: spacing.lg },
   menu: { paddingHorizontal: spacing.sm },
   restGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

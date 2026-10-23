@@ -11,7 +11,8 @@ import type { PrType } from '@/domain/types';
 import { formatDistance, formatDuration, formatWeight } from '@/domain/units';
 import { useLastSave } from '@/store/lastSave';
 import { useSettings } from '@/store/settings';
-import { Button, Card, Icon, Text, radius, spacing, useColors } from '@/ui';
+import { WorkoutStats } from '@/features/workout/WorkoutStats';
+import { Button, Card, Icon, Text, spacing, useColors } from '@/ui';
 
 export function formatPrValue(type: PrType, value: number, units: { weight: 'kg' | 'lb'; distance: 'km' | 'mi' }): string {
   switch (type) {
@@ -65,10 +66,8 @@ export default function SummaryScreen() {
           </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(40).duration(160)} style={[styles.stats, { backgroundColor: c.black }]}>
-          <Stat label={t('workout.duration')} value={formatDuration(result.durationSec)} />
-          <Stat label={t('workout.volume')} value={formatWeight(result.volumeKg, settings.weightUnit)} />
-          <Stat label={t('workout.setsDone')} value={String(result.setCount)} />
+        <Animated.View entering={FadeInDown.delay(40).duration(160)} style={{ marginTop: spacing.xxl }}>
+          <WorkoutStats variant="inverse" durationSec={result.durationSec} exerciseCount={result.exerciseCount} setCount={result.setCount} prCount={result.prs.reduce((a, p) => a + p.hits.length, 0)} />
         </Animated.View>
 
         {result.prs.length > 0 ? (
@@ -113,21 +112,7 @@ export default function SummaryScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={{ flex: 1, gap: 4 }}>
-      <Text variant="label" color="#9C9C97">
-        {label.toUpperCase()}
-      </Text>
-      <Text variant="h2" color="#FFFFFF" tabular>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  stats: { flexDirection: 'row', borderRadius: radius.lg, padding: spacing.lg, marginTop: spacing.xxl },
   prHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   prRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   prValues: { flexDirection: 'row', gap: spacing.md, flexWrap: 'wrap', justifyContent: 'flex-end' },
