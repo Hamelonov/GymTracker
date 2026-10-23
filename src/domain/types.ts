@@ -95,19 +95,25 @@ export interface SetFields {
   distance: boolean;
 }
 
+const WEIGHT_REPS: SetFields = Object.freeze({ weight: true, reps: true, duration: false, distance: false });
+const REPS: SetFields = Object.freeze({ weight: false, reps: true, duration: false, distance: false });
+const DURATION: SetFields = Object.freeze({ weight: false, reps: false, duration: true, distance: false });
+const DISTANCE_DURATION: SetFields = Object.freeze({ weight: false, reps: false, duration: true, distance: true });
+
+/** Returns a shared constant per type, so it is safe to pass to memoized components. */
 export function setFieldsFor(type: ExerciseType): SetFields {
   switch (type) {
     case 'weight_reps':
     case 'weighted_bodyweight':
     case 'assisted_bodyweight':
-      return { weight: true, reps: true, duration: false, distance: false };
+      return WEIGHT_REPS;
     case 'bodyweight_reps':
     case 'reps_only':
-      return { weight: false, reps: true, duration: false, distance: false };
+      return REPS;
     case 'duration':
-      return { weight: false, reps: false, duration: true, distance: false };
+      return DURATION;
     case 'distance_duration':
-      return { weight: false, reps: false, duration: true, distance: true };
+      return DISTANCE_DURATION;
   }
 }
 

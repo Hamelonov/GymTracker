@@ -28,10 +28,12 @@ export interface SetRowProps {
   showRpe: boolean;
   readOnly?: boolean;
   hideCheck?: boolean;
-  onChange: (patch: Partial<SetValues>) => void;
-  onToggle: () => void;
-  onDelete: () => void;
-  onTypePress: () => void;
+  /** Id of the owning exercise; passed back to every handler. */
+  activeId: string;
+  onChange: (activeId: string, setId: string, patch: Partial<SetValues>) => void;
+  onToggle: (activeId: string, setId: string) => void;
+  onDelete: (activeId: string, setId: string) => void;
+  onTypePress: (activeId: string, setId: string) => void;
   typeLabel: (type: SetType) => string;
 }
 
@@ -100,7 +102,11 @@ function DeleteAction({ progress, onPress }: { progress: SharedValue<number>; on
   );
 }
 
-export const SetRow = memo(function SetRow({ set, index, fields, units, showRpe, readOnly, hideCheck, onChange, onToggle, onDelete, onTypePress, typeLabel }: SetRowProps) {
+export const SetRow = memo(function SetRow({ set, index, fields, units, showRpe, readOnly, hideCheck, activeId, onChange: onChangeById, onToggle: onToggleById, onDelete: onDeleteById, onTypePress: onTypePressById, typeLabel }: SetRowProps) {
+  const onChange = (patch: Partial<SetValues>) => onChangeById(activeId, set.id, patch);
+  const onToggle = () => onToggleById(activeId, set.id);
+  const onDelete = () => onDeleteById(activeId, set.id);
+  const onTypePress = () => onTypePressById(activeId, set.id);
   const c = useColors();
   const hapticsOn = useSettings((s) => s.haptics);
   const bgStyle = { backgroundColor: set.completed ? c.accentSoft : c.surface };

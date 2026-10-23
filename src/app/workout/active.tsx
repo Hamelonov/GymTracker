@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router';
 import { push } from '@/lib/nav';
 import { ArrowDown, ArrowUp, ChevronDown, Link, Plus, Replace, Timer, Trash2, Unlink } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -82,24 +82,50 @@ export default function ActiveWorkoutScreen() {
     [workout?.exercises, exMap, settings.defaultRestSeconds],
   );
 
+  // Latest values for the stable handlers below. Handlers never change identity,
+  // so memoized cards and set rows re-render only when their own data changes.
+  const latest = useRef({ restFor, autoStartRest: settings.autoStartRest, mode: session.mode, t });
+  useEffect(() => {
+    latest.current = { restFor, autoStartRest: settings.autoStartRest, mode: session.mode, t };
+  });
+
   const onToggle = useCallback(
     (activeId: string, setId: string) => {
       const res = store().toggleSet(activeId, setId);
-      if (res?.completed && session.mode === 'new' && settings.autoStartRest) {
-        const sec = restFor(activeId);
-        if (sec > 0) startRest(sec);
+      const l = latest.current;
+      if (res?.completed && l.mode === 'new' && l.autoStartRest) {
+        const sec = l.restFor(activeId);
+        // Start the rest timer after this frame so the tick paints first.
+        if (sec > 0) requestAnimationFrame(() => startRest(sec));
       }
     },
-    [store, session.mode, settings.autoStartRest, restFor, startRest],
+    [store, startRest],
   );
 
   const onDeleteSet = useCallback(
     (activeId: string, setId: string) => {
       const removed = store().removeSet(activeId, setId);
-      if (removed) toast(t('common.deleted'), { actionLabel: t('common.undo'), onAction: () => store().restoreSet(activeId, removed.set, removed.index) });
+      const tt = latest.current.t;
+      if (removed) toast(tt('common.deleted'), { actionLabel: tt('common.undo'), onAction: () => store().restoreSet(activeId, removed.set, removed.index) });
     },
-    [store, t],
+    [store],
   );
+
+  const onMenu = useCallback((activeId: string) => setSheet({ kind: 'menu', activeId }), []);
+  const onDescriptionPress = useCallback((activeId: string) => setSheet({ kind: 'description', activeId }), []);
+  const onNotePress = useCallback(
+    (activeId: string) => {
+      setNoteDraft(store().workout?.exercises.find((e) => e.id === activeId)?.note ?? '');
+      setSheet({ kind: 'note', activeId });
+    },
+    [store],
+  );
+  const onAddSet = useCallback((activeId: string) => store().addSet(activeId), [store]);
+  const onSetChange = useCallback(
+    (activeId: string, setId: string, patch: Parameters<ReturnType<typeof store>['updateSet']>[2]) => store().updateSet(activeId, setId, patch),
+    [store],
+  );
+  const onSetTypePress = useCallback((activeId: string, setId: string) => setSheet({ kind: 'setType', activeId, setId }), []);
 
   const removeExercise = (activeId: string) => {
     const w = workout;
@@ -195,17 +221,14 @@ export default function ActiveWorkoutScreen() {
               showRpe={settings.showRpe}
               hasDescription={!!exMap.get(item.exerciseId) && exerciseDescription(exMap.get(item.exerciseId)!, i18n.language).length > 0}
               supersetColor={supersetColor(item.supersetGroup)}
-              onMenu={() => setSheet({ kind: 'menu', activeId: item.id })}
-              onDescriptionPress={() => setSheet({ kind: 'description', activeId: item.id })}
-              onNotePress={() => {
-                setNoteDraft(item.note);
-                setSheet({ kind: 'note', activeId: item.id });
-              }}
-              onAddSet={() => store().addSet(item.id)}
-              onSetChange={(setId, patch) => store().updateSet(item.id, setId, patch)}
-              onSetToggle={(setId) => onToggle(item.id, setId)}
-              onSetDelete={(setId) => onDeleteSet(item.id, setId)}
-              onSetTypePress={(setId) => setSheet({ kind: 'setType', activeId: item.id, setId })}
+              onMenu={onMenu}
+              onDescriptionPress={onDescriptionPress}
+              onNotePress={onNotePress}
+              onAddSet={onAddSet}
+              onSetChange={onSetChange}
+              onSetToggle={onToggle}
+              onSetDelete={onDeleteSet}
+              onSetTypePress={onSetTypePress}
             />
           ))}
 

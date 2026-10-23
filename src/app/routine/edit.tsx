@@ -140,10 +140,11 @@ export default function RoutineEditScreen() {
                   showRpe={false}
                   hideCheck
                   typeLabel={(type: SetType) => t(`workout.setTypeShort.${type}`)}
-                  onChange={(patch) => draft.updateSet(e.id, s.id, patch)}
+                  activeId={e.id}
+                  onChange={(exId, setId, patch) => draft.updateSet(exId, setId, patch)}
                   onToggle={() => {}}
-                  onDelete={() => draft.removeSet(e.id, s.id)}
-                  onTypePress={() => setSheet({ kind: 'setType', id: e.id, setId: s.id })}
+                  onDelete={(exId, setId) => draft.removeSet(exId, setId)}
+                  onTypePress={(exId, setId) => setSheet({ kind: 'setType', id: exId, setId })}
                 />
               );
             })}

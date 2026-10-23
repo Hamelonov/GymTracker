@@ -1,6 +1,6 @@
-import Storage from 'expo-sqlite/kv-store';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { deferredStorage } from './kvStorage';
 import { DEFAULT_PLATES_KG } from '@/domain/plates';
 import type { DistanceUnit, MeasurementUnit, WeightUnit } from '@/domain/types';
 
@@ -24,14 +24,6 @@ export interface SettingsState {
   set: (patch: Partial<SettingsState>) => void;
 }
 
-const kvStorage = {
-  getItem: (name: string) => Storage.getItemSync(name),
-  setItem: (name: string, value: string) => Storage.setItemSync(name, value),
-  removeItem: (name: string) => {
-    Storage.removeItemSync(name);
-  },
-};
-
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
@@ -52,7 +44,7 @@ export const useSettings = create<SettingsState>()(
     }),
     {
       name: 'settings',
-      storage: createJSONStorage(() => kvStorage),
+      storage: createJSONStorage(() => deferredStorage),
       partialize: (s) => {
         const { set: _set, ...rest } = s;
         return rest;

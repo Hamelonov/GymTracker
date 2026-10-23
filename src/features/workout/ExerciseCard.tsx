@@ -1,5 +1,5 @@
 import { BookOpen, Ellipsis, Link, Plus, StickyNote } from 'lucide-react-native';
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
@@ -19,14 +19,15 @@ export interface ExerciseCardProps {
   /** Whether the exercise has a description to show (controls the book icon state). */
   hasDescription: boolean;
   supersetColor?: string | null;
-  onMenu: () => void;
-  onDescriptionPress: () => void;
-  onNotePress: () => void;
-  onAddSet: () => void;
-  onSetChange: (setId: string, patch: Partial<SetValues>) => void;
-  onSetToggle: (setId: string) => void;
-  onSetDelete: (setId: string) => void;
-  onSetTypePress: (setId: string) => void;
+  /** All handlers receive the active exercise id; pass stable references. */
+  onMenu: (activeId: string) => void;
+  onDescriptionPress: (activeId: string) => void;
+  onNotePress: (activeId: string) => void;
+  onAddSet: (activeId: string) => void;
+  onSetChange: (activeId: string, setId: string, patch: Partial<SetValues>) => void;
+  onSetToggle: (activeId: string, setId: string) => void;
+  onSetDelete: (activeId: string, setId: string) => void;
+  onSetTypePress: (activeId: string, setId: string) => void;
 }
 
 export const ExerciseCard = memo(function ExerciseCard({
@@ -50,7 +51,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   const { t, i18n } = useTranslation();
   const fields = setFieldsFor(exercise?.type ?? 'weight_reps');
   const name = exercise ? exerciseName(exercise, i18n.language) : '…';
-  const typeLabel = (type: SetType) => t(`workout.setTypeShort.${type}`);
+  const typeLabel = useCallback((type: SetType) => t(`workout.setTypeShort.${type}`), [t]);
   const hasNote = item.note.trim().length > 0;
 
   return (
@@ -71,16 +72,16 @@ export const ExerciseCard = memo(function ExerciseCard({
           ) : null}
         </View>
         <View style={styles.headerActions}>
-          <Pressable onPress={onDescriptionPress} haptic="selection" hitSlop={6} style={[styles.iconBtn, { backgroundColor: c.surfaceAlt }]}>
+          <Pressable onPress={() => onDescriptionPress(item.id)} haptic="selection" hitSlop={6} style={[styles.iconBtn, { backgroundColor: c.surfaceAlt }]}>
             <Icon icon={BookOpen} size={17} color={hasDescription ? 'text' : 'faint'} />
           </Pressable>
           {!readOnly ? (
-            <Pressable onPress={onNotePress} haptic="selection" hitSlop={6} style={[styles.iconBtn, { backgroundColor: hasNote ? c.accent : c.surfaceAlt }]}>
+            <Pressable onPress={() => onNotePress(item.id)} haptic="selection" hitSlop={6} style={[styles.iconBtn, { backgroundColor: hasNote ? c.accent : c.surfaceAlt }]}>
               <Icon icon={StickyNote} size={17} color={hasNote ? 'onAccent' : 'text'} />
             </Pressable>
           ) : null}
           {!readOnly ? (
-            <Pressable onPress={onMenu} haptic="selection" hitSlop={6} style={[styles.iconBtn, { backgroundColor: c.surfaceAlt }]}>
+            <Pressable onPress={() => onMenu(item.id)} haptic="selection" hitSlop={6} style={[styles.iconBtn, { backgroundColor: c.surfaceAlt }]}>
               <Icon icon={Ellipsis} size={18} />
             </Pressable>
           ) : null}
@@ -112,16 +113,17 @@ export const ExerciseCard = memo(function ExerciseCard({
           showRpe={showRpe}
           readOnly={readOnly}
           typeLabel={typeLabel}
-          onChange={(patch) => onSetChange(s.id, patch)}
-          onToggle={() => onSetToggle(s.id)}
-          onDelete={() => onSetDelete(s.id)}
-          onTypePress={() => onSetTypePress(s.id)}
+          activeId={item.id}
+          onChange={onSetChange}
+          onToggle={onSetToggle}
+          onDelete={onSetDelete}
+          onTypePress={onSetTypePress}
         />
       ))}
 
       {!readOnly ? (
         <View style={styles.addSet}>
-          <Button title={t('workout.addSet')} variant="secondary" size="sm" full icon={<Icon icon={Plus} size={16} />} onPress={onAddSet} haptic="selection" />
+          <Button title={t('workout.addSet')} variant="secondary" size="sm" full icon={<Icon icon={Plus} size={16} />} onPress={() => onAddSet(item.id)} haptic="selection" />
         </View>
       ) : null}
     </Animated.View>

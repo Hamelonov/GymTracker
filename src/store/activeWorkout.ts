@@ -1,6 +1,6 @@
-import Storage from 'expo-sqlite/kv-store';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { deferredStorage } from './kvStorage';
 import { newId } from '@/domain/ids';
 import type { ActiveExercise, ActiveSet, ActiveWorkout, SetType, SetValues } from '@/domain/types';
 import { EMPTY_SET_VALUES } from '@/domain/types';
@@ -38,14 +38,6 @@ interface ActiveWorkoutState {
   restoreSet: (activeId: string, set: ActiveSet, index: number) => void;
   completeAllSets: () => void;
 }
-
-const kvStorage = {
-  getItem: (name: string) => Storage.getItemSync(name),
-  setItem: (name: string, value: string) => Storage.setItemSync(name, value),
-  removeItem: (name: string) => {
-    Storage.removeItemSync(name);
-  },
-};
 
 function makeSet(previous: SetValues | null, type: SetType = 'normal', seed?: SetValues): ActiveSet {
   return {
@@ -259,7 +251,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
     },
     {
       name: 'active-workout',
-      storage: createJSONStorage(() => kvStorage),
+      storage: createJSONStorage(() => deferredStorage),
       partialize: (s) => ({ workout: s.workout, session: s.session }),
     },
   ),
