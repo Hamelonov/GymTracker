@@ -47,7 +47,8 @@
           "color": "#FFD400"
         }
       ],
-      "./plugins/withShortObjectPaths.js"
+      "./plugins/withShortObjectPaths.js",
+      "./plugins/withPreviewBuild.js"
     ],
     "experiments": {
       "typedRoutes": true
