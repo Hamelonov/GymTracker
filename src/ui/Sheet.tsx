@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Modal, Platform, Pressable as RNPressable, StyleSheet, View } from 'react-native';
+import { BackHandler, Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable as RNPressable, StyleSheet, View } from 'react-native';
 import Animated, { Easing, FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from './Text';
@@ -25,6 +25,18 @@ export function Sheet({ visible, onClose, title, children, flush }: SheetProps) 
   const insets = useSafeAreaInsets();
   const [mounted, setMounted] = useState(visible);
   if (visible && !mounted) setMounted(true);
+  // Inside a translucent native Modal Android does not resize the window for the
+  // keyboard, so track its height ourselves and pad the sheet.
+  const [keyboard, setKeyboard] = useState(0);
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !mounted) return undefined;
+    const show = Keyboard.addListener('keyboardDidShow', (e) => setKeyboard(e.endCoordinates.height));
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboard(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, [mounted]);
 
   useEffect(() => {
     if (visible) return undefined;
@@ -56,7 +68,7 @@ export function Sheet({ visible, onClose, title, children, flush }: SheetProps) 
             <Animated.View
               entering={SlideInDown.duration(IN_MS).easing(EASE)}
               exiting={SlideOutDown.duration(OUT_MS).easing(Easing.in(Easing.cubic))}
-              style={[styles.sheet, { backgroundColor: c.bg, paddingBottom: insets.bottom + spacing.lg }]}
+              style={[styles.sheet, { backgroundColor: c.bg, paddingBottom: keyboard + insets.bottom + spacing.lg }]}
             >
               <View style={[styles.handle, { backgroundColor: c.borderStrong }]} />
               {title ? (
