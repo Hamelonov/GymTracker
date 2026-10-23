@@ -55,7 +55,7 @@ function Bar({ bottom, name, startedAt, done }: { bottom: number; name: string; 
   const elapsed = useElapsed(startedAt);
   const rest = useRestRemaining();
   return (
-    <Animated.View entering={FadeInDown.duration(180)} exiting={FadeOutDown.duration(140)} style={[styles.wrap, { bottom: bottom + spacing.sm }]} pointerEvents="box-none">
+    <Animated.View entering={FadeInDown.duration(120)} exiting={FadeOutDown.duration(100)} style={[styles.wrap, { bottom: bottom + spacing.sm }]} pointerEvents="box-none">
       <Pressable onPress={() => push('/workout/active')} haptic="light" style={[styles.bar, { backgroundColor: c.text }]}>
         <View style={[styles.dot, { backgroundColor: c.accent }]} />
         <View style={styles.body}>

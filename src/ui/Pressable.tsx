@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useRef } from 'react';
 import { Pressable as RNPressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSettings } from '@/store/settings';
 
 const AnimatedPressable = Animated.createAnimatedComponent(RNPressable);
@@ -51,11 +51,11 @@ export function Pressable({
       {...rest}
       onPress={handlePress}
       onPressIn={(e) => {
-        scale.set(withSpring(scaleTo, { damping: 20, stiffness: 400 }));
+        scale.set(withTiming(scaleTo, { duration: 70, easing: Easing.out(Easing.quad) }));
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        scale.set(withSpring(1, { damping: 20, stiffness: 400 }));
+        scale.set(withTiming(1, { duration: 100, easing: Easing.out(Easing.quad) }));
         onPressOut?.(e);
       }}
       style={[style, animated]}

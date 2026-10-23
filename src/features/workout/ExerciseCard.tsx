@@ -54,7 +54,7 @@ export const ExerciseCard = memo(function ExerciseCard({
   const hasNote = item.note.trim().length > 0;
 
   return (
-    <Animated.View layout={LinearTransition.duration(160)} style={[styles.card, { backgroundColor: c.surface }]}>
+    <Animated.View layout={LinearTransition.duration(110)} style={[styles.card, { backgroundColor: c.surface }]}>
       {supersetColor ? <View style={[styles.supersetBar, { backgroundColor: supersetColor }]} /> : null}
       <View style={styles.header}>
         <View style={styles.titleWrap}>

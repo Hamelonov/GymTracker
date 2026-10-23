@@ -15,8 +15,8 @@ export interface SheetProps {
   flush?: boolean;
 }
 
-const IN = { duration: 200, easing: Easing.out(Easing.cubic) };
-const OUT = { duration: 150, easing: Easing.in(Easing.cubic) };
+const IN = { duration: 170, easing: Easing.out(Easing.cubic) };
+const OUT = { duration: 130, easing: Easing.in(Easing.cubic) };
 const OFFSCREEN = 4000;
 
 /**

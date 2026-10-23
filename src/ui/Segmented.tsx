@@ -17,7 +17,7 @@ export function Segmented<T extends string>({ options, value, onChange }: Segmen
   const index = Math.max(0, options.findIndex((o) => o.value === value));
   const segW = width / Math.max(1, options.length);
   const indicator = useAnimatedStyle(() => ({
-    transform: [{ translateX: withTiming(index * segW, { duration: 160, easing: Easing.out(Easing.cubic) }) }],
+    transform: [{ translateX: withTiming(index * segW, { duration: 120, easing: Easing.out(Easing.cubic) }) }],
     width: segW,
   }));
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width - 6);

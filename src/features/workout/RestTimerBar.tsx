@@ -21,7 +21,7 @@ export function RestTimerBar() {
   const fill = useAnimatedStyle(() => ({ width: `${Math.max(0, Math.min(1, progress.value)) * 100}%` }));
   if (!running) return null;
   return (
-    <Animated.View entering={FadeInDown.duration(160)} exiting={FadeOutDown.duration(120)} style={[styles.wrap, { backgroundColor: c.text }]}>
+    <Animated.View entering={FadeInDown.duration(120)} exiting={FadeOutDown.duration(100)} style={[styles.wrap, { backgroundColor: c.text }]}>
       <View style={[styles.track, { backgroundColor: c.borderStrong }]}>
         <Animated.View style={[styles.fill, { backgroundColor: c.accent }, fill]} />
       </View>

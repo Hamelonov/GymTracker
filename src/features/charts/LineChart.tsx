@@ -52,11 +52,11 @@ export function LineChart({ data, height = 220, formatY, kind = 'line' }: { data
       >
         {({ points, chartBounds }) =>
           kind === 'bar' ? (
-            <Bar points={points.y} chartBounds={chartBounds} color={c.accent} roundedCorners={{ topLeft: 6, topRight: 6 }} animate={{ type: 'timing', duration: 300 }} />
+            <Bar points={points.y} chartBounds={chartBounds} color={c.accent} roundedCorners={{ topLeft: 6, topRight: 6 }} animate={{ type: 'timing', duration: 180 }} />
           ) : (
             <>
-              <Area points={points.y} y0={chartBounds.bottom} color={c.accentSoft} opacity={0.9} curveType="monotoneX" animate={{ type: 'timing', duration: 300 }} />
-              <Line points={points.y} color={c.text} strokeWidth={2.5} curveType="monotoneX" animate={{ type: 'timing', duration: 300 }} />
+              <Area points={points.y} y0={chartBounds.bottom} color={c.accentSoft} opacity={0.9} curveType="monotoneX" animate={{ type: 'timing', duration: 180 }} />
+              <Line points={points.y} color={c.text} strokeWidth={2.5} curveType="monotoneX" animate={{ type: 'timing', duration: 180 }} />
               {data.length <= 40 ? <Scatter points={points.y.filter((p) => labels.get(Math.round(Number(p.xValue))))} radius={4} color={c.accent} style="fill" /> : null}
             </>
           )

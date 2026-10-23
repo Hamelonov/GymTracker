@@ -101,7 +101,7 @@ function DeleteAction({ progress, onPress }: { progress: SharedValue<number>; on
 export const SetRow = memo(function SetRow({ set, index, fields, units, showRpe, readOnly, hideCheck, onChange, onToggle, onDelete, onTypePress, typeLabel }: SetRowProps) {
   const c = useColors();
   const bgStyle = useAnimatedStyle(() => ({
-    backgroundColor: withTiming(set.completed ? c.accentSoft : c.surface, { duration: 180 }),
+    backgroundColor: withTiming(set.completed ? c.accentSoft : c.surface, { duration: 90 }),
   }));
   const prevText = set.previous ? formatSetValues(set.previous, fields, units, { unitLabel: false }) : '—';
   const placeholderFrom = (v: number | null | undefined, f: (x: number) => string) => (v != null ? f(v) : '');
@@ -117,7 +117,7 @@ export const SetRow = memo(function SetRow({ set, index, fields, units, showRpe,
   );
 
   const row = (
-    <Animated.View style={[styles.row, bgStyle]} layout={LinearTransition.duration(160)}>
+    <Animated.View style={[styles.row, bgStyle]} layout={LinearTransition.duration(110)}>
       <Pressable onPress={onTypePress} disabled={readOnly} style={[styles.setNo, { backgroundColor: set.type === 'normal' ? c.surfaceAlt : c.text }]} haptic="selection">
         <Text variant="caption" color={set.type === 'normal' ? c.text : c.bg} tabular>
           {set.type === 'normal' ? String(index + 1) : typeLabel(set.type)}

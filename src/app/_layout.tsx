@@ -22,7 +22,7 @@ import { useSettings } from '@/store/settings';
 import { DialogHost, Text, ThemeProvider, ToastHost, useTheme } from '@/ui';
 
 void SplashScreen.preventAutoHideAsync();
-SplashScreen.setOptions({ fade: true, duration: 250 });
+SplashScreen.setOptions({ fade: true, duration: 150 });
 
 const perf = (label: string) => {
   if (__DEV__) console.log(`[perf] ${label} at ${Math.round(performance.now())}ms`);
@@ -99,6 +99,7 @@ function Navigation() {
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
+          animationDuration: 200,
           contentStyle: { backgroundColor: colors.bg },
         }}
       >

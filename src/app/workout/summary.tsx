@@ -56,7 +56,7 @@ export default function SummaryScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.accent }}>
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + spacing.xxl, paddingBottom: insets.bottom + 120, paddingHorizontal: spacing.lg }}>
-        <Animated.View entering={FadeInUp.duration(220)}>
+        <Animated.View entering={FadeInUp.duration(160)}>
           <Text variant="display" color="onAccent">
             {t('workout.summaryTitle')}
           </Text>
@@ -65,14 +65,14 @@ export default function SummaryScreen() {
           </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(60).duration(220)} style={[styles.stats, { backgroundColor: c.black }]}>
+        <Animated.View entering={FadeInDown.delay(40).duration(160)} style={[styles.stats, { backgroundColor: c.black }]}>
           <Stat label={t('workout.duration')} value={formatDuration(result.durationSec)} />
           <Stat label={t('workout.volume')} value={formatWeight(result.volumeKg, settings.weightUnit)} />
           <Stat label={t('workout.setsDone')} value={String(result.setCount)} />
         </Animated.View>
 
         {result.prs.length > 0 ? (
-          <Animated.View entering={FadeInDown.delay(120).duration(220)} style={{ marginTop: spacing.xl }}>
+          <Animated.View entering={FadeInDown.delay(80).duration(160)} style={{ marginTop: spacing.xl }}>
             <View style={styles.prHeader}>
               <Icon icon={Trophy} size={18} color="onAccent" />
               <Text variant="h3" color="onAccent">
