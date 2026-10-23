@@ -1,13 +1,13 @@
 import { router, useFocusEffect } from 'expo-router';
 import { push } from '@/lib/nav';
-import { ArrowDown, ArrowUp, ChevronDown, Link, Plus, Replace, Trash2, Unlink } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, ChevronDown, Link, Plus, Replace, Timer, Trash2, Unlink } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { ensureNotificationPermission } from '@/lib/notifications';
-import { exerciseName, getExercisesByIds, lastPerformances } from '@/db/repo/exercises';
+import { exerciseDescription, exerciseName, getExercisesByIds, lastPerformances } from '@/db/repo/exercises';
 import { getRoutine, routineInputFromWorkout, updateRoutine } from '@/db/repo/routines';
 import { saveWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
@@ -33,6 +33,8 @@ type SheetState =
   | { kind: 'rest'; activeId: string }
   | { kind: 'setType'; activeId: string; setId: string }
   | { kind: 'superset'; activeId: string }
+  | { kind: 'description'; activeId: string }
+  | { kind: 'note'; activeId: string }
   | { kind: 'finish' }
   | { kind: 'name' };
 
@@ -46,6 +48,7 @@ export default function ActiveWorkoutScreen() {
   const settings = useSettings();
   const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
   const [nameDraft, setNameDraft] = useState('');
+  const [noteDraft, setNoteDraft] = useState('');
   const startRest = useRestTimer((s) => s.start);
   useEffect(() => {
     if (settings.restNotifications) void ensureNotificationPermission();
@@ -191,17 +194,19 @@ export default function ActiveWorkoutScreen() {
               exercise={exMap.get(item.exerciseId)}
               units={units}
               showRpe={settings.showRpe}
-              restSeconds={restFor(item.id)}
-              lastNote={lastNotes.get(item.exerciseId)}
+              hasDescription={!!exMap.get(item.exerciseId) && exerciseDescription(exMap.get(item.exerciseId)!, i18n.language).length > 0}
               supersetColor={supersetColor(item.supersetGroup)}
               onMenu={() => setSheet({ kind: 'menu', activeId: item.id })}
-              onRestPress={() => setSheet({ kind: 'rest', activeId: item.id })}
+              onDescriptionPress={() => setSheet({ kind: 'description', activeId: item.id })}
+              onNotePress={() => {
+                setNoteDraft(item.note);
+                setSheet({ kind: 'note', activeId: item.id });
+              }}
               onAddSet={() => store().addSet(item.id)}
               onSetChange={(setId, patch) => store().updateSet(item.id, setId, patch)}
               onSetToggle={(setId) => onToggle(item.id, setId)}
               onSetDelete={(setId) => onDeleteSet(item.id, setId)}
               onSetTypePress={(setId) => setSheet({ kind: 'setType', activeId: item.id, setId })}
-              onNoteChange={(note) => store().setExerciseNote(item.id, note)}
             />
           ))}
 
@@ -217,14 +222,6 @@ export default function ActiveWorkoutScreen() {
           {session.mode === 'new' ? (
             <Button title={t('workout.discard')} variant="ghost" full onPress={discard} style={{ marginTop: spacing.sm }} />
           ) : null}
-          <Input
-            label={t('workout.notes')}
-            placeholder={t('workout.notesPlaceholder')}
-            value={workout.notes}
-            onChangeText={(v) => store().setNotes(v)}
-            multiline
-            containerStyle={{ marginTop: spacing.xl }}
-          />
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -237,6 +234,12 @@ export default function ActiveWorkoutScreen() {
       <Sheet visible={sheet.kind === 'menu'} onClose={() => setSheet({ kind: 'none' })} title={current ? exerciseName(exMap.get(current.exerciseId) ?? { nameEn: '', nameRu: '', isCustom: true }, i18n.language) : undefined} flush>
         {current ? (
           <View style={styles.menu}>
+            <ListItem
+              title={t('workout.restTimer')}
+              subtitle={restFor(current.id) > 0 ? formatDuration(restFor(current.id)) : t('workout.restOff')}
+              left={<Icon icon={Timer} />}
+              onPress={() => setSheet({ kind: 'rest', activeId: current.id })}
+            />
             <ListItem title={t('workout.replaceExercise')} left={<Icon icon={Replace} />} onPress={() => { setSheet({ kind: 'none' }); push({ pathname: '/exercise/picker', params: { mode: 'replace', target: current.id } }); }} />
             <ListItem
               title={current.supersetGroup == null ? t('workout.createSuperset') : t('workout.removeFromSuperset')}
@@ -330,6 +333,65 @@ export default function ActiveWorkoutScreen() {
             }}
           />
         </View>
+      </Sheet>
+
+      {/* Description (fixed, read-only here) */}
+      <Sheet visible={sheet.kind === 'description'} onClose={() => setSheet({ kind: 'none' })} title={t('workout.description')}>
+        {current ? (
+          <View>
+            <Text variant="caption" color="muted" style={{ marginBottom: spacing.sm }}>
+              {exerciseName(exMap.get(current.exerciseId) ?? { nameEn: '', nameRu: '', isCustom: true }, i18n.language)}
+            </Text>
+            {(() => {
+              const row = exMap.get(current.exerciseId);
+              const text = row ? exerciseDescription(row, i18n.language) : '';
+              return text ? (
+                <Text style={{ lineHeight: 22 }}>{text}</Text>
+              ) : (
+                <Text color="faint">{t('workout.noDescription')}</Text>
+              );
+            })()}
+            <Button
+              title={t('common.edit')}
+              variant="secondary"
+              full
+              onPress={() => {
+                setSheet({ kind: 'none' });
+                push({ pathname: '/exercise/edit', params: { id: current.exerciseId } });
+              }}
+              style={{ marginTop: spacing.lg }}
+            />
+          </View>
+        ) : null}
+      </Sheet>
+
+      {/* Today's note for this exercise */}
+      <Sheet visible={sheet.kind === 'note'} onClose={() => { if (current) store().setExerciseNote(current.id, noteDraft); setSheet({ kind: 'none' }); }} title={t('workout.exerciseNote')}>
+        {current ? (
+          <View>
+            <Text variant="caption" color="muted" style={{ marginBottom: spacing.sm }}>
+              {exerciseName(exMap.get(current.exerciseId) ?? { nameEn: '', nameRu: '', isCustom: true }, i18n.language)}
+            </Text>
+            <Input value={noteDraft} onChangeText={setNoteDraft} placeholder={t('workout.exerciseNotePlaceholder')} multiline autoFocus />
+            {lastNotes.get(current.exerciseId) && !noteDraft ? (
+              <Pressable onPress={() => setNoteDraft(lastNotes.get(current.exerciseId) ?? '')} style={{ marginTop: spacing.md }} haptic="selection">
+                <Text variant="caption" color="muted">
+                  {t('workout.copyLastNote')}: {lastNotes.get(current.exerciseId)}
+                </Text>
+              </Pressable>
+            ) : null}
+            <Button
+              title={t('common.save')}
+              size="lg"
+              full
+              onPress={() => {
+                store().setExerciseNote(current.id, noteDraft);
+                setSheet({ kind: 'none' });
+              }}
+              style={{ marginTop: spacing.lg }}
+            />
+          </View>
+        ) : null}
       </Sheet>
 
       {/* Rename */}

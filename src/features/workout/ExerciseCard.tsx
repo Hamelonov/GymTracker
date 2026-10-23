@@ -1,15 +1,13 @@
-import { push } from '@/lib/nav';
-import { BookOpen, Ellipsis, Link, Plus, StickyNote, Timer } from 'lucide-react-native';
-import React, { memo, useState } from 'react';
+import { BookOpen, Ellipsis, Link, Plus, StickyNote } from 'lucide-react-native';
+import React, { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, TextInput, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
-import { exerciseDescription, exerciseName } from '@/db/repo/exercises';
+import { StyleSheet, View } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
+import { exerciseName } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import type { ActiveExercise, SetType, SetValues, DistanceUnit, WeightUnit } from '@/domain/types';
 import { setFieldsFor } from '@/domain/types';
-import { formatDuration } from '@/domain/units';
-import { Button, Icon, Pressable, Text, fonts, radius, spacing, useColors } from '@/ui';
+import { Button, Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
 import { SET_COL, SetRow } from './SetRow';
 
 export interface ExerciseCardProps {
@@ -17,18 +15,18 @@ export interface ExerciseCardProps {
   exercise: ExerciseRow | undefined;
   units: { weight: WeightUnit; distance: DistanceUnit };
   showRpe: boolean;
-  restSeconds: number;
   readOnly?: boolean;
-  lastNote?: string;
+  /** Whether the exercise has a description to show (controls the book icon state). */
+  hasDescription: boolean;
   supersetColor?: string | null;
   onMenu: () => void;
-  onRestPress: () => void;
+  onDescriptionPress: () => void;
+  onNotePress: () => void;
   onAddSet: () => void;
   onSetChange: (setId: string, patch: Partial<SetValues>) => void;
   onSetToggle: (setId: string) => void;
   onSetDelete: (setId: string) => void;
   onSetTypePress: (setId: string) => void;
-  onNoteChange: (note: string) => void;
 }
 
 export const ExerciseCard = memo(function ExerciseCard({
@@ -36,32 +34,30 @@ export const ExerciseCard = memo(function ExerciseCard({
   exercise,
   units,
   showRpe,
-  restSeconds,
   readOnly,
-  lastNote,
+  hasDescription,
   supersetColor,
   onMenu,
-  onRestPress,
+  onDescriptionPress,
+  onNotePress,
   onAddSet,
   onSetChange,
   onSetToggle,
   onSetDelete,
   onSetTypePress,
-  onNoteChange,
 }: ExerciseCardProps) {
   const c = useColors();
   const { t, i18n } = useTranslation();
-  const [showDescription, setShowDescription] = useState(false);
   const fields = setFieldsFor(exercise?.type ?? 'weight_reps');
-  const description = exercise ? exerciseDescription(exercise, i18n.language) : '';
   const name = exercise ? exerciseName(exercise, i18n.language) : '…';
   const typeLabel = (type: SetType) => t(`workout.setTypeShort.${type}`);
+  const hasNote = item.note.trim().length > 0;
 
   return (
     <Animated.View layout={LinearTransition.duration(160)} style={[styles.card, { backgroundColor: c.surface }]}>
       {supersetColor ? <View style={[styles.supersetBar, { backgroundColor: supersetColor }]} /> : null}
       <View style={styles.header}>
-        <Pressable style={styles.titleWrap} onPress={() => exercise && push({ pathname: '/exercise/[id]', params: { id: exercise.id } })}>
+        <View style={styles.titleWrap}>
           <Text variant="h3" numberOfLines={2}>
             {name}
           </Text>
@@ -73,61 +69,23 @@ export const ExerciseCard = memo(function ExerciseCard({
               </Text>
             </View>
           ) : null}
-        </Pressable>
-        {!readOnly ? (
-          <View style={styles.headerActions}>
-            <Pressable onPress={onRestPress} haptic="selection" style={[styles.restBtn, { backgroundColor: c.surfaceAlt }]}>
-              <Icon icon={Timer} size={14} color={restSeconds > 0 ? 'text' : 'faint'} />
-              <Text variant="label" color={restSeconds > 0 ? 'text' : 'faint'} tabular>
-                {restSeconds > 0 ? formatDuration(restSeconds) : t('workout.restOff')}
-              </Text>
+        </View>
+        <View style={styles.headerActions}>
+          <Pressable onPress={onDescriptionPress} haptic="selection" hitSlop={6} style={[styles.iconBtn, { backgroundColor: c.surfaceAlt }]}>
+            <Icon icon={BookOpen} size={17} color={hasDescription ? 'text' : 'faint'} />
+          </Pressable>
+          {!readOnly ? (
+            <Pressable onPress={onNotePress} haptic="selection" hitSlop={6} style={[styles.iconBtn, { backgroundColor: hasNote ? c.accent : c.surfaceAlt }]}>
+              <Icon icon={StickyNote} size={17} color={hasNote ? 'onAccent' : 'text'} />
             </Pressable>
-            <Pressable onPress={onMenu} haptic="selection" hitSlop={8} style={[styles.menuBtn, { backgroundColor: c.surfaceAlt }]}>
+          ) : null}
+          {!readOnly ? (
+            <Pressable onPress={onMenu} haptic="selection" hitSlop={6} style={[styles.iconBtn, { backgroundColor: c.surfaceAlt }]}>
               <Icon icon={Ellipsis} size={18} />
             </Pressable>
-          </View>
-        ) : null}
-      </View>
-
-      {description ? (
-        <View style={styles.descWrap}>
-          <Pressable onPress={() => setShowDescription((v) => !v)} style={styles.descToggle} haptic="selection">
-            <Icon icon={BookOpen} size={14} color="muted" />
-            <Text variant="caption" color="muted">
-              {t('workout.description')}
-            </Text>
-          </Pressable>
-          {showDescription ? (
-            <Animated.View entering={FadeIn.duration(120)} exiting={FadeOut.duration(100)} style={[styles.descBody, { backgroundColor: c.surfaceAlt }]}>
-              <Text variant="caption" color="text" style={{ lineHeight: 18 }}>
-                {description}
-              </Text>
-            </Animated.View>
           ) : null}
         </View>
-      ) : null}
-
-      <View style={styles.noteRow}>
-        <Icon icon={StickyNote} size={16} color={item.note ? 'text' : 'faint'} />
-        <TextInput
-          value={item.note}
-          onChangeText={onNoteChange}
-          editable={!readOnly}
-          placeholder={t('workout.exerciseNotePlaceholder')}
-          placeholderTextColor={c.textFaint}
-          selectionColor={c.accent}
-          cursorColor={c.text}
-          multiline
-          style={[styles.noteInput, { color: c.text }]}
-        />
       </View>
-      {!item.note && lastNote && !readOnly ? (
-        <Pressable onPress={() => onNoteChange(lastNote)} style={styles.lastNote} haptic="selection">
-          <Text variant="caption" color="faint" numberOfLines={1}>
-            {t('workout.copyLastNote')}: {lastNote}
-          </Text>
-        </Pressable>
-      ) : null}
 
       <View style={styles.colHeader}>
         <Text variant="label" color="faint" style={{ width: SET_COL.setNo, textAlign: 'center' }}>
@@ -174,18 +132,11 @@ const styles = StyleSheet.create({
   card: { borderRadius: radius.lg, paddingTop: spacing.md, paddingBottom: spacing.md, marginBottom: spacing.md, overflow: 'hidden' },
   supersetBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
   header: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: spacing.lg, gap: spacing.sm },
-  titleWrap: { flex: 1 },
+  titleWrap: { flex: 1, paddingTop: 4 },
   supersetTag: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  restBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 32, paddingHorizontal: spacing.sm + 2, borderRadius: radius.pill },
-  menuBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  descWrap: { paddingHorizontal: spacing.lg, marginTop: spacing.sm },
-  descToggle: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingVertical: 2 },
-  descBody: { marginTop: spacing.sm, padding: spacing.md, borderRadius: radius.md },
-  noteRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, marginTop: spacing.sm },
-  noteInput: { flex: 1, fontFamily: fonts.regular, fontSize: 14, paddingVertical: 6, minHeight: 32, textAlignVertical: 'center' },
-  lastNote: { paddingHorizontal: spacing.lg + 24, marginTop: -2, marginBottom: 4 },
-  colHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, marginTop: spacing.sm, marginBottom: 2 },
+  iconBtn: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  colHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, marginTop: spacing.md, marginBottom: 2 },
   col: { flex: 1, textAlign: 'center' },
   addSet: { paddingHorizontal: spacing.lg, marginTop: spacing.sm },
 });
