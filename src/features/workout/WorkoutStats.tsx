@@ -12,7 +12,7 @@ export interface WorkoutStatsProps {
   durationSec?: number;
   exerciseCount: number;
   setCount: number;
-  /** Shown as a fourth column only when greater than zero. */
+  /** Shown as a fourth cell only when greater than zero. */
   prCount?: number;
   /** `inverse` is the black card used on the yellow summary screen. */
   variant?: 'surface' | 'inverse';
@@ -23,6 +23,9 @@ export interface WorkoutStatsProps {
  * The one "workout at a glance" block: Time · Exercises · Sets (· PRs).
  * Used on the active workout screen, the finish sheet, the summary screen and
  * the workout detail page, so a change here applies everywhere.
+ *
+ * Three cells sit in one row; four cells wrap into a 2 × 2 grid so long labels
+ * and big numbers always fit.
  */
 export function WorkoutStats({ startedAt, durationSec, exerciseCount, setCount, prCount = 0, variant = 'surface', style }: WorkoutStatsProps) {
   const c = useColors();
@@ -31,42 +34,60 @@ export function WorkoutStats({ startedAt, durationSec, exerciseCount, setCount, 
   const labelColor = inverse ? c.textFaint : c.textMuted;
   const valueColor = inverse ? c.white : c.text;
   const valueVariant = inverse ? 'h2' : 'h3';
+  const grid = prCount > 0;
+  const cellStyle = grid ? styles.cellHalf : styles.cellThird;
+
+  const time =
+    durationSec != null || startedAt == null ? (
+      <Text variant={valueVariant} color={valueColor} tabular numberOfLines={1}>
+        {formatDuration(durationSec ?? 0)}
+      </Text>
+    ) : (
+      <ElapsedTimer startedAt={startedAt} variant={valueVariant} color={valueColor} numberOfLines={1} />
+    );
 
   return (
     <View style={[styles.card, { backgroundColor: inverse ? c.black : c.surface }, style]}>
-      <View style={styles.stat}>
-        <Text variant="label" color={labelColor}>
-          {t('workout.duration').toUpperCase()}
-        </Text>
-        {durationSec != null || startedAt == null ? (
-          <Text variant={valueVariant} color={valueColor} tabular>
-            {formatDuration(durationSec ?? 0)}
-          </Text>
-        ) : (
-          <ElapsedTimer startedAt={startedAt} variant={valueVariant} color={valueColor} />
-        )}
-      </View>
-      <Stat label={t('history.exercisesDone')} value={String(exerciseCount)} labelColor={labelColor} valueColor={valueColor} variant={valueVariant} />
-      <Stat label={t('workout.setsDone')} value={String(setCount)} labelColor={labelColor} valueColor={valueColor} variant={valueVariant} />
-      {prCount > 0 ? <Stat label={t('workout.prs')} value={String(prCount)} labelColor={labelColor} valueColor={inverse ? c.accent : c.text} variant={valueVariant} /> : null}
+      <Cell label={t('workout.duration')} labelColor={labelColor} style={cellStyle}>
+        {time}
+      </Cell>
+      <Cell label={t('history.exercisesDone')} labelColor={labelColor} style={cellStyle}>
+        <Value value={exerciseCount} color={valueColor} variant={valueVariant} />
+      </Cell>
+      <Cell label={t('workout.setsDone')} labelColor={labelColor} style={cellStyle}>
+        <Value value={setCount} color={valueColor} variant={valueVariant} />
+      </Cell>
+      {grid ? (
+        <Cell label={t('workout.prs')} labelColor={labelColor} style={cellStyle}>
+          <Value value={prCount} color={inverse ? c.accent : c.text} variant={valueVariant} />
+        </Cell>
+      ) : null}
     </View>
   );
 }
 
-function Stat({ label, value, labelColor, valueColor, variant }: { label: string; value: string; labelColor: string; valueColor: string; variant: 'h2' | 'h3' }) {
+function Cell({ label, labelColor, style, children }: { label: string; labelColor: string; style: ViewStyle; children: React.ReactNode }) {
   return (
-    <View style={styles.stat}>
-      <Text variant="label" color={labelColor}>
+    <View style={[styles.cell, style]}>
+      <Text variant="label" color={labelColor} numberOfLines={1}>
         {label.toUpperCase()}
       </Text>
-      <Text variant={variant} color={valueColor} tabular>
-        {value}
-      </Text>
+      {children}
     </View>
+  );
+}
+
+function Value({ value, color, variant }: { value: number; color: string; variant: 'h2' | 'h3' }) {
+  return (
+    <Text variant={variant} color={color} tabular numberOfLines={1}>
+      {value}
+    </Text>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', borderRadius: radius.lg, padding: spacing.lg },
-  stat: { flex: 1, gap: 4 },
+  card: { flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.lg, borderRadius: radius.lg, padding: spacing.lg },
+  cell: { gap: 4, paddingRight: spacing.sm },
+  cellThird: { width: '33.333%' },
+  cellHalf: { width: '50%' },
 });

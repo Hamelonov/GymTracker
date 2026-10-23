@@ -156,6 +156,7 @@ const en = {
     summaryTitle: 'Workout complete',
     summarySubtitle: 'Nice work. Here is what you did.',
     newRecords: 'New records',
+    firstTime: 'first time',
     minimize: 'Minimize',
     elapsed: 'Elapsed',
     nameLabel: 'Workout name',

@@ -9,7 +9,7 @@ import { createRoutine, getRoutine, listFolders, updateRoutine } from '@/db/repo
 import { useQuery } from '@/db/version';
 import { newId } from '@/domain/ids';
 import { setFieldsFor, type ActiveSet, type SetType } from '@/domain/types';
-import { formatDuration } from '@/domain/units';
+import { formatDuration, unitLabels } from '@/domain/units';
 import { SET_COL, SetRow } from '@/features/workout/SetRow';
 import { usePickerResult } from '@/store/picker';
 import { useRoutineDraft } from '@/store/routineDraft';
@@ -123,9 +123,9 @@ export default function RoutineEditScreen() {
                 {t('workout.setShort').toUpperCase()}
               </Text>
               <View style={{ flex: 1.1 }} />
-              {fields.weight ? <Text variant="label" color="faint" style={styles.col}>{units.weight.toUpperCase()}</Text> : null}
+              {fields.weight ? <Text variant="label" color="faint" style={styles.col}>{(unitLabels[units.weight] ?? units.weight).toUpperCase()}</Text> : null}
               {fields.reps ? <Text variant="label" color="faint" style={styles.col}>{t('workout.reps').toUpperCase()}</Text> : null}
-              {fields.distance ? <Text variant="label" color="faint" style={styles.col}>{units.distance.toUpperCase()}</Text> : null}
+              {fields.distance ? <Text variant="label" color="faint" style={styles.col}>{(unitLabels[units.distance] ?? units.distance).toUpperCase()}</Text> : null}
               {fields.duration ? <Text variant="label" color="faint" style={styles.col}>{t('workout.time').toUpperCase()}</Text> : null}
             </View>
             {e.sets.map((s, i) => {

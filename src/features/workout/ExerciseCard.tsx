@@ -8,6 +8,7 @@ import type { ExerciseRow } from '@/db/schema';
 import type { ActiveExercise, SetType, SetValues, DistanceUnit, WeightUnit } from '@/domain/types';
 import { setFieldsFor } from '@/domain/types';
 import { Button, Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
+import { unitLabels } from '@/domain/units';
 import { SET_COL, SetRow } from './SetRow';
 
 export interface ExerciseCardProps {
@@ -95,9 +96,9 @@ export const ExerciseCard = memo(function ExerciseCard({
         <Text variant="label" color="faint" style={{ flex: 1.1, textAlign: 'center' }}>
           {t('workout.previous').toUpperCase()}
         </Text>
-        {fields.weight ? <Text variant="label" color="faint" style={styles.col}>{(exercise?.type === 'assisted_bodyweight' ? '−' : '') + units.weight.toUpperCase()}</Text> : null}
+        {fields.weight ? <Text variant="label" color="faint" style={styles.col}>{(exercise?.type === 'assisted_bodyweight' ? '−' : '') + (unitLabels[units.weight] ?? units.weight).toUpperCase()}</Text> : null}
         {fields.reps ? <Text variant="label" color="faint" style={styles.col}>{t('workout.reps').toUpperCase()}</Text> : null}
-        {fields.distance ? <Text variant="label" color="faint" style={styles.col}>{units.distance.toUpperCase()}</Text> : null}
+        {fields.distance ? <Text variant="label" color="faint" style={styles.col}>{(unitLabels[units.distance] ?? units.distance).toUpperCase()}</Text> : null}
         {fields.duration ? <Text variant="label" color="faint" style={styles.col}>{t('workout.time').toUpperCase()}</Text> : null}
         {showRpe ? <Text variant="label" color="faint" style={styles.col}>{t('workout.rpe')}</Text> : null}
         {!readOnly ? <View style={{ width: SET_COL.check }} /> : null}
