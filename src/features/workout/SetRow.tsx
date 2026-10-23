@@ -1,8 +1,10 @@
 import { Check, Trash2 } from 'lucide-react-native';
 import React, { memo, useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { Pressable as RNPressable, StyleSheet, TextInput, View } from 'react-native';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, { interpolate, LinearTransition, type SharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { interpolate, LinearTransition, type SharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { useSettings } from '@/store/settings';
 import type { ActiveSet, SetFields, SetType, WeightUnit, DistanceUnit, SetValues } from '@/domain/types';
 import {
   durationToInput,
@@ -100,9 +102,8 @@ function DeleteAction({ progress, onPress }: { progress: SharedValue<number>; on
 
 export const SetRow = memo(function SetRow({ set, index, fields, units, showRpe, readOnly, hideCheck, onChange, onToggle, onDelete, onTypePress, typeLabel }: SetRowProps) {
   const c = useColors();
-  const bgStyle = useAnimatedStyle(() => ({
-    backgroundColor: withTiming(set.completed ? c.accentSoft : c.surface, { duration: 90 }),
-  }));
+  const hapticsOn = useSettings((s) => s.haptics);
+  const bgStyle = { backgroundColor: set.completed ? c.accentSoft : c.surface };
   const prevText = set.previous ? formatSetValues(set.previous, fields, units, { unitLabel: false }) : '—';
   const placeholderFrom = (v: number | null | undefined, f: (x: number) => string) => (v != null ? f(v) : '');
 
@@ -184,14 +185,16 @@ export const SetRow = memo(function SetRow({ set, index, fields, units, showRpe,
         />
       ) : null}
       {!readOnly && !hideCheck ? (
-        <Pressable
-          onPress={onToggle}
-          haptic={set.completed ? 'selection' : 'medium'}
-          scaleTo={0.85}
+        <RNPressable
+          onPress={() => {
+            if (hapticsOn) void Haptics.impactAsync(set.completed ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
+            onToggle();
+          }}
+          hitSlop={6}
           style={[styles.check, { backgroundColor: set.completed ? c.text : c.surfaceAlt }]}
         >
           <Icon icon={Check} size={18} color={set.completed ? c.accent : c.textFaint} strokeWidth={3} />
-        </Pressable>
+        </RNPressable>
       ) : null}
     </Animated.View>
   );
