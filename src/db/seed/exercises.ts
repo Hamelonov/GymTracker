@@ -13,7 +13,7 @@ export type SeedExercise = [
   string,
 ];
 
-export const SEED_VERSION = 1;
+export const SEED_VERSION = 2;
 
 export const SEED_EXERCISES: SeedExercise[] = [
   // ───────── Chest
@@ -47,7 +47,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
   ['push-up', 'Push-Up', 'Отжимания', 'chest', ['triceps', 'shoulders', 'abs'], 'bodyweight', 'bodyweight_reps',
     'Hands just wider than shoulders, body in a straight line. Lower the chest to the floor and push back up.',
     'Руки чуть шире плеч, тело прямое. Опусти грудь к полу и оттолкнись обратно.'],
-  ['dips-chest', 'Chest Dip', 'Отжимания на брусьях (грудь)', 'chest', ['triceps', 'shoulders'], 'bodyweight', 'weighted_bodyweight',
+  ['dips-chest', 'Chest Dip', 'Отжимания на брусьях (грудь)', 'chest', ['triceps', 'shoulders'], 'bodyweight', 'bodyweight_reps',
     'Lean forward, elbows flared slightly, lower until the shoulders are below the elbows, press up.',
     'Наклонись вперёд, локти слегка в стороны, опускайся, пока плечи не уйдут ниже локтей, выжимай вверх.'],
   ['smith-bench', 'Bench Press (Smith Machine)', 'Жим лёжа в Смите', 'chest', ['triceps'], 'smith', 'weight_reps',
@@ -85,12 +85,21 @@ export const SEED_EXERCISES: SeedExercise[] = [
   ['close-grip-pulldown', 'Close Grip Lat Pulldown', 'Тяга верхнего блока узким хватом', 'lats', ['biceps'], 'cable', 'weight_reps',
     'Neutral close grip. Pull the handle to the chest and keep the chest up throughout.',
     'Узкий параллельный хват. Тяни рукоять к груди, держи грудь приподнятой.'],
-  ['pull-up', 'Pull-Up', 'Подтягивания', 'lats', ['biceps', 'back'], 'bodyweight', 'weighted_bodyweight',
+  ['pull-up', 'Pull-Up', 'Подтягивания', 'lats', ['biceps', 'back'], 'bodyweight', 'bodyweight_reps',
     'Overhand grip, start from a dead hang, pull until the chin passes the bar, lower all the way down.',
     'Хват сверху, старт из полного виса, подтянись, пока подбородок не пройдёт перекладину, опустись полностью.'],
-  ['chin-up', 'Chin-Up', 'Подтягивания обратным хватом', 'lats', ['biceps'], 'bodyweight', 'weighted_bodyweight',
+  ['chin-up', 'Chin-Up', 'Подтягивания обратным хватом', 'lats', ['biceps'], 'bodyweight', 'bodyweight_reps',
     'Underhand grip, shoulder width. Pull the chest toward the bar, control the way down.',
     'Хват снизу на ширине плеч. Тяни грудь к перекладине, контролируй опускание.'],
+  ['pull-up-weighted', 'Pull-Up (Weighted)', 'Подтягивания с отягощением', 'lats', ['biceps', 'back'], 'bodyweight', 'weighted_bodyweight',
+    'Pull-up with extra weight on a belt or vest. Log only the added weight.',
+    'Подтягивания с дополнительным весом на поясе или жилете. Записывай только добавленный вес.'],
+  ['chin-up-weighted', 'Chin-Up (Weighted)', 'Подтягивания обратным хватом с отягощением', 'lats', ['biceps'], 'bodyweight', 'weighted_bodyweight',
+    'Chin-up with extra weight on a belt or vest. Log only the added weight.',
+    'Подтягивания обратным хватом с дополнительным весом. Записывай только добавленный вес.'],
+  ['dips-weighted', 'Dip (Weighted)', 'Отжимания на брусьях с отягощением', 'chest', ['triceps', 'shoulders'], 'bodyweight', 'weighted_bodyweight',
+    'Dip with extra weight on a belt or vest. Log only the added weight.',
+    'Отжимания на брусьях с дополнительным весом. Записывай только добавленный вес.'],
   ['assisted-pull-up', 'Assisted Pull-Up (Machine)', 'Подтягивания в гравитроне', 'lats', ['biceps'], 'machine', 'assisted_bodyweight',
     'Kneel on the pad, pull until the chin passes the handles. The weight shown is the assistance.',
     'Колени на платформе, тяни, пока подбородок не пройдёт рукоятки. Указанный вес — это помощь тренажёра.'],
@@ -106,7 +115,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
   ['db-shrug', 'Shrug (Dumbbell)', 'Шраги с гантелями', 'traps', ['forearms'], 'dumbbell', 'weight_reps',
     'Dumbbells at the sides, shrug straight up and hold for a second at the top.',
     'Гантели по бокам, поднимай плечи вверх и задержись на секунду наверху.'],
-  ['hyperextension', 'Back Extension', 'Гиперэкстензия', 'lower_back', ['glutes', 'hamstrings'], 'bodyweight', 'weighted_bodyweight',
+  ['hyperextension', 'Back Extension', 'Гиперэкстензия', 'lower_back', ['glutes', 'hamstrings'], 'bodyweight', 'bodyweight_reps',
     'Hips on the pad, hinge down with a flat back, rise until the body is in a straight line. Do not overextend.',
     'Таз на подушке, наклоняйся с ровной спиной, поднимайся до прямой линии тела. Не переразгибайся.'],
   ['good-morning', 'Good Morning', 'Наклоны со штангой', 'hamstrings', ['lower_back', 'glutes'], 'barbell', 'weight_reps',
@@ -190,7 +199,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
   ['overhead-triceps-ext', 'Overhead Triceps Extension (Dumbbell)', 'Французский жим сидя с гантелью', 'triceps', [], 'dumbbell', 'weight_reps',
     'Hold one dumbbell overhead with both hands, lower behind the head, elbows pointing forward, extend.',
     'Держи гантель над головой двумя руками, опускай за голову, локти смотрят вперёд, разгибай.'],
-  ['triceps-dip', 'Triceps Dip', 'Отжимания на брусьях (трицепс)', 'triceps', ['chest', 'shoulders'], 'bodyweight', 'weighted_bodyweight',
+  ['triceps-dip', 'Triceps Dip', 'Отжимания на брусьях (трицепс)', 'triceps', ['chest', 'shoulders'], 'bodyweight', 'bodyweight_reps',
     'Stay upright, elbows close to the body, lower to 90° and press up.',
     'Корпус вертикально, локти близко к телу, опускайся до 90° и выжимай.'],
   ['bench-dip', 'Bench Dip', 'Обратные отжимания от скамьи', 'triceps', ['shoulders'], 'bodyweight', 'bodyweight_reps',
@@ -290,7 +299,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
   ['hanging-knee-raise', 'Hanging Knee Raise', 'Подъём коленей в висе', 'abs', ['forearms'], 'bodyweight', 'bodyweight_reps',
     'Hang from a bar, pull the knees up toward the chest, lower under control.',
     'Вис на перекладине, подтягивай колени к груди, опускай под контролем.'],
-  ['russian-twist', 'Russian Twist', 'Русские скручивания', 'abs', [], 'bodyweight', 'weighted_bodyweight',
+  ['russian-twist', 'Russian Twist', 'Русские скручивания', 'abs', [], 'bodyweight', 'bodyweight_reps',
     'Seated, feet off the floor, rotate the torso side to side touching the floor beside the hips.',
     'Сидя, стопы над полом, вращай корпус из стороны в сторону, касаясь пола у бёдер.'],
   ['ab-wheel', 'Ab Wheel Rollout', 'Ролик для пресса', 'abs', ['lats', 'shoulders'], 'other', 'bodyweight_reps',
@@ -299,7 +308,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
   ['mountain-climber', 'Mountain Climber', 'Скалолаз', 'abs', ['shoulders', 'cardio'], 'bodyweight', 'duration',
     'In a push-up position, drive the knees toward the chest alternately at speed.',
     'В упоре лёжа, поочерёдно подтягивай колени к груди в быстром темпе.'],
-  ['decline-sit-up', 'Decline Sit-Up', 'Скручивания на наклонной скамье', 'abs', [], 'bodyweight', 'weighted_bodyweight',
+  ['decline-sit-up', 'Decline Sit-Up', 'Скручивания на наклонной скамье', 'abs', [], 'bodyweight', 'bodyweight_reps',
     'Feet hooked, lower the torso back under control, sit up without pulling with the neck.',
     'Ноги зафиксированы, опускай корпус назад под контролем, поднимайся без рывка шеей.'],
 

@@ -48,7 +48,7 @@
         }
       ],
       "./plugins/withShortObjectPaths.js",
-      "./plugins/withPreviewBuild.js"
+      "./plugins/withDevVariant.js"
     ],
     "experiments": {
       "typedRoutes": true

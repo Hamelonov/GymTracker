@@ -19,6 +19,7 @@ import {
 } from '@/domain/units';
 import { Icon, Pressable, Text, fonts, radius, spacing, useColors } from '@/ui';
 import { formatSetValues } from './format';
+import { isSetFilled } from '@/domain/summary';
 
 export interface SetRowProps {
   set: ActiveSet;
@@ -107,6 +108,16 @@ export const SetRow = memo(function SetRow({ set, index, fields, units, showRpe,
   const onToggle = () => onToggleById(activeId, set.id);
   const onDelete = () => onDeleteById(activeId, set.id);
   const onTypePress = () => onTypePressById(activeId, set.id);
+  // An empty set (nothing typed, or only zeros) cannot be marked done. Empty
+  // fields are filled from last time on completion, so those values count.
+  const filledLike: SetValues = {
+    weightKg: set.weightKg ?? set.previous?.weightKg ?? null,
+    reps: set.reps ?? set.previous?.reps ?? null,
+    durationSec: set.durationSec ?? set.previous?.durationSec ?? null,
+    distanceM: set.distanceM ?? set.previous?.distanceM ?? null,
+    rpe: set.rpe,
+  };
+  const canComplete = set.completed || isSetFilled(filledLike, fields);
   const c = useColors();
   const hapticsOn = useSettings((s) => s.haptics);
   const bgStyle = { backgroundColor: set.completed ? c.accentSoft : c.surface };
@@ -192,13 +203,13 @@ export const SetRow = memo(function SetRow({ set, index, fields, units, showRpe,
       ) : null}
       {!readOnly && !hideCheck ? (
         <RNPressable
-         
+          disabled={!canComplete}
           onPress={() => {
             if (hapticsOn) void Haptics.impactAsync(set.completed ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
             onToggle();
           }}
           hitSlop={6}
-          style={[styles.check, { backgroundColor: set.completed ? c.text : c.surfaceAlt }]}
+          style={[styles.check, { backgroundColor: set.completed ? c.text : c.surfaceAlt, opacity: canComplete ? 1 : 0.35 }]}
         >
           <Icon icon={Check} size={18} color={set.completed ? c.accent : c.textFaint} strokeWidth={3} />
         </RNPressable>
