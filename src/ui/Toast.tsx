@@ -16,66 +16,80 @@ interface ToastItem {
   durationMs: number;
 }
 
+interface ToastOptions {
+  actionLabel?: string;
+  onAction?: () => void;
+  durationMs?: number;
+}
+
 interface ToastState {
   current: ToastItem | null;
-  show: (message: string, opts?: { actionLabel?: string; onAction?: () => void; durationMs?: number }) => void;
+  show: (message: string, options?: ToastOptions) => void;
   dismiss: () => void;
 }
 
-let seq = 0;
+// A toast with a button stays longer so there is time to press it.
+const DURATION_WITH_ACTION_MS = 5000;
+const DURATION_PLAIN_MS = 2500;
 
-export const useToast = create<ToastState>((set) => ({
+let toastCounter = 0;
+
+export const useToastStore = create<ToastState>((set) => ({
   current: null,
-  show: (message, opts) =>
+  show: (message, options) =>
     set({
       current: {
-        id: ++seq,
+        id: ++toastCounter,
         message,
-        actionLabel: opts?.actionLabel,
-        onAction: opts?.onAction,
-        durationMs: opts?.durationMs ?? (opts?.actionLabel ? 5000 : 2500),
+        actionLabel: options?.actionLabel,
+        onAction: options?.onAction,
+        durationMs:
+          options?.durationMs ?? (options?.actionLabel ? DURATION_WITH_ACTION_MS : DURATION_PLAIN_MS),
       },
     }),
   dismiss: () => set({ current: null }),
 }));
 
-export function toast(message: string, opts?: { actionLabel?: string; onAction?: () => void; durationMs?: number }) {
-  useToast.getState().show(message, opts);
+export function toast(message: string, options?: ToastOptions) {
+  useToastStore.getState().show(message, options);
 }
 
 export function ToastHost({ bottomOffset = 0 }: { bottomOffset?: number }) {
-  const c = useColors();
+  const colors = useColors();
   const insets = useSafeAreaInsets();
-  const current = useToast((s) => s.current);
-  const dismiss = useToast((s) => s.dismiss);
+  const current = useToastStore((state) => state.current);
+  const dismiss = useToastStore((state) => state.dismiss);
 
   useEffect(() => {
     if (!current) return undefined;
-    const t = setTimeout(dismiss, current.durationMs);
-    return () => clearTimeout(t);
+    const dismissTimer = setTimeout(dismiss, current.durationMs);
+    return () => clearTimeout(dismissTimer);
   }, [current, dismiss]);
 
   if (!current) return null;
+
+  const handleActionPress = () => {
+    current.onAction?.();
+    dismiss();
+  };
+
   return (
-    <View pointerEvents="box-none" style={[styles.host, { bottom: insets.bottom + bottomOffset + spacing.lg }]}>
+    <View
+      pointerEvents="box-none"
+      style={[styles.host, { bottom: insets.bottom + bottomOffset + spacing.lg }]}
+    >
       <Animated.View
         key={current.id}
         entering={FadeInDown.duration(120)}
         exiting={FadeOutDown.duration(100)}
-        style={[styles.toast, { backgroundColor: c.text }]}
+        style={[styles.toast, { backgroundColor: colors.text }]}
       >
-        <Text variant="bodyMedium" color={c.bg} style={styles.msg} numberOfLines={2}>
+        <Text variant="bodyMedium" color={colors.background} style={styles.message} numberOfLines={2}>
           {current.message}
         </Text>
         {current.actionLabel ? (
-          <Pressable
-            onPress={() => {
-              current.onAction?.();
-              dismiss();
-            }}
-            hitSlop={8}
-          >
-            <Text variant="h3" color={c.accent}>
+          <Pressable onPress={handleActionPress} hitSlop={8}>
+            <Text variant="h3" color={colors.accent}>
               {current.actionLabel}
             </Text>
           </Pressable>
@@ -97,5 +111,5 @@ const styles = StyleSheet.create({
     maxWidth: 480,
     width: '100%',
   },
-  msg: { flex: 1 },
+  message: { flex: 1 },
 });

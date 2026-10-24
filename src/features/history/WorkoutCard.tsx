@@ -4,15 +4,30 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { exerciseName } from '@/db/repo/exercises';
 import type { WorkoutSummary } from '@/db/repo/workouts';
+import type { SetRow } from '@/db/schema';
 import { formatDateTime } from '@/domain/dates';
+import type { WeightUnit } from '@/domain/types';
 import { formatDuration, formatWeight } from '@/domain/units';
 import { useSettings } from '@/store/settings';
 import { Card, Icon, Pressable, Text, spacing, useColors } from '@/ui';
 
+const MAX_EXERCISES_SHOWN = 5;
+
+/** Short text for the best set: "80 × 5" for weighted sets, otherwise reps or time. */
+function formatBestSet(bestSet: SetRow, weightUnit: WeightUnit): string {
+  if (bestSet.weightKg != null)
+    return `${formatWeight(bestSet.weightKg, weightUnit, false)} × ${bestSet.reps ?? '—'}`;
+  if (bestSet.reps != null) return `${bestSet.reps}`;
+  if (bestSet.durationSec != null) return formatDuration(bestSet.durationSec);
+  return '';
+}
+
 export function WorkoutCard({ workout, onPress }: { workout: WorkoutSummary; onPress: () => void }) {
-  const c = useColors();
-  const { t, i18n } = useTranslation();
-  const unit = useSettings((s) => s.weightUnit);
+  const colors = useColors();
+  const { t: translate, i18n } = useTranslation();
+  const weightUnit = useSettings((state) => state.weightUnit);
+  const hiddenExerciseCount = workout.exercises.length - MAX_EXERCISES_SHOWN;
+
   return (
     <Pressable onPress={onPress} scaleTo={0.985}>
       <Card raised style={styles.card}>
@@ -22,7 +37,7 @@ export function WorkoutCard({ workout, onPress }: { workout: WorkoutSummary; onP
         <Text variant="caption" color="muted" style={{ marginTop: 2 }}>
           {formatDateTime(workout.startedAt, i18n.language)}
         </Text>
-        <View style={styles.stats}>
+        <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Icon icon={Clock} size={14} color="muted" />
             <Text variant="caption" tabular>
@@ -32,34 +47,34 @@ export function WorkoutCard({ workout, onPress }: { workout: WorkoutSummary; onP
           <View style={styles.stat}>
             <Icon icon={Weight} size={14} color="muted" />
             <Text variant="caption" tabular>
-              {formatWeight(workout.volumeKg, unit)}
+              {formatWeight(workout.volumeKg, weightUnit)}
             </Text>
           </View>
           {workout.prCount > 0 ? (
-            <View style={[styles.stat, styles.pr, { backgroundColor: c.accent }]}>
+            <View style={[styles.stat, styles.recordBadge, { backgroundColor: colors.accent }]}>
               <Icon icon={Trophy} size={12} color="onAccent" />
               <Text variant="label" color="onAccent">
-                {workout.prCount} {t('pr.badge')}
+                {workout.prCount} {translate('pr.badge')}
               </Text>
             </View>
           ) : null}
         </View>
-        <View style={[styles.divider, { backgroundColor: c.border }]} />
-        {workout.exerciseNames.slice(0, 5).map((e, i) => (
-          <View key={`${e.id}-${i}`} style={styles.exRow}>
+        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+        {workout.exercises.slice(0, MAX_EXERCISES_SHOWN).map((exercise, index) => (
+          <View key={`${exercise.id}-${index}`} style={styles.exerciseRow}>
             <Text variant="caption" numberOfLines={1} style={{ flex: 1 }}>
-              {e.setCount} × {exerciseName(e, i18n.language)}
+              {exercise.setCount} × {exerciseName(exercise, i18n.language)}
             </Text>
-            {e.bestSet ? (
+            {exercise.bestSet ? (
               <Text variant="caption" color="muted" tabular>
-                {e.bestSet.weightKg != null ? `${formatWeight(e.bestSet.weightKg, unit, false)} × ${e.bestSet.reps ?? '—'}` : e.bestSet.reps != null ? `${e.bestSet.reps}` : e.bestSet.durationSec != null ? formatDuration(e.bestSet.durationSec) : ''}
+                {formatBestSet(exercise.bestSet, weightUnit)}
               </Text>
             ) : null}
           </View>
         ))}
-        {workout.exerciseNames.length > 5 ? (
+        {hiddenExerciseCount > 0 ? (
           <Text variant="caption" color="faint" style={{ marginTop: 4 }}>
-            +{workout.exerciseNames.length - 5}
+            +{hiddenExerciseCount}
           </Text>
         ) : null}
       </Card>
@@ -69,9 +84,9 @@ export function WorkoutCard({ workout, onPress }: { workout: WorkoutSummary; onP
 
 const styles = StyleSheet.create({
   card: { marginBottom: spacing.md },
-  stats: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md, alignItems: 'center' },
+  statsRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md, alignItems: 'center' },
   stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  pr: { paddingHorizontal: spacing.sm, height: 22, borderRadius: 11 },
+  recordBadge: { paddingHorizontal: spacing.sm, height: 22, borderRadius: 11 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: spacing.md },
-  exRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 3 },
+  exerciseRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 3 },
 });

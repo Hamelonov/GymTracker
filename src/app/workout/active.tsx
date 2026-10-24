@@ -1,169 +1,250 @@
 import { router, useFocusEffect } from 'expo-router';
 import { push } from '@/lib/nav';
-import { ArrowDown, ArrowUp, ChevronDown, Link, Plus, Replace, Timer, Trash2, Unlink } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { ensureNotificationPermission } from '@/lib/notifications';
-import { exerciseDescription, exerciseName, getExercisesByIds, lastPerformances, updateExercise } from '@/db/repo/exercises';
+import { getExercisesByIds, getLastPerformances } from '@/db/repo/exercises';
 import { getRoutine, routineInputFromWorkout, updateRoutine } from '@/db/repo/routines';
 import { saveWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
-import type { SetType } from '@/domain/types';
-import { formatDuration } from '@/domain/units';
+import type { ActiveExercise, SetType } from '@/domain/types';
 import { countWorkingSets } from '@/domain/volume';
-import { WorkoutStats } from '@/features/workout/WorkoutStats';
+import { formatDateTime } from '@/domain/dates';
+import { ActiveWorkoutHeader } from '@/features/workout/ActiveWorkoutHeader';
 import { ExerciseCard } from '@/features/workout/ExerciseCard';
+import { exerciseDisplayDescription } from '@/features/workout/exerciseDisplayName';
 import { RestTimerBar } from '@/features/workout/RestTimerBar';
+import { WorkoutStats } from '@/features/workout/WorkoutStats';
+import { ExerciseDescriptionSheet } from '@/features/workout/sheets/ExerciseDescriptionSheet';
+import { ExerciseMenuSheet } from '@/features/workout/sheets/ExerciseMenuSheet';
+import { ExerciseNoteSheet } from '@/features/workout/sheets/ExerciseNoteSheet';
+import { FinishWorkoutSheet } from '@/features/workout/sheets/FinishWorkoutSheet';
+import { RenameWorkoutSheet } from '@/features/workout/sheets/RenameWorkoutSheet';
+import { RestTimerPickerSheet } from '@/features/workout/sheets/RestTimerPickerSheet';
+import { SetTypePickerSheet } from '@/features/workout/sheets/SetTypePickerSheet';
+import { SupersetPickerSheet } from '@/features/workout/sheets/SupersetPickerSheet';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useLastSave } from '@/store/lastSave';
 import { useRestTimer } from '@/store/restTimer';
 import { useSettings } from '@/store/settings';
-import { formatDateTime } from '@/domain/dates';
-import { Button, Icon, Input, ListItem, Pressable, Sheet, Text, confirm, radius, spacing, toast, useColors } from '@/ui';
+import { Button, Icon, confirm, spacing, toast, useColors } from '@/ui';
 
 const SUPERSET_COLORS = ['#F5A524', '#3E63DD', '#30A46C', '#E5484D', '#8E4EC6', '#12A594'];
-const REST_OPTIONS = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300];
 
+/** Each superset group gets its own color; groups beyond the palette reuse colors from the start. */
+function supersetColorForGroup(group: number | null): string | null {
+  if (group == null) return null;
+  return SUPERSET_COLORS[(group - 1) % SUPERSET_COLORS.length] ?? null;
+}
+
+type SetPatch = Parameters<ReturnType<typeof useActiveWorkout.getState>['updateSet']>[2];
+
+/** Which bottom sheet is open, and for which exercise or set. */
 type SheetState =
   | { kind: 'none' }
-  | { kind: 'menu'; activeId: string }
-  | { kind: 'rest'; activeId: string }
-  | { kind: 'setType'; activeId: string; setId: string }
-  | { kind: 'superset'; activeId: string }
-  | { kind: 'description'; activeId: string }
-  | { kind: 'note'; activeId: string }
+  | { kind: 'menu'; workoutExerciseId: string }
+  | { kind: 'rest'; workoutExerciseId: string }
+  | { kind: 'setType'; workoutExerciseId: string; setId: string }
+  | { kind: 'superset'; workoutExerciseId: string }
+  | { kind: 'description'; workoutExerciseId: string }
+  | { kind: 'note'; workoutExerciseId: string }
   | { kind: 'finish' }
   | { kind: 'name' };
 
 export default function ActiveWorkoutScreen() {
-  const c = useColors();
-  const { t, i18n } = useTranslation();
+  const colors = useColors();
+  const { t: translate, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
-  const workout = useActiveWorkout((s) => s.workout);
-  const session = useActiveWorkout((s) => s.session);
-  const store = useActiveWorkout.getState;
+  const workout = useActiveWorkout((state) => state.workout);
+  const session = useActiveWorkout((state) => state.session);
+  // Reads the store at call time, so the handlers below never act on stale state.
+  const getWorkoutStore = useActiveWorkout.getState;
   const settings = useSettings();
   const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
   const [nameDraft, setNameDraft] = useState('');
   const [noteDraft, setNoteDraft] = useState('');
-  const [descDraft, setDescDraft] = useState<string | null>(null);
-  const startRest = useRestTimer((s) => s.start);
+  const startRest = useRestTimer((state) => state.start);
   useEffect(() => {
     if (settings.restNotifications) void ensureNotificationPermission();
   }, [settings.restNotifications]);
+  // The floating "workout in progress" bar is shown only while this screen is not focused.
   useFocusEffect(
     useCallback(() => {
-      store().setMinimized(false);
-      return () => store().setMinimized(true);
-    }, [store]),
+      getWorkoutStore().setMinimized(false);
+      return () => getWorkoutStore().setMinimized(true);
+    }, [getWorkoutStore]),
   );
 
-  const exerciseIds = useMemo(() => workout?.exercises.map((e) => e.exerciseId) ?? [], [workout?.exercises]);
-  const exMap = useQuery(() => getExercisesByIds(exerciseIds), [exerciseIds.join(',')]);
-  const lastNotes = useQuery(() => {
-    const m = lastPerformances(exerciseIds);
-    const out = new Map<string, string>();
-    for (const [id, v] of m) if (v.note) out.set(id, v.note);
-    return out;
+  const exerciseIds = useMemo(
+    () => workout?.exercises.map((workoutExercise) => workoutExercise.exerciseId) ?? [],
+    [workout?.exercises],
+  );
+  const exercisesById = useQuery(() => getExercisesByIds(exerciseIds), [exerciseIds.join(',')]);
+  const lastNoteByExerciseId = useQuery(() => {
+    const lastPerformanceByExerciseId = getLastPerformances(exerciseIds);
+    const notes = new Map<string, string>();
+    for (const [exerciseId, performance] of lastPerformanceByExerciseId) {
+      if (performance.note) notes.set(exerciseId, performance.note);
+    }
+    return notes;
   }, [exerciseIds.join(',')]);
 
-  const units = useMemo(() => ({ weight: settings.weightUnit, distance: settings.distanceUnit }), [settings.weightUnit, settings.distanceUnit]);
-  const restFor = useCallback(
-    (activeId: string) => {
-      const ex = workout?.exercises.find((e) => e.id === activeId);
-      if (!ex) return settings.defaultRestSeconds;
-      if (ex.restSeconds != null) return ex.restSeconds;
-      const row = exMap.get(ex.exerciseId);
-      return row?.restSeconds ?? settings.defaultRestSeconds;
+  const units = useMemo(
+    () => ({ weight: settings.weightUnit, distance: settings.distanceUnit }),
+    [settings.weightUnit, settings.distanceUnit],
+  );
+  // Rest set on this exercise in the workout, else on the exercise itself, else the app default.
+  const restSecondsFor = useCallback(
+    (workoutExerciseId: string) => {
+      const workoutExercise = workout?.exercises.find((exercise) => exercise.id === workoutExerciseId);
+      if (!workoutExercise) return settings.defaultRestSeconds;
+      if (workoutExercise.restSeconds != null) return workoutExercise.restSeconds;
+      const exerciseDetails = exercisesById.get(workoutExercise.exerciseId);
+      return exerciseDetails?.restSeconds ?? settings.defaultRestSeconds;
     },
-    [workout?.exercises, exMap, settings.defaultRestSeconds],
+    [workout?.exercises, exercisesById, settings.defaultRestSeconds],
   );
 
   // Latest values for the stable handlers below. Handlers never change identity,
   // so memoized cards and set rows re-render only when their own data changes.
-  const latest = useRef({ restFor, autoStartRest: settings.autoStartRest, mode: session.mode, t });
+  const latestValuesRef = useRef({
+    restSecondsFor,
+    autoStartRest: settings.autoStartRest,
+    mode: session.mode,
+    translate,
+  });
   useEffect(() => {
-    latest.current = { restFor, autoStartRest: settings.autoStartRest, mode: session.mode, t };
+    latestValuesRef.current = {
+      restSecondsFor,
+      autoStartRest: settings.autoStartRest,
+      mode: session.mode,
+      translate,
+    };
   });
 
-  const onToggle = useCallback(
-    (activeId: string, setId: string) => {
-      const res = store().toggleSet(activeId, setId);
-      const l = latest.current;
-      if (res?.completed && l.mode === 'new' && l.autoStartRest) {
-        const sec = l.restFor(activeId);
+  const toggleSet = useCallback(
+    (workoutExerciseId: string, setId: string) => {
+      const toggleResult = getWorkoutStore().toggleSet(workoutExerciseId, setId);
+      const latestValues = latestValuesRef.current;
+      if (toggleResult?.completed && latestValues.mode === 'new' && latestValues.autoStartRest) {
+        const restSeconds = latestValues.restSecondsFor(workoutExerciseId);
         // Start the rest timer after this frame so the tick paints first.
-        if (sec > 0) requestAnimationFrame(() => startRest(sec));
+        if (restSeconds > 0) requestAnimationFrame(() => startRest(restSeconds));
       }
     },
-    [store, startRest],
+    [getWorkoutStore, startRest],
   );
 
-  const onDeleteSet = useCallback(
-    (activeId: string, setId: string) => {
-      const removed = store().removeSet(activeId, setId);
-      const tt = latest.current.t;
-      if (removed) toast(tt('common.deleted'), { actionLabel: tt('common.undo'), onAction: () => store().restoreSet(activeId, removed.set, removed.index) });
+  const deleteSetWithUndo = useCallback(
+    (workoutExerciseId: string, setId: string) => {
+      const removed = getWorkoutStore().removeSet(workoutExerciseId, setId);
+      const latestTranslate = latestValuesRef.current.translate;
+      if (removed)
+        toast(latestTranslate('common.deleted'), {
+          actionLabel: latestTranslate('common.undo'),
+          onAction: () => getWorkoutStore().restoreSet(workoutExerciseId, removed.set, removed.index),
+        });
     },
-    [store],
+    [getWorkoutStore],
   );
 
-  const onMenu = useCallback((activeId: string) => setSheet({ kind: 'menu', activeId }), []);
-  const onDescriptionPress = useCallback((activeId: string) => setSheet({ kind: 'description', activeId }), []);
-  const onNotePress = useCallback(
-    (activeId: string) => {
-      setNoteDraft(store().workout?.exercises.find((e) => e.id === activeId)?.note ?? '');
-      setSheet({ kind: 'note', activeId });
+  const openExerciseMenu = useCallback(
+    (workoutExerciseId: string) => setSheet({ kind: 'menu', workoutExerciseId }),
+    [],
+  );
+  const openDescription = useCallback(
+    (workoutExerciseId: string) => setSheet({ kind: 'description', workoutExerciseId }),
+    [],
+  );
+  const openNote = useCallback(
+    (workoutExerciseId: string) => {
+      const workoutExercise = getWorkoutStore().workout?.exercises.find(
+        (exercise) => exercise.id === workoutExerciseId,
+      );
+      setNoteDraft(workoutExercise?.note ?? '');
+      setSheet({ kind: 'note', workoutExerciseId });
     },
-    [store],
+    [getWorkoutStore],
   );
-  const onAddSet = useCallback((activeId: string) => store().addSet(activeId), [store]);
-  const onSetChange = useCallback(
-    (activeId: string, setId: string, patch: Parameters<ReturnType<typeof store>['updateSet']>[2]) => store().updateSet(activeId, setId, patch),
-    [store],
+  const addSet = useCallback(
+    (workoutExerciseId: string) => getWorkoutStore().addSet(workoutExerciseId),
+    [getWorkoutStore],
   );
-  const onSetTypePress = useCallback((activeId: string, setId: string) => setSheet({ kind: 'setType', activeId, setId }), []);
+  const changeSet = useCallback(
+    (workoutExerciseId: string, setId: string, patch: SetPatch) =>
+      getWorkoutStore().updateSet(workoutExerciseId, setId, patch),
+    [getWorkoutStore],
+  );
+  const openSetTypePicker = useCallback(
+    (workoutExerciseId: string, setId: string) => setSheet({ kind: 'setType', workoutExerciseId, setId }),
+    [],
+  );
 
-  const removeExercise = (activeId: string) => {
-    const w = workout;
-    const index = w?.exercises.findIndex((e) => e.id === activeId) ?? -1;
-    const removed = store().removeExercise(activeId);
-    setSheet({ kind: 'none' });
-    if (removed) toast(t('common.deleted'), { actionLabel: t('common.undo'), onAction: () => store().restoreExercise(removed, index) });
+  const closeSheet = () => setSheet({ kind: 'none' });
+
+  const removeExerciseWithUndo = (workoutExerciseId: string) => {
+    const index = workout?.exercises.findIndex((exercise) => exercise.id === workoutExerciseId) ?? -1;
+    const removed = getWorkoutStore().removeExercise(workoutExerciseId);
+    closeSheet();
+    if (removed)
+      toast(translate('common.deleted'), {
+        actionLabel: translate('common.undo'),
+        onAction: () => getWorkoutStore().restoreExercise(removed, index),
+      });
   };
 
-  const discard = async () => {
-    if (!(await confirm({ title: t('workout.discard'), message: t('workout.discardConfirm'), destructive: true, confirmLabel: t('common.discard') }))) return;
+  const discardWorkout = async () => {
+    const confirmed = await confirm({
+      title: translate('workout.discard'),
+      message: translate('workout.discardConfirm'),
+      destructive: true,
+      confirmLabel: translate('common.discard'),
+    });
+    if (!confirmed) return;
     useRestTimer.getState().skip();
-    store().clear();
+    getWorkoutStore().clear();
     router.back();
   };
 
-  const finish = async () => {
+  const finishWorkout = async () => {
     if (!workout) return;
-    const completed = workout.exercises.flatMap((e) => e.sets.filter((s) => s.completed));
-    if (completed.length === 0) return;
-    setSheet({ kind: 'none' });
+    const hasCompletedSets = workout.exercises.some((exercise) => exercise.sets.some((set) => set.completed));
+    if (!hasCompletedSets) return;
+    closeSheet();
     useRestTimer.getState().skip();
     if (session.mode === 'edit') {
       saveWorkout(workout, session.finishedAt, { existingId: session.workoutId });
-      store().clear();
-      toast(t('workout.saved'));
+      getWorkoutStore().clear();
+      toast(translate('workout.saved'));
       router.back();
       return;
     }
-    const result = saveWorkout(workout, Date.now());
-    useLastSave.getState().set(result);
+    const saveResult = saveWorkout(workout, Date.now());
+    useLastSave.getState().setResult(saveResult);
     const routine = workout.routineId ? getRoutine(workout.routineId) : undefined;
-    store().clear();
+    getWorkoutStore().clear();
     if (routine) {
-      const changed =
-        routine.exercises.length !== workout.exercises.filter((e) => e.sets.some((s) => s.completed)).length ||
-        routine.exercises.some((re, i) => workout.exercises[i]?.exerciseId !== re.exerciseId);
-      if (changed && (await confirm({ title: t('workout.updateRoutine'), message: t('workout.updateRoutineHint', { name: routine.name }), confirmLabel: t('workout.updateRoutine'), cancelLabel: t('workout.keepRoutine') }))) {
+      const doneExerciseCount = workout.exercises.filter((exercise) =>
+        exercise.sets.some((set) => set.completed),
+      ).length;
+      const routineChanged =
+        routine.exercises.length !== doneExerciseCount ||
+        routine.exercises.some(
+          (routineExercise, index) => workout.exercises[index]?.exerciseId !== routineExercise.exerciseId,
+        );
+      if (
+        routineChanged &&
+        (await confirm({
+          title: translate('workout.updateRoutine'),
+          message: translate('workout.updateRoutineHint', { name: routine.name }),
+          confirmLabel: translate('workout.updateRoutine'),
+          cancelLabel: translate('workout.keepRoutine'),
+        }))
+      ) {
         updateRoutine(routine.id, routineInputFromWorkout(workout, routine));
       }
     }
@@ -172,295 +253,255 @@ export default function ActiveWorkoutScreen() {
 
   if (!workout) {
     return (
-      <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-        <Button title={t('common.close')} variant="ghost" onPress={() => router.back()} />
+      <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
+        <Button title={translate('common.close')} variant="ghost" onPress={() => router.back()} />
       </View>
     );
   }
 
-  const completedSets = workout.exercises.flatMap((e) => e.sets.filter((s) => s.completed));
-  const setsDone = countWorkingSets(completedSets);
-  const supersetColor = (group: number | null) => (group == null ? null : SUPERSET_COLORS[(group - 1) % SUPERSET_COLORS.length] ?? null);
-  const current = sheet.kind !== 'none' && 'activeId' in sheet ? workout.exercises.find((e) => e.id === sheet.activeId) : undefined;
-  const currentIndex = current ? workout.exercises.indexOf(current) : -1;
+  const completedSets = workout.exercises.flatMap((exercise) => exercise.sets.filter((set) => set.completed));
+  const workingSetCount = countWorkingSets(completedSets);
+  // Editing a finished workout shows its saved duration instead of a live timer.
+  const fixedDurationSeconds =
+    session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000);
+  const hasNoExercises = workout.exercises.length === 0;
+
+  const currentExercise =
+    sheet.kind !== 'none' && 'workoutExerciseId' in sheet
+      ? workout.exercises.find((exercise) => exercise.id === sheet.workoutExerciseId)
+      : undefined;
+  const currentExerciseIndex = currentExercise ? workout.exercises.indexOf(currentExercise) : -1;
+  const currentExerciseDetails = currentExercise ? exercisesById.get(currentExercise.exerciseId) : undefined;
+  const currentRestSeconds = currentExercise ? restSecondsFor(currentExercise.id) : null;
+
+  const openRename = () => {
+    setNameDraft(workout.name);
+    setSheet({ kind: 'name' });
+  };
+
+  const saveName = () => {
+    getWorkoutStore().rename(nameDraft.trim());
+    closeSheet();
+  };
+
+  const openRestPicker = () => {
+    if (currentExercise) setSheet({ kind: 'rest', workoutExerciseId: currentExercise.id });
+  };
+
+  const setCurrentExerciseRest = (seconds: number | null) => {
+    if (currentExercise) getWorkoutStore().setExerciseRest(currentExercise.id, seconds);
+    closeSheet();
+  };
+
+  const replaceCurrentExercise = () => {
+    if (!currentExercise) return;
+    closeSheet();
+    push({ pathname: '/exercise/picker', params: { mode: 'replace', target: currentExercise.id } });
+  };
+
+  // In a superset: leave it. Not in one: pick a partner to create it with.
+  const toggleCurrentExerciseSuperset = () => {
+    if (!currentExercise) return;
+    if (currentExercise.supersetGroup != null) {
+      getWorkoutStore().setSuperset([currentExercise.id], null);
+      closeSheet();
+    } else {
+      setSheet({ kind: 'superset', workoutExerciseId: currentExercise.id });
+    }
+  };
+
+  const linkCurrentExerciseWith = (partner: ActiveExercise) => {
+    if (!currentExercise) return;
+    // Join the partner's superset, or -1 to start a new one.
+    getWorkoutStore().setSuperset([currentExercise.id, partner.id], partner.supersetGroup ?? -1);
+    closeSheet();
+  };
+
+  const moveCurrentExercise = (offset: number) => {
+    getWorkoutStore().moveExercise(currentExerciseIndex, currentExerciseIndex + offset);
+    closeSheet();
+  };
+
+  const changeSelectedSetType = (type: SetType) => {
+    if (sheet.kind === 'setType') getWorkoutStore().updateSet(sheet.workoutExerciseId, sheet.setId, { type });
+    closeSheet();
+  };
+
+  const deleteSelectedSet = () => {
+    if (sheet.kind === 'setType') deleteSetWithUndo(sheet.workoutExerciseId, sheet.setId);
+    closeSheet();
+  };
+
+  const saveNoteAndClose = () => {
+    if (currentExercise) getWorkoutStore().setExerciseNote(currentExercise.id, noteDraft);
+    closeSheet();
+  };
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10} style={[styles.iconBtn, { backgroundColor: c.surfaceAlt }]} haptic="selection">
-          <Icon icon={ChevronDown} size={22} />
-        </Pressable>
-        <Pressable style={styles.headerCenter} onPress={() => { setNameDraft(workout.name); setSheet({ kind: 'name' }); }}>
-          <Text variant="h3" numberOfLines={1} align="center">
-            {workout.name || t('workout.defaultName')}
-          </Text>
-          {session.mode === 'edit' ? (
-            <Text variant="caption" color="muted">
-              {formatDateTime(workout.startedAt, i18n.language)}
-            </Text>
-          ) : null}
-        </Pressable>
-        <Button title={session.mode === 'new' ? t('workout.finish') : t('common.save')} size="sm" onPress={() => setSheet({ kind: 'finish' })} disabled={completedSets.length === 0} />
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
+      <ActiveWorkoutHeader
+        workoutName={workout.name}
+        dateText={session.mode === 'edit' ? formatDateTime(workout.startedAt, i18n.language) : null}
+        finishButtonTitle={session.mode === 'new' ? translate('workout.finish') : translate('common.save')}
+        canFinish={completedSets.length > 0}
+        onMinimizePress={() => router.back()}
+        onNamePress={openRename}
+        onFinishPress={() => setSheet({ kind: 'finish' })}
+      />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 140 }]} showsVerticalScrollIndicator={false}>
-          <WorkoutStats startedAt={workout.startedAt} durationSec={session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000)} exerciseCount={workout.exercises.length} setCount={setsDone} style={{ marginBottom: spacing.md }} />
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 140 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <WorkoutStats
+            startedAt={workout.startedAt}
+            durationSec={fixedDurationSeconds}
+            exerciseCount={workout.exercises.length}
+            setCount={workingSetCount}
+            style={{ marginBottom: spacing.md }}
+          />
 
-          {workout.exercises.map((item) => (
-            <ExerciseCard
-              key={item.id}
-              item={item}
-              exercise={exMap.get(item.exerciseId)}
-              units={units}
-              showRpe={settings.showRpe}
-              hasDescription={!!exMap.get(item.exerciseId) && exerciseDescription(exMap.get(item.exerciseId)!, i18n.language).length > 0}
-              supersetColor={supersetColor(item.supersetGroup)}
-              onMenu={onMenu}
-              onDescriptionPress={onDescriptionPress}
-              onNotePress={onNotePress}
-              onAddSet={onAddSet}
-              onSetChange={onSetChange}
-              onSetToggle={onToggle}
-              onSetDelete={onDeleteSet}
-              onSetTypePress={onSetTypePress}
-            />
-          ))}
+          {workout.exercises.map((workoutExercise) => {
+            const exerciseDetails = exercisesById.get(workoutExercise.exerciseId);
+            return (
+              <ExerciseCard
+                key={workoutExercise.id}
+                workoutExercise={workoutExercise}
+                exerciseDetails={exerciseDetails}
+                units={units}
+                showRpe={settings.showRpe}
+                hasDescription={exerciseDisplayDescription(exerciseDetails, i18n.language).length > 0}
+                supersetColor={supersetColorForGroup(workoutExercise.supersetGroup)}
+                onMenu={openExerciseMenu}
+                onDescriptionPress={openDescription}
+                onNotePress={openNote}
+                onAddSet={addSet}
+                onSetChange={changeSet}
+                onSetToggle={toggleSet}
+                onSetDelete={deleteSetWithUndo}
+                onSetTypePress={openSetTypePicker}
+              />
+            );
+          })}
 
           <Button
-            title={t('workout.addExercise')}
+            title={translate('workout.addExercise')}
             size="lg"
-            full
-            variant={workout.exercises.length === 0 ? 'primary' : 'secondary'}
-            icon={<Icon icon={Plus} size={20} color={workout.exercises.length === 0 ? 'onAccent' : 'text'} strokeWidth={2.5} />}
+            fullWidth
+            variant={hasNoExercises ? 'primary' : 'secondary'}
+            icon={
+              <Icon icon={Plus} size={20} color={hasNoExercises ? 'onAccent' : 'text'} strokeWidth={2.5} />
+            }
             onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
             style={{ marginTop: spacing.sm }}
           />
           {session.mode === 'new' ? (
-            <Button title={t('workout.discard')} variant="ghost" full onPress={discard} style={{ marginTop: spacing.sm }} />
+            <Button
+              title={translate('workout.discard')}
+              variant="ghost"
+              fullWidth
+              onPress={discardWorkout}
+              style={{ marginTop: spacing.sm }}
+            />
           ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {settings.keepAwake ? <KeepAwake /> : null}
-      <View style={[styles.restWrap, { bottom: insets.bottom + spacing.md }]} pointerEvents="box-none">
+      {settings.keepAwake ? <KeepScreenAwake /> : null}
+      <View
+        style={[styles.restTimerWrapper, { bottom: insets.bottom + spacing.md }]}
+        pointerEvents="box-none"
+      >
         <RestTimerBar />
       </View>
 
-      {/* Exercise menu */}
-      <Sheet visible={sheet.kind === 'menu'} onClose={() => setSheet({ kind: 'none' })} title={current ? exerciseName(exMap.get(current.exerciseId) ?? { nameEn: '', nameRu: '', isCustom: true }, i18n.language) : undefined} flush>
-        {current ? (
-          <View style={styles.menu}>
-            <ListItem
-              title={t('workout.restTimer')}
-              subtitle={restFor(current.id) > 0 ? formatDuration(restFor(current.id)) : t('workout.restOff')}
-              left={<Icon icon={Timer} />}
-              onPress={() => setSheet({ kind: 'rest', activeId: current.id })}
-            />
-            <ListItem title={t('workout.replaceExercise')} left={<Icon icon={Replace} />} onPress={() => { setSheet({ kind: 'none' }); push({ pathname: '/exercise/picker', params: { mode: 'replace', target: current.id } }); }} />
-            <ListItem
-              title={current.supersetGroup == null ? t('workout.createSuperset') : t('workout.removeFromSuperset')}
-              left={<Icon icon={current.supersetGroup == null ? Link : Unlink} />}
-              onPress={() => {
-                if (current.supersetGroup != null) {
-                  store().setSuperset([current.id], null);
-                  setSheet({ kind: 'none' });
-                } else setSheet({ kind: 'superset', activeId: current.id });
-              }}
-            />
-            {currentIndex > 0 ? <ListItem title={`${t('workout.reorder')} ↑`} left={<Icon icon={ArrowUp} />} onPress={() => { store().moveExercise(currentIndex, currentIndex - 1); setSheet({ kind: 'none' }); }} /> : null}
-            {currentIndex < workout.exercises.length - 1 ? <ListItem title={`${t('workout.reorder')} ↓`} left={<Icon icon={ArrowDown} />} onPress={() => { store().moveExercise(currentIndex, currentIndex + 1); setSheet({ kind: 'none' }); }} /> : null}
-            <ListItem title={t('workout.removeExercise')} titleColor={c.danger} left={<Icon icon={Trash2} color="danger" />} onPress={() => removeExercise(current.id)} />
-          </View>
-        ) : null}
-      </Sheet>
-
-      {/* Superset partner */}
-      <Sheet visible={sheet.kind === 'superset'} onClose={() => setSheet({ kind: 'none' })} title={t('workout.createSuperset')} flush>
-        <View style={styles.menu}>
-          {workout.exercises
-            .filter((e) => e.id !== current?.id)
-            .map((e) => (
-              <ListItem
-                key={e.id}
-                title={exerciseName(exMap.get(e.exerciseId) ?? { nameEn: '', nameRu: '', isCustom: true }, i18n.language)}
-                subtitle={e.supersetGroup != null ? `${t('workout.superset')} ${e.supersetGroup}` : undefined}
-                onPress={() => {
-                  if (!current) return;
-                  store().setSuperset([current.id, e.id], e.supersetGroup ?? -1);
-                  setSheet({ kind: 'none' });
-                }}
-              />
-            ))}
-        </View>
-      </Sheet>
-
-      {/* Rest timer per exercise */}
-      <Sheet visible={sheet.kind === 'rest'} onClose={() => setSheet({ kind: 'none' })} title={t('workout.restTimer')}>
-        <View style={styles.restGrid}>
-          {REST_OPTIONS.map((sec) => {
-            const selected = current && restFor(current.id) === sec;
-            return (
-              <Pressable
-                key={sec}
-                haptic="selection"
-                onPress={() => {
-                  if (current) store().setExerciseRest(current.id, sec);
-                  setSheet({ kind: 'none' });
-                }}
-                style={[styles.restOpt, { backgroundColor: selected ? c.text : c.surfaceAlt }]}
-              >
-                <Text variant="bodyMedium" color={selected ? c.bg : c.text} tabular>
-                  {sec === 0 ? t('workout.restOff') : formatDuration(sec)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <Button title={t('workout.restDefault', { sec: formatDuration(settings.defaultRestSeconds) })} variant="ghost" full onPress={() => { if (current) store().setExerciseRest(current.id, null); setSheet({ kind: 'none' }); }} style={{ marginTop: spacing.md }} />
-      </Sheet>
-
-      {/* Set type */}
-      <Sheet visible={sheet.kind === 'setType'} onClose={() => setSheet({ kind: 'none' })} title={t('workout.setType')} flush>
-        <View style={styles.menu}>
-          {(['normal', 'warmup', 'drop', 'failure'] as SetType[]).map((type) => (
-            <ListItem
-              key={type}
-              title={t(`workout.setTypes.${type}`)}
-              left={
-                <View style={[styles.typeBadge, { backgroundColor: type === 'normal' ? c.surfaceAlt : c.text }]}>
-                  <Text variant="caption" color={type === 'normal' ? c.text : c.bg}>
-                    {type === 'normal' ? '1' : t(`workout.setTypeShort.${type}`)}
-                  </Text>
-                </View>
-              }
-              onPress={() => {
-                if (sheet.kind === 'setType') store().updateSet(sheet.activeId, sheet.setId, { type });
-                setSheet({ kind: 'none' });
-              }}
-            />
-          ))}
-          <ListItem
-            title={t('workout.deleteSet')}
-            titleColor={c.danger}
-            left={<Icon icon={Trash2} color="danger" />}
-            onPress={() => {
-              if (sheet.kind === 'setType') onDeleteSet(sheet.activeId, sheet.setId);
-              setSheet({ kind: 'none' });
-            }}
-          />
-        </View>
-      </Sheet>
-
-      {/* Description: the exercise's permanent note, editable in place */}
-      <Sheet
-        visible={sheet.kind === 'description'}
-        onClose={() => {
-          setDescDraft(null);
-          setSheet({ kind: 'none' });
+      <ExerciseMenuSheet
+        visible={sheet.kind === 'menu'}
+        onClose={closeSheet}
+        workoutExercise={currentExercise}
+        exerciseDetails={currentExerciseDetails}
+        restSeconds={currentRestSeconds ?? 0}
+        canMoveUp={currentExerciseIndex > 0}
+        canMoveDown={currentExerciseIndex < workout.exercises.length - 1}
+        onRestTimerPress={openRestPicker}
+        onReplacePress={replaceCurrentExercise}
+        onSupersetPress={toggleCurrentExerciseSuperset}
+        onMoveUpPress={() => moveCurrentExercise(-1)}
+        onMoveDownPress={() => moveCurrentExercise(1)}
+        onRemovePress={() => {
+          if (currentExercise) removeExerciseWithUndo(currentExercise.id);
         }}
-        title={t('workout.description')}
-      >
-        {current ? (
-          <View>
-            <Text variant="caption" color="muted" style={{ marginBottom: spacing.sm }}>
-              {exerciseName(exMap.get(current.exerciseId) ?? { nameEn: '', nameRu: '', isCustom: true }, i18n.language)}
-            </Text>
-            {descDraft != null ? (
-              <>
-                <Input value={descDraft} onChangeText={setDescDraft} placeholder={t('exercise.descriptionPlaceholder')} multiline />
-                <Button
-                  title={t('common.save')}
-                  size="lg"
-                  full
-                  onPress={() => {
-                    updateExercise(current.exerciseId, { description: descDraft });
-                    setDescDraft(null);
-                    setSheet({ kind: 'none' });
-                  }}
-                  style={{ marginTop: spacing.lg }}
-                />
-              </>
-            ) : (
-              <>
-                {(() => {
-                  const row = exMap.get(current.exerciseId);
-                  const text = row ? exerciseDescription(row, i18n.language) : '';
-                  return text ? <Text style={{ lineHeight: 22 }}>{text}</Text> : <Text color="faint">{t('workout.noDescription')}</Text>;
-                })()}
-                <Button
-                  title={t('common.edit')}
-                  variant="secondary"
-                  full
-                  onPress={() => {
-                    const row = exMap.get(current.exerciseId);
-                    setDescDraft(row ? exerciseDescription(row, i18n.language) : '');
-                  }}
-                  style={{ marginTop: spacing.lg }}
-                />
-              </>
-            )}
-          </View>
-        ) : null}
-      </Sheet>
+      />
 
-      {/* Today's note for this exercise */}
-      <Sheet visible={sheet.kind === 'note'} onClose={() => { if (current) store().setExerciseNote(current.id, noteDraft); setSheet({ kind: 'none' }); }} title={t('workout.exerciseNote')}>
-        {current ? (
-          <View>
-            <Text variant="caption" color="muted" style={{ marginBottom: spacing.sm }}>
-              {exerciseName(exMap.get(current.exerciseId) ?? { nameEn: '', nameRu: '', isCustom: true }, i18n.language)}
-            </Text>
-            <Input value={noteDraft} onChangeText={setNoteDraft} placeholder={t('workout.exerciseNotePlaceholder')} multiline />
-            {lastNotes.get(current.exerciseId) && !noteDraft ? (
-              <Pressable onPress={() => setNoteDraft(lastNotes.get(current.exerciseId) ?? '')} style={{ marginTop: spacing.md }} haptic="selection">
-                <Text variant="caption" color="muted">
-                  {t('workout.copyLastNote')}: {lastNotes.get(current.exerciseId)}
-                </Text>
-              </Pressable>
-            ) : null}
-            <Button
-              title={t('common.save')}
-              size="lg"
-              full
-              onPress={() => {
-                store().setExerciseNote(current.id, noteDraft);
-                setSheet({ kind: 'none' });
-              }}
-              style={{ marginTop: spacing.lg }}
-            />
-          </View>
-        ) : null}
-      </Sheet>
+      <SupersetPickerSheet
+        visible={sheet.kind === 'superset'}
+        onClose={closeSheet}
+        partnerCandidates={workout.exercises.filter((exercise) => exercise.id !== currentExercise?.id)}
+        exercisesById={exercisesById}
+        onPartnerPress={linkCurrentExerciseWith}
+      />
 
-      {/* Rename */}
-      <Sheet visible={sheet.kind === 'name'} onClose={() => setSheet({ kind: 'none' })} title={t('workout.nameLabel')}>
-        <Input value={nameDraft} onChangeText={setNameDraft} autoFocus placeholder={t('workout.defaultName')} returnKeyType="done" onSubmitEditing={() => { store().rename(nameDraft.trim()); setSheet({ kind: 'none' }); }} />
-        <Button title={t('common.save')} size="lg" full onPress={() => { store().rename(nameDraft.trim()); setSheet({ kind: 'none' }); }} style={{ marginTop: spacing.lg }} />
-      </Sheet>
+      <RestTimerPickerSheet
+        visible={sheet.kind === 'rest'}
+        onClose={closeSheet}
+        selectedSeconds={currentRestSeconds}
+        defaultRestSeconds={settings.defaultRestSeconds}
+        onRestSelect={setCurrentExerciseRest}
+      />
 
-      {/* Finish */}
-      <Sheet visible={sheet.kind === 'finish'} onClose={() => setSheet({ kind: 'none' })} title={t('workout.finishTitle')}>
-        <WorkoutStats startedAt={workout.startedAt} durationSec={session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000)} exerciseCount={workout.exercises.length} setCount={setsDone} style={{ marginBottom: spacing.lg }} />
-        <Button title={t('workout.finishAndSave')} size="lg" full onPress={finish} haptic="success" />
-      </Sheet>
+      <SetTypePickerSheet
+        visible={sheet.kind === 'setType'}
+        onClose={closeSheet}
+        onSetTypeSelect={changeSelectedSetType}
+        onDeleteSetPress={deleteSelectedSet}
+      />
+
+      <ExerciseDescriptionSheet
+        visible={sheet.kind === 'description'}
+        onClose={closeSheet}
+        workoutExercise={currentExercise}
+        exerciseDetails={currentExerciseDetails}
+      />
+
+      <ExerciseNoteSheet
+        visible={sheet.kind === 'note'}
+        workoutExercise={currentExercise}
+        exerciseDetails={currentExerciseDetails}
+        noteDraft={noteDraft}
+        onNoteDraftChange={setNoteDraft}
+        lastNote={currentExercise ? lastNoteByExerciseId.get(currentExercise.exerciseId) : undefined}
+        onSave={saveNoteAndClose}
+      />
+
+      <RenameWorkoutSheet
+        visible={sheet.kind === 'name'}
+        onClose={closeSheet}
+        nameDraft={nameDraft}
+        onNameDraftChange={setNameDraft}
+        onSave={saveName}
+      />
+
+      <FinishWorkoutSheet
+        visible={sheet.kind === 'finish'}
+        onClose={closeSheet}
+        startedAt={workout.startedAt}
+        durationSec={fixedDurationSeconds}
+        exerciseCount={workout.exercises.length}
+        setCount={workingSetCount}
+        onFinishPress={finishWorkout}
+      />
     </View>
   );
 }
 
-function KeepAwake() {
+function KeepScreenAwake() {
   useKeepAwake('workout');
   return null;
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.md },
-  headerCenter: { flex: 1, alignItems: 'center' },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  content: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  restWrap: { position: 'absolute', left: spacing.lg, right: spacing.lg },
-  menu: { paddingHorizontal: spacing.sm },
-  restGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  restOpt: { width: '30%', flexGrow: 1, height: 48, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
-  typeBadge: { width: 36, height: 36, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  restTimerWrapper: { position: 'absolute', left: spacing.lg, right: spacing.lg },
 });

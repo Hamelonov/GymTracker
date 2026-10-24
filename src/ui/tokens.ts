@@ -12,7 +12,7 @@ export const palette = {
 };
 
 export interface ThemeColors {
-  bg: string;
+  background: string;
   surface: string;
   surfaceAlt: string;
   surfaceRaised: string;
@@ -31,14 +31,14 @@ export interface ThemeColors {
   info: string;
   overlay: string;
   tabBar: string;
-  inputBg: string;
+  inputBackground: string;
   /** Fixed brand colors that do not flip with the theme. */
   black: string;
   white: string;
 }
 
 export const lightColors: ThemeColors = {
-  bg: '#FFFFFF',
+  background: '#FFFFFF',
   surface: '#F6F6F4',
   surfaceAlt: '#ECECE9',
   surfaceRaised: '#FFFFFF',
@@ -57,13 +57,13 @@ export const lightColors: ThemeColors = {
   info: palette.blue,
   overlay: 'rgba(10,10,10,0.45)',
   tabBar: 'rgba(255,255,255,0.96)',
-  inputBg: '#F0F0ED',
+  inputBackground: '#F0F0ED',
   black: palette.black,
   white: palette.white,
 };
 
 export const darkColors: ThemeColors = {
-  bg: '#0A0A0A',
+  background: '#0A0A0A',
   surface: '#161616',
   surfaceAlt: '#212121',
   surfaceRaised: '#1C1C1C',
@@ -82,7 +82,7 @@ export const darkColors: ThemeColors = {
   info: '#6E8CFF',
   overlay: 'rgba(0,0,0,0.6)',
   tabBar: 'rgba(10,10,10,0.96)',
-  inputBg: '#1F1F1F',
+  inputBackground: '#1F1F1F',
   black: palette.black,
   white: palette.white,
 };
@@ -124,4 +124,4 @@ export const typeScale = {
   mono: { fontSize: 17, lineHeight: 22, fontFamily: fonts.semibold, letterSpacing: -0.2 },
 } as const;
 
-export type TypeVariant = keyof typeof typeScale;
+export type TextVariant = keyof typeof typeScale;

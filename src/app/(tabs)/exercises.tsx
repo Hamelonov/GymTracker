@@ -8,17 +8,21 @@ import { ExerciseList } from '@/features/exercises/ExerciseList';
 import { Header, IconButton, useColors } from '@/ui';
 
 export default function ExercisesTab() {
-  const { t } = useTranslation();
-  const c = useColors();
+  const { t: translate } = useTranslation();
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
       <Header
-        title={t('exercise.library')}
+        title={translate('exercise.library')}
         large
-        right={<IconButton icon={Plus} variant="accent" onPress={() => push('/exercise/edit')} haptic="light" />}
+        right={
+          <IconButton icon={Plus} variant="accent" onPress={() => push('/exercise/edit')} haptic="light" />
+        }
       />
-      <ExerciseList onPress={(e) => push({ pathname: '/exercise/[id]', params: { id: e.id } })} />
+      <ExerciseList
+        onPress={(exercise) => push({ pathname: '/exercise/[id]', params: { id: exercise.id } })}
+      />
     </View>
   );
 }

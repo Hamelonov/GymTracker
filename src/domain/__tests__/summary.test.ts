@@ -1,13 +1,20 @@
-import { formatSetsLine, groupSets, isSetFilled, pickRecordMetric, recordGain, type LineSet } from '../summary';
-import { setFieldsFor, type PrHit, type SetType } from '../types';
+import {
+  formatSetsLine,
+  groupSets,
+  isSetFilled,
+  pickRecordMetric,
+  recordGain,
+  type LineSet,
+} from '../summary';
+import { getSetFieldsForExerciseType, type RecordHit, type SetType } from '../types';
 
-const fmt = {
+const formatters = {
   weight: (kg: number) => `${kg} kg`,
-  duration: (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`,
-  distance: (m: number) => `${m / 1000} km`,
+  duration: (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
+  distance: (meters: number) => `${meters / 1000} km`,
 };
 
-const s = (weightKg: number | null, reps: number | null, type: SetType = 'normal'): LineSet => ({
+const makeSet = (weightKg: number | null, reps: number | null, type: SetType = 'normal'): LineSet => ({
   weightKg,
   reps,
   durationSec: null,
@@ -16,21 +23,41 @@ const s = (weightKg: number | null, reps: number | null, type: SetType = 'normal
   type,
 });
 
-const hit = (type: PrHit['type'], value: number, previous: number | null): PrHit => ({ type, value, previous });
+const hit = (type: RecordHit['type'], value: number, previous: number | null): RecordHit => ({
+  type,
+  value,
+  previous,
+});
 
 describe('pickRecordMetric', () => {
   it('shows weight for a weighted exercise when the weight record moved', () => {
-    expect(pickRecordMetric(setFieldsFor('weight_reps'), [hit('weight', 42.5, 40), hit('reps', 10, 8)])).toBe('weight');
+    expect(
+      pickRecordMetric(getSetFieldsForExerciseType('weight_reps'), [
+        hit('weight', 42.5, 40),
+        hit('reps', 10, 8),
+      ]),
+    ).toBe('weight');
   });
   it('shows reps for a weighted exercise when only reps improved', () => {
-    expect(pickRecordMetric(setFieldsFor('weight_reps'), [hit('reps', 12, 10), hit('volume', 480, 400)])).toBe('reps');
+    expect(
+      pickRecordMetric(getSetFieldsForExerciseType('weight_reps'), [
+        hit('reps', 12, 10),
+        hit('volume', 480, 400),
+      ]),
+    ).toBe('reps');
   });
   it('never shows weight for bodyweight exercises', () => {
-    expect(pickRecordMetric(setFieldsFor('bodyweight_reps'), [hit('reps', 15, 12)])).toBe('reps');
+    expect(pickRecordMetric(getSetFieldsForExerciseType('bodyweight_reps'), [hit('reps', 15, 12)])).toBe(
+      'reps',
+    );
   });
   it('uses distance or time for cardio', () => {
-    expect(pickRecordMetric(setFieldsFor('distance_duration'), [hit('distance', 5000, 4000)])).toBe('distance');
-    expect(pickRecordMetric(setFieldsFor('duration'), [hit('duration', 90, 60)])).toBe('duration');
+    expect(
+      pickRecordMetric(getSetFieldsForExerciseType('distance_duration'), [hit('distance', 5000, 4000)]),
+    ).toBe('distance');
+    expect(pickRecordMetric(getSetFieldsForExerciseType('duration'), [hit('duration', 90, 60)])).toBe(
+      'duration',
+    );
   });
 });
 
@@ -47,44 +74,70 @@ describe('recordGain', () => {
 });
 
 describe('formatSetsLine', () => {
-  const wr = setFieldsFor('weight_reps');
+  const weightRepsFields = getSetFieldsForExerciseType('weight_reps');
   it('groups sets with the same weight', () => {
-    expect(formatSetsLine([s(80, 8), s(80, 7), s(80, 6)], wr, fmt)).toBe('80 kg × 8/7/6');
+    expect(
+      formatSetsLine([makeSet(80, 8), makeSet(80, 7), makeSet(80, 6)], weightRepsFields, formatters),
+    ).toBe('80 kg × 8/7/6');
   });
   it('splits groups when the weight changes', () => {
-    expect(formatSetsLine([s(82.5, 7), s(82.5, 6), s(80, 8)], wr, fmt)).toBe('82.5 kg × 7/6, 80 kg × 8');
+    expect(
+      formatSetsLine([makeSet(82.5, 7), makeSet(82.5, 6), makeSet(80, 8)], weightRepsFields, formatters),
+    ).toBe('82.5 kg × 7/6, 80 kg × 8');
   });
   it('exposes weight and reps separately for the table', () => {
-    expect(groupSets([s(82.5, 7), s(82.5, 6), s(80, 8)], wr, fmt)).toEqual([
+    expect(
+      groupSets([makeSet(82.5, 7), makeSet(82.5, 6), makeSet(80, 8)], weightRepsFields, formatters),
+    ).toEqual([
       { weightKg: 82.5, values: ['7', '6'] },
       { weightKg: 80, values: ['8'] },
     ]);
   });
   it('leaves warm-ups out', () => {
-    expect(formatSetsLine([s(40, 10, 'warmup'), s(30, 12), s(30, 10)], wr, fmt)).toBe('30 kg × 12/10');
+    expect(
+      formatSetsLine(
+        [makeSet(40, 10, 'warmup'), makeSet(30, 12), makeSet(30, 10)],
+        weightRepsFields,
+        formatters,
+      ),
+    ).toBe('30 kg × 12/10');
   });
   it('shows reps only for bodyweight exercises', () => {
-    expect(formatSetsLine([s(null, 8), s(null, 7), s(null, 7)], setFieldsFor('bodyweight_reps'), fmt)).toBe('8/7/7');
+    expect(
+      formatSetsLine(
+        [makeSet(null, 8), makeSet(null, 7), makeSet(null, 7)],
+        getSetFieldsForExerciseType('bodyweight_reps'),
+        formatters,
+      ),
+    ).toBe('8/7/7');
   });
   it('shows reps only for weighted-bodyweight sets done without extra weight', () => {
-    expect(formatSetsLine([s(null, 8), s(0, 7)], setFieldsFor('weighted_bodyweight'), fmt)).toBe('8/7');
+    expect(
+      formatSetsLine(
+        [makeSet(null, 8), makeSet(0, 7)],
+        getSetFieldsForExerciseType('weighted_bodyweight'),
+        formatters,
+      ),
+    ).toBe('8/7');
   });
   it('formats timed sets', () => {
-    const t = (sec: number): LineSet => ({ ...s(null, null), durationSec: sec });
-    expect(formatSetsLine([t(60), t(45)], setFieldsFor('duration'), fmt)).toBe('1:00/0:45');
+    const timedSet = (seconds: number): LineSet => ({ ...makeSet(null, null), durationSec: seconds });
+    expect(
+      formatSetsLine([timedSet(60), timedSet(45)], getSetFieldsForExerciseType('duration'), formatters),
+    ).toBe('1:00/0:45');
   });
 });
 
 describe('isSetFilled', () => {
   it('rejects empty and zero sets', () => {
-    expect(isSetFilled(s(null, null), setFieldsFor('weight_reps'))).toBe(false);
-    expect(isSetFilled(s(0, 0), setFieldsFor('weight_reps'))).toBe(false);
+    expect(isSetFilled(makeSet(null, null), getSetFieldsForExerciseType('weight_reps'))).toBe(false);
+    expect(isSetFilled(makeSet(0, 0), getSetFieldsForExerciseType('weight_reps'))).toBe(false);
   });
   it('accepts a set with any value', () => {
-    expect(isSetFilled(s(60, null), setFieldsFor('weight_reps'))).toBe(true);
-    expect(isSetFilled(s(null, 8), setFieldsFor('bodyweight_reps'))).toBe(true);
+    expect(isSetFilled(makeSet(60, null), getSetFieldsForExerciseType('weight_reps'))).toBe(true);
+    expect(isSetFilled(makeSet(null, 8), getSetFieldsForExerciseType('bodyweight_reps'))).toBe(true);
   });
   it('ignores fields the exercise does not use', () => {
-    expect(isSetFilled(s(20, null), setFieldsFor('bodyweight_reps'))).toBe(false);
+    expect(isSetFilled(makeSet(20, null), getSetFieldsForExerciseType('bodyweight_reps'))).toBe(false);
   });
 });

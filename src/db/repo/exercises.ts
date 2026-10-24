@@ -1,38 +1,49 @@
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
-import { db } from '../client';
-import { exercises, personalRecords, sets, workoutExercises, workouts, type ExerciseRow, type SetRow } from '../schema';
-import { bumpDb } from '../version';
+import { database } from '../client';
+import {
+  exercises,
+  personalRecords,
+  sets,
+  workoutExercises,
+  workouts,
+  type ExerciseRow,
+  type SetRow,
+} from '../schema';
+import { notifyDatabaseChanged } from '../version';
 import { newId } from '@/domain/ids';
-import type { Equipment, ExerciseType, MuscleGroup, PrType, SetValues } from '@/domain/types';
+import type { Equipment, ExerciseType, MuscleGroup, RecordType, SetValues } from '@/domain/types';
 import type { RecordTable } from '@/domain/records';
 
-export function exerciseName(e: Pick<ExerciseRow, 'nameEn' | 'nameRu' | 'isCustom'>, lang: string): string {
-  if (e.isCustom) return e.nameEn;
-  return lang.startsWith('ru') ? e.nameRu : e.nameEn;
+export function exerciseName(
+  exercise: Pick<ExerciseRow, 'nameEn' | 'nameRu' | 'isCustom'>,
+  language: string,
+): string {
+  if (exercise.isCustom) return exercise.nameEn;
+  return language.startsWith('ru') ? exercise.nameRu : exercise.nameEn;
 }
 
 export function exerciseDescription(
-  e: Pick<ExerciseRow, 'description' | 'descriptionEn' | 'descriptionRu'>,
-  lang: string,
+  exercise: Pick<ExerciseRow, 'description' | 'descriptionEn' | 'descriptionRu'>,
+  language: string,
 ): string {
-  if (e.description && e.description.trim()) return e.description;
-  return lang.startsWith('ru') ? e.descriptionRu : e.descriptionEn;
+  if (exercise.description && exercise.description.trim()) return exercise.description;
+  return language.startsWith('ru') ? exercise.descriptionRu : exercise.descriptionEn;
 }
 
-export function listExercises(opts: { includeArchived?: boolean } = {}): ExerciseRow[] {
-  const q = db.select().from(exercises);
-  const rows = opts.includeArchived ? q.all() : q.where(eq(exercises.archived, false)).all();
-  return rows;
+export function listExercises(options: { includeArchived?: boolean } = {}): ExerciseRow[] {
+  const query = database.select().from(exercises);
+  if (options.includeArchived) return query.all();
+  return query.where(eq(exercises.archived, false)).all();
 }
 
 export function getExercise(id: string): ExerciseRow | undefined {
-  return db.select().from(exercises).where(eq(exercises.id, id)).get();
+  return database.select().from(exercises).where(eq(exercises.id, id)).get();
 }
 
 export function getExercisesByIds(ids: string[]): Map<string, ExerciseRow> {
   if (ids.length === 0) return new Map();
-  const rows = db.select().from(exercises).where(inArray(exercises.id, ids)).all();
-  return new Map(rows.map((r) => [r.id, r]));
+  const rows = database.select().from(exercises).where(inArray(exercises.id, ids)).all();
+  return new Map(rows.map((row) => [row.id, row]));
 }
 
 export interface ExerciseInput {
@@ -62,8 +73,8 @@ export function createExercise(input: ExerciseInput): ExerciseRow {
     archived: false,
     createdAt: Date.now(),
   };
-  db.insert(exercises).values(row).run();
-  bumpDb();
+  database.insert(exercises).values(row).run();
+  notifyDatabaseChanged();
   return row;
 }
 
@@ -81,23 +92,23 @@ export function updateExercise(id: string, patch: Partial<ExerciseInput>): void 
   if (patch.type != null) values.type = patch.type;
   if (patch.description !== undefined) values.description = patch.description.trim() || null;
   if (patch.restSeconds !== undefined) values.restSeconds = patch.restSeconds;
-  db.update(exercises).set(values).where(eq(exercises.id, id)).run();
-  bumpDb();
+  database.update(exercises).set(values).where(eq(exercises.id, id)).run();
+  notifyDatabaseChanged();
 }
 
 export function setExerciseArchived(id: string, archived: boolean): void {
-  db.update(exercises).set({ archived }).where(eq(exercises.id, id)).run();
-  bumpDb();
+  database.update(exercises).set({ archived }).where(eq(exercises.id, id)).run();
+  notifyDatabaseChanged();
 }
 
 export function deleteExercise(id: string): void {
-  db.delete(exercises).where(eq(exercises.id, id)).run();
-  bumpDb();
+  database.delete(exercises).where(eq(exercises.id, id)).run();
+  notifyDatabaseChanged();
 }
 
 /** How many workouts included each exercise, for "recent" / "most used" sorting. */
-export function exerciseUsage(): Map<string, { count: number; lastAt: number }> {
-  const rows = db
+export function getExerciseUsage(): Map<string, { count: number; lastAt: number }> {
+  const rows = database
     .select({
       exerciseId: workoutExercises.exerciseId,
       count: sql<number>`count(*)`,
@@ -107,37 +118,45 @@ export function exerciseUsage(): Map<string, { count: number; lastAt: number }> 
     .innerJoin(workouts, eq(workouts.id, workoutExercises.workoutId))
     .groupBy(workoutExercises.exerciseId)
     .all();
-  return new Map(rows.map((r) => [r.exerciseId, { count: r.count, lastAt: r.lastAt }]));
+  return new Map(rows.map((row) => [row.exerciseId, { count: row.count, lastAt: row.lastAt }]));
 }
 
 export function getRecordTable(exerciseId: string): RecordTable {
-  const rows = db.select().from(personalRecords).where(eq(personalRecords.exerciseId, exerciseId)).all();
+  const rows = database
+    .select()
+    .from(personalRecords)
+    .where(eq(personalRecords.exerciseId, exerciseId))
+    .all();
   const table: RecordTable = {};
-  for (const r of rows) table[r.type] = r.value;
+  for (const row of rows) table[row.type] = row.value;
   return table;
 }
 
 export function getRecordTables(exerciseIds: string[]): Map<string, RecordTable> {
-  const out = new Map<string, RecordTable>();
-  if (exerciseIds.length === 0) return out;
-  const rows = db.select().from(personalRecords).where(inArray(personalRecords.exerciseId, exerciseIds)).all();
-  for (const r of rows) {
-    const t = out.get(r.exerciseId) ?? {};
-    t[r.type] = r.value;
-    out.set(r.exerciseId, t);
+  const tablesByExerciseId = new Map<string, RecordTable>();
+  if (exerciseIds.length === 0) return tablesByExerciseId;
+  const rows = database
+    .select()
+    .from(personalRecords)
+    .where(inArray(personalRecords.exerciseId, exerciseIds))
+    .all();
+  for (const row of rows) {
+    const table = tablesByExerciseId.get(row.exerciseId) ?? {};
+    table[row.type] = row.value;
+    tablesByExerciseId.set(row.exerciseId, table);
   }
-  return out;
+  return tablesByExerciseId;
 }
 
 export interface RecordDetail {
-  type: PrType;
+  type: RecordType;
   value: number;
   achievedAt: number;
   workoutId: string | null;
 }
 
 export function getRecordDetails(exerciseId: string): RecordDetail[] {
-  return db
+  return database
     .select({
       type: personalRecords.type,
       value: personalRecords.value,
@@ -150,43 +169,54 @@ export function getRecordDetails(exerciseId: string): RecordDetail[] {
 }
 
 /** The sets logged the last time this exercise was performed (most recent workout). */
-export function lastPerformance(exerciseId: string): { sets: SetRow[]; note: string; workoutId: string; at: number } | null {
-  const last = db
-    .select({ id: workoutExercises.id, note: workoutExercises.note, workoutId: workouts.id, at: workouts.startedAt })
+export function getLastPerformance(
+  exerciseId: string,
+): { sets: SetRow[]; note: string; workoutId: string; at: number } | null {
+  const lastWorkoutExercise = database
+    .select({
+      id: workoutExercises.id,
+      note: workoutExercises.note,
+      workoutId: workouts.id,
+      at: workouts.startedAt,
+    })
     .from(workoutExercises)
     .innerJoin(workouts, eq(workouts.id, workoutExercises.workoutId))
     .where(eq(workoutExercises.exerciseId, exerciseId))
     .orderBy(desc(workouts.startedAt))
     .limit(1)
     .get();
-  if (!last) return null;
-  const rows = db
+  if (!lastWorkoutExercise) return null;
+  const completedSets = database
     .select()
     .from(sets)
-    .where(and(eq(sets.workoutExerciseId, last.id), eq(sets.completed, true)))
+    .where(and(eq(sets.workoutExerciseId, lastWorkoutExercise.id), eq(sets.completed, true)))
     .orderBy(asc(sets.position))
     .all();
-  return { sets: rows, note: last.note, workoutId: last.workoutId, at: last.at };
+  return {
+    sets: completedSets,
+    note: lastWorkoutExercise.note,
+    workoutId: lastWorkoutExercise.workoutId,
+    at: lastWorkoutExercise.at,
+  };
 }
 
-export function lastPerformances(exerciseIds: string[]): Map<string, { sets: SetValues[]; note: string }> {
-  const out = new Map<string, { sets: SetValues[]; note: string }>();
-  for (const id of exerciseIds) {
-    const p = lastPerformance(id);
-    if (p) {
-      out.set(id, {
-        note: p.note,
-        sets: p.sets.map((s) => ({
-          weightKg: s.weightKg,
-          reps: s.reps,
-          durationSec: s.durationSec,
-          distanceM: s.distanceM,
-          rpe: s.rpe,
-        })),
-      });
-    }
+export function getLastPerformances(exerciseIds: string[]): Map<string, { sets: SetValues[]; note: string }> {
+  const performancesByExerciseId = new Map<string, { sets: SetValues[]; note: string }>();
+  for (const exerciseId of exerciseIds) {
+    const previousPerformance = getLastPerformance(exerciseId);
+    if (!previousPerformance) continue;
+    performancesByExerciseId.set(exerciseId, {
+      note: previousPerformance.note,
+      sets: previousPerformance.sets.map((set) => ({
+        weightKg: set.weightKg,
+        reps: set.reps,
+        durationSec: set.durationSec,
+        distanceM: set.distanceM,
+        rpe: set.rpe,
+      })),
+    });
   }
-  return out;
+  return performancesByExerciseId;
 }
 
 export interface ExerciseHistoryEntry {
@@ -197,10 +227,10 @@ export interface ExerciseHistoryEntry {
   sets: SetRow[];
 }
 
-export function exerciseHistory(exerciseId: string, limit = 200): ExerciseHistoryEntry[] {
-  const wes = db
+export function getExerciseHistory(exerciseId: string, limit = 200): ExerciseHistoryEntry[] {
+  const workoutExerciseRows = database
     .select({
-      weId: workoutExercises.id,
+      workoutExerciseId: workoutExercises.id,
       note: workoutExercises.note,
       workoutId: workouts.id,
       workoutName: workouts.name,
@@ -212,24 +242,29 @@ export function exerciseHistory(exerciseId: string, limit = 200): ExerciseHistor
     .orderBy(desc(workouts.startedAt))
     .limit(limit)
     .all();
-  if (wes.length === 0) return [];
-  const setRows = db
+  if (workoutExerciseRows.length === 0) return [];
+  const setRows = database
     .select()
     .from(sets)
-    .where(inArray(sets.workoutExerciseId, wes.map((w) => w.weId)))
+    .where(
+      inArray(
+        sets.workoutExerciseId,
+        workoutExerciseRows.map((workoutExercise) => workoutExercise.workoutExerciseId),
+      ),
+    )
     .orderBy(asc(sets.position))
     .all();
-  const byWe = new Map<string, SetRow[]>();
-  for (const s of setRows) {
-    const list = byWe.get(s.workoutExerciseId) ?? [];
-    list.push(s);
-    byWe.set(s.workoutExerciseId, list);
+  const setsByWorkoutExerciseId = new Map<string, SetRow[]>();
+  for (const set of setRows) {
+    const list = setsByWorkoutExerciseId.get(set.workoutExerciseId) ?? [];
+    list.push(set);
+    setsByWorkoutExerciseId.set(set.workoutExerciseId, list);
   }
-  return wes.map((w) => ({
-    workoutId: w.workoutId,
-    workoutName: w.workoutName,
-    startedAt: w.startedAt,
-    note: w.note,
-    sets: byWe.get(w.weId) ?? [],
+  return workoutExerciseRows.map((workoutExercise) => ({
+    workoutId: workoutExercise.workoutId,
+    workoutName: workoutExercise.workoutName,
+    startedAt: workoutExercise.startedAt,
+    note: workoutExercise.note,
+    sets: setsByWorkoutExerciseId.get(workoutExercise.workoutExerciseId) ?? [],
   }));
 }

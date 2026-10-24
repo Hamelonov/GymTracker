@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 
-type State = { pressed: boolean };
+type PressState = { pressed: boolean };
 
 export interface FastPressableProps extends Omit<PressableProps, 'style' | 'children'> {
-  style?: StyleProp<ViewStyle> | ((state: State) => StyleProp<ViewStyle>);
-  children?: React.ReactNode | ((state: State) => React.ReactNode);
+  style?: StyleProp<ViewStyle> | ((pressState: PressState) => StyleProp<ViewStyle>);
+  children?: React.ReactNode | ((pressState: PressState) => React.ReactNode);
 }
 
 /**
@@ -14,27 +14,34 @@ export interface FastPressableProps extends Omit<PressableProps, 'style' | 'chil
  * This wrapper tracks the pressed look itself and clears it the moment the
  * press fires, so the UI never lags behind the action.
  */
-export function FastPressable({ style, children, onPressIn, onPressOut, onPress, ...rest }: FastPressableProps) {
-  const [pressed, setPressed] = useState(false);
-  const state = { pressed };
+export function FastPressable({
+  style,
+  children,
+  onPressIn,
+  onPressOut,
+  onPress,
+  ...rest
+}: FastPressableProps) {
+  const [isPressed, setIsPressed] = useState(false);
+  const pressState = { pressed: isPressed };
   return (
     <Pressable
       {...rest}
-      onPressIn={(e) => {
-        setPressed(true);
-        onPressIn?.(e);
+      onPressIn={(event) => {
+        setIsPressed(true);
+        onPressIn?.(event);
       }}
-      onPressOut={(e) => {
-        setPressed(false);
-        onPressOut?.(e);
+      onPressOut={(event) => {
+        setIsPressed(false);
+        onPressOut?.(event);
       }}
-      onPress={(e) => {
-        setPressed(false);
-        onPress?.(e);
+      onPress={(event) => {
+        setIsPressed(false);
+        onPress?.(event);
       }}
-      style={typeof style === 'function' ? style(state) : style}
+      style={typeof style === 'function' ? style(pressState) : style}
     >
-      {typeof children === 'function' ? children(state) : children}
+      {typeof children === 'function' ? children(pressState) : children}
     </Pressable>
   );
 }

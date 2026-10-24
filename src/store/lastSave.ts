@@ -3,10 +3,10 @@ import type { SaveResult } from '@/db/repo/workouts';
 
 interface LastSaveState {
   result: SaveResult | null;
-  set: (r: SaveResult | null) => void;
+  setResult: (result: SaveResult | null) => void;
 }
 
 export const useLastSave = create<LastSaveState>((set) => ({
   result: null,
-  set: (result) => set({ result }),
+  setResult: (result) => set({ result }),
 }));

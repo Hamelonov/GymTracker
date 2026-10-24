@@ -2,12 +2,24 @@ import { FlashList } from '@shopify/flash-list';
 import { Check, Plus, Search, X } from 'lucide-react-native';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable as RNPressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { exerciseName, exerciseUsage, listExercises } from '@/db/repo/exercises';
+import { Pressable as NativePressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { exerciseName, getExerciseUsage, listExercises } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import { useQuery } from '@/db/version';
 import { MUSCLE_GROUPS, type MuscleGroup } from '@/domain/types';
-import { Chip, EmptyState, FastPressable, Icon, Pressable, Text, fonts, radius, spacing, useColors, type ThemeColors } from '@/ui';
+import {
+  Chip,
+  EmptyState,
+  FastPressable,
+  Icon,
+  Pressable,
+  Text,
+  fonts,
+  radius,
+  spacing,
+  useColors,
+  type ThemeColors,
+} from '@/ui';
 
 export interface ExerciseListProps {
   selectedIds?: Set<string>;
@@ -18,57 +30,59 @@ export interface ExerciseListProps {
   excludeIds?: Set<string>;
 }
 
-interface Item {
+/** An exercise with its display strings computed once, so list rows stay cheap to render. */
+interface ExerciseListItem {
   exercise: ExerciseRow;
   name: string;
   subtitle: string;
   initial: string;
 }
 
-const collators = new Map<string, Intl.Collator>();
-function collator(lang: string): Intl.Collator {
-  let c = collators.get(lang);
-  if (!c) {
-    c = new Intl.Collator(lang, { sensitivity: 'base' });
-    collators.set(lang, c);
+// Creating an Intl.Collator is slow, so one is cached per language.
+const collatorsByLanguage = new Map<string, Intl.Collator>();
+function getCollator(language: string): Intl.Collator {
+  let collator = collatorsByLanguage.get(language);
+  if (!collator) {
+    collator = new Intl.Collator(language, { sensitivity: 'base' });
+    collatorsByLanguage.set(language, collator);
   }
-  return c;
+  return collator;
 }
 
-export function ExerciseAvatar({ exercise, size = 44 }: { exercise: ExerciseRow; size?: number }) {
-  const c = useColors();
-  const { i18n } = useTranslation();
-  const name = exerciseName(exercise, i18n.language);
-  return (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: exercise.isCustom ? c.accentSoft : c.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}>
-      <Text variant="h3" color={c.text}>
-        {name.slice(0, 1).toUpperCase()}
-      </Text>
-    </View>
-  );
+interface ExerciseRowViewProps {
+  item: ExerciseListItem;
+  isSelected: boolean;
+  isSelectable: boolean;
+  colors: ThemeColors;
+  onPress: (exercise: ExerciseRow) => void;
 }
 
 /** One row. Plain RN Pressable: the list renders many of these and must stay cheap. */
-const Row = memo(function Row({
+const ExerciseRowView = memo(function ExerciseRowView({
   item,
-  selected,
-  selectable,
+  isSelected,
+  isSelectable,
   colors,
   onPress,
-}: {
-  item: Item;
-  selected: boolean;
-  selectable: boolean;
-  colors: ThemeColors;
-  onPress: (e: ExerciseRow) => void;
-}) {
-  const c = colors;
+}: ExerciseRowViewProps) {
   return (
-    <FastPressable onPress={() => onPress(item.exercise)} style={({ pressed }) => [styles.row, selected ? { backgroundColor: c.accentSoft } : null, pressed ? { opacity: 0.7 } : null]}>
-      <View style={[styles.avatar, { backgroundColor: item.exercise.isCustom ? c.accentSoft : c.surfaceAlt }]}>
+    <FastPressable
+      onPress={() => onPress(item.exercise)}
+      style={({ pressed }) => [
+        styles.row,
+        isSelected ? { backgroundColor: colors.accentSoft } : null,
+        pressed ? { opacity: 0.7 } : null,
+      ]}
+    >
+      <View
+        style={[
+          styles.avatar,
+          { backgroundColor: item.exercise.isCustom ? colors.accentSoft : colors.surfaceAlt },
+        ]}
+      >
         <Text variant="h3">{item.initial}</Text>
       </View>
-      <View style={styles.rowBody}>
+      <View style={styles.rowText}>
         <Text variant="bodyMedium" numberOfLines={1}>
           {item.name}
         </Text>
@@ -76,120 +90,167 @@ const Row = memo(function Row({
           {item.subtitle}
         </Text>
       </View>
-      {selectable ? (
-        <View style={[styles.check, { borderColor: selected ? c.text : c.borderStrong, backgroundColor: selected ? c.text : 'transparent' }]}>
-          {selected ? <Icon icon={Check} size={14} color={c.bg} strokeWidth={3} /> : null}
+      {isSelectable ? (
+        <View
+          style={[
+            styles.checkCircle,
+            {
+              borderColor: isSelected ? colors.text : colors.borderStrong,
+              backgroundColor: isSelected ? colors.text : 'transparent',
+            },
+          ]}
+        >
+          {isSelected ? <Icon icon={Check} size={14} color={colors.background} strokeWidth={3} /> : null}
         </View>
       ) : null}
     </FastPressable>
   );
 });
 
-export function ExerciseList({ selectedIds, onPress, onCreate, header, bottomPadding = 0, excludeIds }: ExerciseListProps) {
-  const c = useColors();
-  const { t, i18n } = useTranslation();
-  const [query, setQuery] = useState('');
-  const [muscle, setMuscle] = useState<MuscleGroup | null>(null);
-  const all = useQuery(() => listExercises(), []);
-  const usage = useQuery(() => exerciseUsage(), []);
-  const lang = i18n.language;
+export function ExerciseList({
+  selectedIds,
+  onPress,
+  onCreate,
+  header,
+  bottomPadding = 0,
+  excludeIds,
+}: ExerciseListProps) {
+  const colors = useColors();
+  const { t: translate, i18n } = useTranslation();
+  const [searchText, setSearchText] = useState('');
+  const [muscleFilter, setMuscleFilter] = useState<MuscleGroup | null>(null);
+  const allExercises = useQuery(() => listExercises(), []);
+  const usageByExerciseId = useQuery(() => getExerciseUsage(), []);
+  const language = i18n.language;
 
   // Precompute display strings and the default order once per data/language change.
-  const items = useMemo<Item[]>(() => {
-    const cmp = collator(lang);
-    const list = all.map((e) => {
-      const name = exerciseName(e, lang);
-      const u = usage.get(e.id);
+  const sortedItems = useMemo<ExerciseListItem[]>(() => {
+    const collator = getCollator(language);
+    const items = allExercises.map((exercise) => {
+      const name = exerciseName(exercise, language);
+      const usage = usageByExerciseId.get(exercise.id);
+      const usageSuffix = usage ? ` · ${usage.count}×` : '';
       return {
-        exercise: e,
+        exercise,
         name,
         initial: name.slice(0, 1).toUpperCase(),
-        subtitle: `${t(`muscles.${e.muscleGroup}`)} · ${t(`equipment.${e.equipment}`)}${u ? ` · ${u.count}×` : ''}`,
+        subtitle: `${translate(`muscles.${exercise.muscleGroup}`)} · ${translate(`equipment.${exercise.equipment}`)}${usageSuffix}`,
       };
     });
-    list.sort((a, b) => {
-      const ua = usage.get(a.exercise.id)?.count ?? 0;
-      const ub = usage.get(b.exercise.id)?.count ?? 0;
-      if (ua !== ub) return ub - ua;
-      return cmp.compare(a.name, b.name);
+    // Most used exercises first, then alphabetically.
+    items.sort((first, second) => {
+      const firstUsageCount = usageByExerciseId.get(first.exercise.id)?.count ?? 0;
+      const secondUsageCount = usageByExerciseId.get(second.exercise.id)?.count ?? 0;
+      if (firstUsageCount !== secondUsageCount) return secondUsageCount - firstUsageCount;
+      return collator.compare(first.name, second.name);
     });
-    return list;
-  }, [all, usage, lang, t]);
+    return items;
+  }, [allExercises, usageByExerciseId, language, translate]);
 
-  const data = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const filtered = items.filter((it) => {
-      const e = it.exercise;
-      if (excludeIds?.has(e.id)) return false;
-      if (muscle && e.muscleGroup !== muscle && !e.secondaryMuscles.includes(muscle)) return false;
-      if (!q) return true;
-      return e.nameEn.toLowerCase().includes(q) || e.nameRu.toLowerCase().includes(q);
+  const visibleItems = useMemo(() => {
+    const normalizedSearch = searchText.trim().toLowerCase();
+    const filteredItems = sortedItems.filter(({ exercise }) => {
+      if (excludeIds?.has(exercise.id)) return false;
+      if (muscleFilter) {
+        const worksFilteredMuscle =
+          exercise.muscleGroup === muscleFilter || exercise.secondaryMuscles.includes(muscleFilter);
+        if (!worksFilteredMuscle) return false;
+      }
+      if (!normalizedSearch) return true;
+      // Search both languages so a name can be found whatever the interface language is.
+      return (
+        exercise.nameEn.toLowerCase().includes(normalizedSearch) ||
+        exercise.nameRu.toLowerCase().includes(normalizedSearch)
+      );
     });
-    if (q) {
-      const cmp = collator(lang);
-      filtered.sort((a, b) => cmp.compare(a.name, b.name));
+    // While searching, usage order is less useful than plain alphabetical order.
+    if (normalizedSearch) {
+      const collator = getCollator(language);
+      filteredItems.sort((first, second) => collator.compare(first.name, second.name));
     }
-    return filtered;
-  }, [items, query, muscle, excludeIds, lang]);
+    return filteredItems;
+  }, [sortedItems, searchText, muscleFilter, excludeIds, language]);
 
-  const selectable = selectedIds != null;
+  const isSelectable = selectedIds != null;
   const renderItem = useCallback(
-    ({ item }: { item: Item }) => <Row item={item} selected={selectedIds?.has(item.exercise.id) ?? false} selectable={selectable} colors={c} onPress={onPress} />,
-    [selectedIds, selectable, c, onPress],
+    ({ item }: { item: ExerciseListItem }) => (
+      <ExerciseRowView
+        item={item}
+        isSelected={selectedIds?.has(item.exercise.id) ?? false}
+        isSelectable={isSelectable}
+        colors={colors}
+        onPress={onPress}
+      />
+    ),
+    [selectedIds, isSelectable, colors, onPress],
   );
 
   return (
     <FlashList
-      data={data}
-      keyExtractor={(it) => it.exercise.id}
+      data={visibleItems}
+      keyExtractor={(item) => item.exercise.id}
       keyboardShouldPersistTaps="handled"
       extraData={selectedIds}
       contentContainerStyle={{ paddingBottom: bottomPadding + spacing.xxl }}
       ListHeaderComponent={
         <View>
           {header}
-          <View style={[styles.search, { backgroundColor: c.inputBg }]}>
+          <View style={[styles.searchBox, { backgroundColor: colors.inputBackground }]}>
             <Icon icon={Search} size={18} color="faint" />
             <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder={t('exercise.searchPlaceholder')}
-              placeholderTextColor={c.textFaint}
-              selectionColor={c.accent}
-              style={[styles.searchInput, { color: c.text }]}
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder={translate('exercise.searchPlaceholder')}
+              placeholderTextColor={colors.textFaint}
+              selectionColor={colors.accent}
+              style={[styles.searchInput, { color: colors.text }]}
               autoCorrect={false}
               returnKeyType="search"
             />
-            {query ? (
-              <RNPressable onPress={() => setQuery('')} hitSlop={10}>
+            {searchText ? (
+              <NativePressable onPress={() => setSearchText('')} hitSlop={10}>
                 <Icon icon={X} size={18} color="muted" />
-              </RNPressable>
+              </NativePressable>
             ) : null}
           </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
-            <Chip label={t('common.all')} selected={muscle == null} onPress={() => setMuscle(null)} />
-            {MUSCLE_GROUPS.map((m) => (
-              <Chip key={m} label={t(`muscles.${m}`)} selected={muscle === m} onPress={() => setMuscle(muscle === m ? null : m)} />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.muscleChips}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Chip
+              label={translate('common.all')}
+              selected={muscleFilter == null}
+              onPress={() => setMuscleFilter(null)}
+            />
+            {MUSCLE_GROUPS.map((muscle) => (
+              <Chip
+                key={muscle}
+                label={translate(`muscles.${muscle}`)}
+                selected={muscleFilter === muscle}
+                onPress={() => setMuscleFilter(muscleFilter === muscle ? null : muscle)}
+              />
             ))}
           </ScrollView>
           {onCreate ? (
-            <Pressable onPress={onCreate} style={styles.create} haptic="light">
-              <View style={[styles.createIcon, { backgroundColor: c.accent }]}>
+            <Pressable onPress={onCreate} style={styles.createRow} haptic="light">
+              <View style={[styles.createIcon, { backgroundColor: colors.accent }]}>
                 <Icon icon={Plus} size={18} color="onAccent" strokeWidth={2.5} />
               </View>
-              <Text variant="bodyMedium">{t('exercise.create')}</Text>
+              <Text variant="bodyMedium">{translate('exercise.create')}</Text>
             </Pressable>
           ) : null}
         </View>
       }
-      ListEmptyComponent={<EmptyState icon={Search} title={t('common.noResults')} />}
+      ListEmptyComponent={<EmptyState icon={Search} title={translate('common.noResults')} />}
       renderItem={renderItem}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  search: {
+  searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -199,8 +260,8 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
   },
   searchInput: { flex: 1, fontFamily: fonts.medium, fontSize: 16, paddingVertical: 0 },
-  chips: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  create: {
+  muscleChips: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  createRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -217,6 +278,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  rowBody: { flex: 1 },
-  check: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  rowText: { flex: 1 },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

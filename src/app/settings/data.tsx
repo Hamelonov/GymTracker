@@ -4,93 +4,161 @@ import * as Sharing from 'expo-sharing';
 import { Download, Trash2, Upload } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { StyleSheet } from 'react-native';
 import { createBackup, deleteAllUserData, isBackup, restoreBackup, workoutsCsv } from '@/db/repo/backup';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useSettings } from '@/store/settings';
 import { Button, Card, Screen, SectionTitle, Text, confirm, spacing, toast } from '@/ui';
 
-function stamp(): string {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+type BusyAction = 'json' | 'csv' | 'import';
+
+function padToTwoDigits(number: number): string {
+  return String(number).padStart(2, '0');
 }
 
-async function shareText(name: string, content: string, mimeType: string) {
-  const file = new File(Paths.cache, name);
+/** Current local time as `YYYYMMDD-HHmm`, used in exported file names. */
+function formatFileTimestamp(): string {
+  const date = new Date();
+  const datePart = `${date.getFullYear()}${padToTwoDigits(date.getMonth() + 1)}${padToTwoDigits(date.getDate())}`;
+  const timePart = `${padToTwoDigits(date.getHours())}${padToTwoDigits(date.getMinutes())}`;
+  return `${datePart}-${timePart}`;
+}
+
+/** Writes the text to a cache file and opens the system share sheet for it. */
+async function shareTextFile(fileName: string, content: string, mimeType: string) {
+  const file = new File(Paths.cache, fileName);
   if (file.exists) file.delete();
   file.create();
   await file.write(content);
-  if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(file.uri, { mimeType, dialogTitle: name });
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(file.uri, { mimeType, dialogTitle: fileName });
+  }
 }
 
 export default function DataScreen() {
-  const { t, i18n } = useTranslation();
-  const unit = useSettings((s) => s.weightUnit);
-  const [busy, setBusy] = useState<string | null>(null);
+  const { t: translate, i18n } = useTranslation();
+  const weightUnit = useSettings((state) => state.weightUnit);
+  const [busyAction, setBusyAction] = useState<BusyAction | null>(null);
 
   const exportJson = async () => {
-    setBusy('json');
+    setBusyAction('json');
     try {
-      await shareText(`gymtracker-backup-${stamp()}.json`, JSON.stringify(createBackup()), 'application/json');
-      toast(t('settings.exportDone'));
+      await shareTextFile(
+        `gymtracker-backup-${formatFileTimestamp()}.json`,
+        JSON.stringify(createBackup()),
+        'application/json',
+      );
+      toast(translate('settings.exportDone'));
     } catch {
-      toast(t('common.error'));
+      toast(translate('common.error'));
     } finally {
-      setBusy(null);
+      setBusyAction(null);
     }
   };
 
   const exportCsv = async () => {
-    setBusy('csv');
+    setBusyAction('csv');
     try {
-      await shareText(`gymtracker-workouts-${stamp()}.csv`, workoutsCsv(unit, i18n.language), 'text/csv');
-      toast(t('settings.exportDone'));
+      await shareTextFile(
+        `gymtracker-workouts-${formatFileTimestamp()}.csv`,
+        workoutsCsv(weightUnit, i18n.language),
+        'text/csv',
+      );
+      toast(translate('settings.exportDone'));
     } catch {
-      toast(t('common.error'));
+      toast(translate('common.error'));
     } finally {
-      setBusy(null);
+      setBusyAction(null);
     }
   };
 
   const importJson = async () => {
-    const res = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: true, multiple: false });
-    if (res.canceled || !res.assets[0]) return;
-    setBusy('import');
+    const pickerResult = await DocumentPicker.getDocumentAsync({
+      type: ['application/json', 'text/plain', '*/*'],
+      copyToCacheDirectory: true,
+      multiple: false,
+    });
+    const pickedFile = pickerResult.canceled ? undefined : pickerResult.assets[0];
+    if (!pickedFile) return;
+    setBusyAction('import');
     try {
-      const text = await new File(res.assets[0].uri).text();
-      const parsed: unknown = JSON.parse(text);
-      if (!isBackup(parsed)) throw new Error('invalid');
-      if (!(await confirm({ title: t('settings.importJson'), message: t('settings.importConfirm'), destructive: true, confirmLabel: t('settings.importJson') }))) return;
-      restoreBackup(parsed);
+      const fileText = await new File(pickedFile.uri).text();
+      const parsedBackup: unknown = JSON.parse(fileText);
+      if (!isBackup(parsedBackup)) throw new Error('invalid');
+      const isConfirmed = await confirm({
+        title: translate('settings.importJson'),
+        message: translate('settings.importConfirm'),
+        destructive: true,
+        confirmLabel: translate('settings.importJson'),
+      });
+      if (!isConfirmed) return;
+      restoreBackup(parsedBackup);
       useActiveWorkout.getState().clear();
-      toast(t('settings.importDone'));
+      toast(translate('settings.importDone'));
     } catch {
-      toast(t('settings.importFailed'));
+      toast(translate('settings.importFailed'));
     } finally {
-      setBusy(null);
+      setBusyAction(null);
     }
   };
 
-  const deleteAll = async () => {
-    if (!(await confirm({ title: t('settings.deleteAll'), message: t('settings.deleteAllConfirm'), destructive: true, confirmLabel: t('common.delete') }))) return;
+  const deleteAllData = async () => {
+    const isConfirmed = await confirm({
+      title: translate('settings.deleteAll'),
+      message: translate('settings.deleteAllConfirm'),
+      destructive: true,
+      confirmLabel: translate('common.delete'),
+    });
+    if (!isConfirmed) return;
     deleteAllUserData();
     useActiveWorkout.getState().clear();
-    toast(t('common.deleted'));
+    toast(translate('common.deleted'));
   };
 
   return (
-    <Screen header={{ back: true, title: t('profile.data') }}>
-      <SectionTitle title={t('settings.data')} first />
-      <Card style={{ gap: spacing.sm }}>
-        <Button title={t('settings.exportJson')} variant="secondary" full icon={<Download size={18} />} loading={busy === 'json'} onPress={exportJson} />
-        <Button title={t('settings.exportCsv')} variant="secondary" full icon={<Download size={18} />} loading={busy === 'csv'} onPress={exportCsv} />
-        <Button title={t('settings.importJson')} variant="outline" full icon={<Upload size={18} />} loading={busy === 'import'} onPress={importJson} />
+    <Screen header={{ backButton: true, title: translate('profile.data') }}>
+      <SectionTitle title={translate('settings.data')} first />
+      <Card style={styles.buttonsCard}>
+        <Button
+          title={translate('settings.exportJson')}
+          variant="secondary"
+          fullWidth
+          icon={<Download size={18} />}
+          loading={busyAction === 'json'}
+          onPress={exportJson}
+        />
+        <Button
+          title={translate('settings.exportCsv')}
+          variant="secondary"
+          fullWidth
+          icon={<Download size={18} />}
+          loading={busyAction === 'csv'}
+          onPress={exportCsv}
+        />
+        <Button
+          title={translate('settings.importJson')}
+          variant="outline"
+          fullWidth
+          icon={<Upload size={18} />}
+          loading={busyAction === 'import'}
+          onPress={importJson}
+        />
         <Text variant="caption" color="faint">
-          {t('settings.importHint')}
+          {translate('settings.importHint')}
         </Text>
       </Card>
-      <SectionTitle title={t('settings.deleteAll')} />
-      <Button title={t('settings.deleteAll')} variant="danger" full icon={<Trash2 size={18} color="#E5484D" />} onPress={deleteAll} />
+      <SectionTitle title={translate('settings.deleteAll')} />
+      <Button
+        title={translate('settings.deleteAll')}
+        variant="danger"
+        fullWidth
+        icon={<Trash2 size={18} color="#E5484D" />}
+        onPress={deleteAllData}
+      />
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  buttonsCard: { gap: spacing.sm },
+});

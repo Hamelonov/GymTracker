@@ -1,11 +1,16 @@
 import { estimateOneRm, repsAtPercent, weightForReps } from '../oneRm';
 import { platesPerSide } from '../plates';
-import { bestOf, detectPrs, prTypesFor } from '../records';
+import { bestValueOf, detectPersonalRecords, recordTypesForExercise } from '../records';
 import { formatDuration, formatWeight, parseDurationInput, parseNumberInput, unitToKg } from '../units';
 import { countWorkingSets, totalVolume } from '../volume';
 import type { SetType } from '../types';
 
-const set = (weightKg: number | null, reps: number | null, type: SetType = 'normal', completed = true) => ({
+const makeSet = (
+  weightKg: number | null,
+  reps: number | null,
+  type: SetType = 'normal',
+  completed = true,
+) => ({
   weightKg,
   reps,
   durationSec: null,
@@ -20,9 +25,9 @@ describe('oneRm', () => {
     expect(estimateOneRm(100, 1)).toBe(100);
   });
   it('estimates a plausible 1RM for 5 reps', () => {
-    const v = estimateOneRm(100, 5);
-    expect(v).toBeGreaterThan(112);
-    expect(v).toBeLessThan(118);
+    const estimate = estimateOneRm(100, 5);
+    expect(estimate).toBeGreaterThan(112);
+    expect(estimate).toBeLessThan(118);
   });
   it('is monotonic in reps', () => {
     expect(estimateOneRm(100, 8)).toBeGreaterThan(estimateOneRm(100, 5));
@@ -39,7 +44,12 @@ describe('oneRm', () => {
 
 describe('volume', () => {
   it('ignores warm-ups and incomplete sets', () => {
-    const sets = [set(60, 10, 'warmup'), set(100, 5), set(100, 5, 'normal', false), set(90, 8, 'drop')];
+    const sets = [
+      makeSet(60, 10, 'warmup'),
+      makeSet(100, 5),
+      makeSet(100, 5, 'normal', false),
+      makeSet(90, 8, 'drop'),
+    ];
     expect(totalVolume(sets)).toBe(500 + 720);
     expect(countWorkingSets(sets)).toBe(2);
   });
@@ -47,25 +57,38 @@ describe('volume', () => {
 
 describe('records', () => {
   it('detects weight, 1RM, volume and reps PRs on the first set that beats them', () => {
-    const hits = detectPrs([set(100, 5), set(100, 5), set(105, 3)], 'weight_reps', { weight: 100, one_rm: 110, volume: 600, reps: 8 });
-    expect(hits.get(0)?.map((h) => h.type)).toEqual(['one_rm']);
+    const hits = detectPersonalRecords([makeSet(100, 5), makeSet(100, 5), makeSet(105, 3)], 'weight_reps', {
+      weight: 100,
+      one_rm: 110,
+      volume: 600,
+      reps: 8,
+    });
+    expect(hits.get(0)?.map((hit) => hit.type)).toEqual(['one_rm']);
     expect(hits.get(1)).toBeUndefined();
     // 105×3 ≈ 113 kg 1RM, below the 100×5 estimate (≈115 kg) set just before.
-    expect(hits.get(2)?.map((h) => h.type)).toEqual(['weight']);
+    expect(hits.get(2)?.map((hit) => hit.type)).toEqual(['weight']);
   });
   it('treats an empty record table as all-new records', () => {
-    const hits = detectPrs([set(50, 10)], 'weight_reps', {});
-    expect(hits.get(0)?.map((h) => h.type).sort()).toEqual(['one_rm', 'reps', 'volume', 'weight']);
+    const hits = detectPersonalRecords([makeSet(50, 10)], 'weight_reps', {});
+    expect(
+      hits
+        .get(0)
+        ?.map((hit) => hit.type)
+        .sort(),
+    ).toEqual(['one_rm', 'reps', 'volume', 'weight']);
   });
   it('only tracks reps for bodyweight exercises', () => {
-    expect(prTypesFor('bodyweight_reps')).toEqual(['reps']);
-    expect(bestOf([set(null, 12), set(null, 15)], 'reps')).toBe(15);
+    expect(recordTypesForExercise('bodyweight_reps')).toEqual(['reps']);
+    expect(bestValueOf([makeSet(null, 12), makeSet(null, 15)], 'reps')).toBe(15);
   });
 });
 
 describe('plates', () => {
   it('splits 100 kg on a 20 kg bar', () => {
-    expect(platesPerSide(100, 20, [25, 20, 15, 10, 5, 2.5, 1.25])).toEqual({ plates: [25, 15], remainder: 0 });
+    expect(platesPerSide(100, 20, [25, 20, 15, 10, 5, 2.5, 1.25])).toEqual({
+      plates: [25, 15],
+      remainder: 0,
+    });
   });
   it('reports what cannot be loaded', () => {
     expect(platesPerSide(61, 20, [20, 10, 5])).toEqual({ plates: [20], remainder: 1 });

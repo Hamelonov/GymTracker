@@ -2,12 +2,12 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 const CHANNEL_ID = 'rest-timer';
-let configured = false;
+let isConfigured = false;
 let permissionGranted: boolean | null = null;
 
 export async function configureNotifications(): Promise<void> {
-  if (configured) return;
-  configured = true;
+  if (isConfigured) return;
+  isConfigured = true;
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,
@@ -30,20 +30,20 @@ export async function configureNotifications(): Promise<void> {
 export async function ensureNotificationPermission(): Promise<boolean> {
   if (permissionGranted != null) return permissionGranted;
   await configureNotifications();
-  const existing = await Notifications.getPermissionsAsync();
-  if (existing.granted) {
+  const existingPermission = await Notifications.getPermissionsAsync();
+  if (existingPermission.granted) {
     permissionGranted = true;
     return true;
   }
-  const req = await Notifications.requestPermissionsAsync();
-  permissionGranted = req.granted;
-  return req.granted;
+  const requestedPermission = await Notifications.requestPermissionsAsync();
+  permissionGranted = requestedPermission.granted;
+  return requestedPermission.granted;
 }
 
 export async function scheduleRestDone(seconds: number, title: string, body: string): Promise<string | null> {
   try {
-    const ok = await ensureNotificationPermission();
-    if (!ok || seconds < 1) return null;
+    const hasPermission = await ensureNotificationPermission();
+    if (!hasPermission || seconds < 1) return null;
     return await Notifications.scheduleNotificationAsync({
       content: { title, body, vibrate: [0, 300, 150, 300] },
       trigger: {
@@ -57,19 +57,19 @@ export async function scheduleRestDone(seconds: number, title: string, body: str
   }
 }
 
-export async function cancelScheduled(id: string | null): Promise<void> {
-  if (!id) return;
+export async function cancelScheduledNotification(notificationId: string | null): Promise<void> {
+  if (!notificationId) return;
   try {
-    await Notifications.cancelScheduledNotificationAsync(id);
+    await Notifications.cancelScheduledNotificationAsync(notificationId);
   } catch {
-    // ignore
+    // The notification may already have fired or been removed; nothing to do.
   }
 }
 
-export async function dismissAllPresented(): Promise<void> {
+export async function dismissAllPresentedNotifications(): Promise<void> {
   try {
     await Notifications.dismissAllNotificationsAsync();
   } catch {
-    // ignore
+    // Dismissing is best effort; a failure must not break the app.
   }
 }

@@ -1,6 +1,3 @@
-
-
-
 const ru = {
   common: {
     save: 'Сохранить',
@@ -167,7 +164,8 @@ const ru = {
     newRecords: 'Новые рекорды',
     firstTime: 'впервые',
     todayDone: 'Сегодня сделано',
-    repsFull: 'Повторы',
+    setsAndReps: 'Подходы/Повторы',
+    exerciseColumn: 'Упражнение',
     minimize: 'Свернуть',
     elapsed: 'Прошло',
     nameLabel: 'Название тренировки',

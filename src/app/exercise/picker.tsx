@@ -10,51 +10,75 @@ import { useActiveWorkout } from '@/store/activeWorkout';
 import { usePickerResult } from '@/store/picker';
 import { Button, Header, spacing, useColors } from '@/ui';
 
-type Mode = 'workout' | 'routine' | 'replace';
+/** workout: add to the active workout; routine: hand back to the routine editor; replace: swap one exercise. */
+type PickerMode = 'workout' | 'routine' | 'replace';
 
 export default function ExercisePickerScreen() {
-  const params = useLocalSearchParams<{ mode?: Mode; token?: string; target?: string }>();
-  const mode: Mode = params.mode ?? 'workout';
-  const { t } = useTranslation();
-  const c = useColors();
+  const params = useLocalSearchParams<{ mode?: PickerMode; token?: string; target?: string }>();
+  const mode: PickerMode = params.mode ?? 'workout';
+  const isReplaceMode = mode === 'replace';
+  const { t: translate } = useTranslation();
+  const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [selected, setSelected] = useState<string[]>([]);
-  const selectedSet = useMemo(() => new Set(selected), [selected]);
-  const addExercises = useActiveWorkout((s) => s.addExercises);
-  const replaceExercise = useActiveWorkout((s) => s.replaceExercise);
-  const publish = usePickerResult((s) => s.publish);
+  const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
+  const selectedExerciseIdSet = useMemo(() => new Set(selectedExerciseIds), [selectedExerciseIds]);
+  const addExercises = useActiveWorkout((state) => state.addExercises);
+  const replaceExercise = useActiveWorkout((state) => state.replaceExercise);
+  const publishPickerResult = usePickerResult((state) => state.publish);
 
-  const finish = (ids: string[]) => {
-    if (ids.length === 0) return;
-    if (mode === 'workout') addExercises(ids);
-    else if (mode === 'replace' && params.target) replaceExercise(params.target, ids[0] ?? '');
-    else if (mode === 'routine' && params.token) publish(params.token, ids);
+  const finishWithExercises = (exerciseIds: string[]) => {
+    if (exerciseIds.length === 0) return;
+    if (mode === 'workout') addExercises(exerciseIds);
+    else if (isReplaceMode && params.target) replaceExercise(params.target, exerciseIds[0] ?? '');
+    else if (mode === 'routine' && params.token) publishPickerResult(params.token, exerciseIds);
     router.back();
   };
 
+  const toggleExerciseSelection = (exerciseId: string) =>
+    setSelectedExerciseIds((previous) =>
+      previous.includes(exerciseId)
+        ? previous.filter((selectedId) => selectedId !== exerciseId)
+        : [...previous, exerciseId],
+    );
+
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top }}>
-      <Header title={mode === 'replace' ? t('workout.replaceExercise') : t('workout.addExercises')} back="close" />
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
+      <Header
+        title={isReplaceMode ? translate('workout.replaceExercise') : translate('workout.addExercises')}
+        backButton="close"
+      />
       <ExerciseList
-        selectedIds={mode === 'replace' ? undefined : selectedSet}
-        onCreate={() => push({ pathname: '/exercise/edit', params: { pick: mode === 'replace' ? '0' : '1' } })}
-        bottomPadding={selected.length > 0 ? 90 : 0}
-        onPress={(e) => {
-          if (mode === 'replace') {
-            finish([e.id]);
+        selectedIds={isReplaceMode ? undefined : selectedExerciseIdSet}
+        onCreate={() =>
+          push({ pathname: '/exercise/edit', params: { addToWorkout: isReplaceMode ? 'false' : 'true' } })
+        }
+        bottomPadding={selectedExerciseIds.length > 0 ? 90 : 0}
+        onPress={(exercise) => {
+          // Replacing takes exactly one exercise, so a tap finishes right away.
+          if (isReplaceMode) {
+            finishWithExercises([exercise.id]);
             return;
           }
-          setSelected((prev) => (prev.includes(e.id) ? prev.filter((x) => x !== e.id) : [...prev, e.id]));
+          toggleExerciseSelection(exercise.id);
         }}
       />
-      {selected.length > 0 ? (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md, backgroundColor: c.bg, borderTopColor: c.border }]}>
+      {selectedExerciseIds.length > 0 ? (
+        <View
+          style={[
+            styles.footer,
+            {
+              paddingBottom: insets.bottom + spacing.md,
+              backgroundColor: colors.background,
+              borderTopColor: colors.border,
+            },
+          ]}
+        >
           <Button
-            title={t('exercise.addSelected', { count: selected.length })}
+            title={translate('exercise.addSelected', { count: selectedExerciseIds.length })}
             size="lg"
-            full
-            icon={<Plus size={20} color={c.onAccent} strokeWidth={2.5} />}
-            onPress={() => finish(selected)}
+            fullWidth
+            icon={<Plus size={20} color={colors.onAccent} strokeWidth={2.5} />}
+            onPress={() => finishWithExercises(selectedExerciseIds)}
           />
         </View>
       ) : null}

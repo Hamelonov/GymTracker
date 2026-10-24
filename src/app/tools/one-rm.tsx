@@ -2,50 +2,85 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { PERCENT_TABLE, estimateOneRm, repsAtPercent } from '@/domain/oneRm';
-import { parseNumberInput, roundDisplay, trimNumber } from '@/domain/units';
+import { parseNumberInput, roundForDisplay, formatNumberWithoutTrailingZeros } from '@/domain/units';
 import { useSettings } from '@/store/settings';
 import { Card, Input, Screen, SectionTitle, Text, spacing, useColors } from '@/ui';
 
+/** Estimated one-rep max, or null until both fields hold positive numbers. */
+function estimateOneRmFromInput(weightText: string, repsText: string): number | null {
+  const weight = parseNumberInput(weightText);
+  const reps = parseNumberInput(repsText);
+  if (weight == null || reps == null) return null;
+  if (weight <= 0 || reps <= 0) return null;
+  return estimateOneRm(weight, Math.round(reps));
+}
+
 export default function OneRmScreen() {
-  const { t } = useTranslation();
-  const c = useColors();
-  const unit = useSettings((s) => s.weightUnit);
-  const [weight, setWeight] = useState('');
-  const [reps, setReps] = useState('');
-  const w = parseNumberInput(weight);
-  const r = parseNumberInput(reps);
-  const oneRm = w != null && r != null && w > 0 && r > 0 ? estimateOneRm(w, Math.round(r)) : null;
+  const { t: translate } = useTranslation();
+  const colors = useColors();
+  const weightUnit = useSettings((state) => state.weightUnit);
+  const [weightText, setWeightText] = useState('');
+  const [repsText, setRepsText] = useState('');
+  const oneRm = estimateOneRmFromInput(weightText, repsText);
+
+  const formatPercentOfOneRm = (percent: number) => {
+    if (oneRm == null) return '—';
+    return `${formatNumberWithoutTrailingZeros(roundForDisplay((oneRm * percent) / 100, 1))} ${weightUnit}`;
+  };
 
   return (
-    <Screen header={{ back: true, title: t('tools.oneRmTitle') }}>
-      <View style={styles.row}>
-        <Input label={`${t('tools.weightLifted')} (${unit})`} value={weight} onChangeText={setWeight} keyboardType="decimal-pad" autoFocus placeholder="100" containerStyle={{ flex: 1 }} style={{ fontSize: 24, minHeight: 56 }} />
-        <Input label={t('tools.repsDone')} value={reps} onChangeText={setReps} keyboardType="number-pad" placeholder="5" containerStyle={{ flex: 1 }} style={{ fontSize: 24, minHeight: 56 }} />
+    <Screen header={{ backButton: true, title: translate('tools.oneRmTitle') }}>
+      <View style={styles.inputsRow}>
+        <Input
+          label={`${translate('tools.weightLifted')} (${weightUnit})`}
+          value={weightText}
+          onChangeText={setWeightText}
+          keyboardType="decimal-pad"
+          autoFocus
+          placeholder="100"
+          containerStyle={styles.inputContainer}
+          style={styles.input}
+        />
+        <Input
+          label={translate('tools.repsDone')}
+          value={repsText}
+          onChangeText={setRepsText}
+          keyboardType="number-pad"
+          placeholder="5"
+          containerStyle={styles.inputContainer}
+          style={styles.input}
+        />
       </View>
-      <Card style={[styles.result, { backgroundColor: c.text }]}>
-        <Text variant="label" color={c.textFaint}>
-          {t('tools.estimated').toUpperCase()}
+      <Card style={[styles.result, { backgroundColor: colors.text }]}>
+        <Text variant="label" color={colors.textFaint}>
+          {translate('tools.estimated').toUpperCase()}
         </Text>
-        <Text variant="display" color={c.accent} tabular>
-          {oneRm != null ? `${trimNumber(roundDisplay(oneRm, 1))}` : '—'}
-          <Text variant="h2" color={c.textFaint}>
+        <Text variant="display" color={colors.accent} tabular>
+          {oneRm != null ? `${formatNumberWithoutTrailingZeros(roundForDisplay(oneRm, 1))}` : '—'}
+          <Text variant="h2" color={colors.textFaint}>
             {' '}
-            {unit}
+            {weightUnit}
           </Text>
         </Text>
       </Card>
-      <SectionTitle title={t('tools.percentTable')} />
+      <SectionTitle title={translate('tools.percentTable')} />
       <Card padded={false}>
-        {PERCENT_TABLE.map((p, i) => (
-          <View key={p} style={[styles.pRow, i > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border } : null]}>
-            <Text variant="bodyMedium" style={{ width: 60 }} tabular>
-              {p}%
+        {PERCENT_TABLE.map((percent, index) => (
+          <View
+            key={percent}
+            style={[
+              styles.percentRow,
+              index > 0 ? [styles.divider, { borderTopColor: colors.border }] : null,
+            ]}
+          >
+            <Text variant="bodyMedium" style={styles.percentColumn} tabular>
+              {percent}%
             </Text>
-            <Text variant="bodyMedium" tabular style={{ flex: 1 }}>
-              {oneRm != null ? `${trimNumber(roundDisplay((oneRm * p) / 100, 1))} ${unit}` : '—'}
+            <Text variant="bodyMedium" tabular style={styles.weightColumn}>
+              {formatPercentOfOneRm(percent)}
             </Text>
             <Text variant="caption" color="muted" tabular>
-              ~{repsAtPercent(p)} {t('common.reps')}
+              ~{repsAtPercent(percent)} {translate('common.reps')}
             </Text>
           </View>
         ))}
@@ -55,7 +90,17 @@ export default function OneRmScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  inputsRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  inputContainer: { flex: 1 },
+  input: { fontSize: 24, minHeight: 56 },
   result: { marginTop: spacing.lg, alignItems: 'center', gap: 4 },
-  pRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  percentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth },
+  percentColumn: { width: 60 },
+  weightColumn: { flex: 1 },
 });

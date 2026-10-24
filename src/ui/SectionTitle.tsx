@@ -3,7 +3,15 @@ import { StyleSheet, View } from 'react-native';
 import { Text } from './Text';
 import { spacing } from './tokens';
 
-export function SectionTitle({ title, right, first }: { title: string; right?: React.ReactNode; first?: boolean }) {
+export function SectionTitle({
+  title,
+  right,
+  first,
+}: {
+  title: string;
+  right?: React.ReactNode;
+  first?: boolean;
+}) {
   return (
     <View style={[styles.row, first ? styles.first : null]}>
       <Text variant="label" color="muted">

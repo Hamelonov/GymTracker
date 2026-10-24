@@ -10,13 +10,13 @@ export interface CardProps extends ViewProps {
 }
 
 export function Card({ padded = true, raised, style, ...rest }: CardProps) {
-  const c = useColors();
+  const colors = useColors();
   return (
     <View
       {...rest}
       style={[
         styles.card,
-        { backgroundColor: raised ? c.surfaceRaised : c.surface, borderColor: c.border },
+        { backgroundColor: raised ? colors.surfaceRaised : colors.surface, borderColor: colors.border },
         raised ? styles.raised : null,
         padded ? styles.padded : null,
         style,

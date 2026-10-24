@@ -1,5 +1,12 @@
 import React from 'react';
-import { type StyleProp, StyleSheet, TextInput, type TextInputProps, View, type ViewStyle } from 'react-native';
+import {
+  type StyleProp,
+  StyleSheet,
+  TextInput,
+  type TextInputProps,
+  View,
+  type ViewStyle,
+} from 'react-native';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
 import { fonts, radius, spacing } from './tokens';
@@ -13,7 +20,7 @@ export interface InputProps extends TextInputProps {
 }
 
 export function Input({ label, hint, error, containerStyle, right, style, multiline, ...rest }: InputProps) {
-  const c = useColors();
+  const colors = useColors();
   return (
     <View style={containerStyle}>
       {label ? (
@@ -24,31 +31,47 @@ export function Input({ label, hint, error, containerStyle, right, style, multil
       <View
         style={[
           styles.field,
-          { backgroundColor: c.inputBg, borderColor: error ? c.danger : 'transparent' },
-          multiline ? styles.multiline : null,
+          { backgroundColor: colors.inputBackground, borderColor: error ? colors.danger : 'transparent' },
+          multiline ? styles.fieldMultiline : null,
         ]}
       >
         <TextInput
-          placeholderTextColor={c.textFaint}
-          selectionColor={c.accent}
-          cursorColor={c.text}
+          placeholderTextColor={colors.textFaint}
+          selectionColor={colors.accent}
+          cursorColor={colors.text}
           multiline={multiline}
           {...rest}
-          style={[styles.input, { color: c.text }, multiline ? styles.inputMultiline : null, style]}
+          style={[
+            styles.textInput,
+            { color: colors.text },
+            multiline ? styles.textInputMultiline : null,
+            style,
+          ]}
         />
         {right}
       </View>
-      {error ? (
-        <Text variant="caption" color="danger" style={styles.hint}>
-          {error}
-        </Text>
-      ) : hint ? (
-        <Text variant="caption" color="faint" style={styles.hint}>
-          {hint}
-        </Text>
-      ) : null}
+      <InputFootnote error={error} hint={hint} />
     </View>
   );
+}
+
+/** The line under the field: an error wins over a hint. */
+function InputFootnote({ error, hint }: { error?: string; hint?: string }) {
+  if (error) {
+    return (
+      <Text variant="caption" color="danger" style={styles.footnote}>
+        {error}
+      </Text>
+    );
+  }
+  if (hint) {
+    return (
+      <Text variant="caption" color="faint" style={styles.footnote}>
+        {hint}
+      </Text>
+    );
+  }
+  return null;
 }
 
 const styles = StyleSheet.create({
@@ -61,8 +84,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  multiline: { minHeight: 96, alignItems: 'flex-start', paddingVertical: spacing.md },
-  input: { flex: 1, fontFamily: fonts.medium, fontSize: 16, paddingVertical: 0, minHeight: 50 },
-  inputMultiline: { minHeight: 72, textAlignVertical: 'top' },
-  hint: { marginTop: spacing.sm, marginLeft: 2 },
+  fieldMultiline: { minHeight: 96, alignItems: 'flex-start', paddingVertical: spacing.md },
+  textInput: { flex: 1, fontFamily: fonts.medium, fontSize: 16, paddingVertical: 0, minHeight: 50 },
+  textInputMultiline: { minHeight: 72, textAlignVertical: 'top' },
+  footnote: { marginTop: spacing.sm, marginLeft: 2 },
 });

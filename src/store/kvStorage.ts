@@ -9,40 +9,47 @@ import type { StateStorage } from 'zustand/middleware';
  * are coalesced and flushed shortly after the UI has updated, and immediately
  * when the app goes to the background, so nothing is lost if Android kills it.
  */
-const pending = new Map<string, string | null>();
-let timer: ReturnType<typeof setTimeout> | null = null;
+// Values waiting to be written; null means "remove this key".
+const pendingWrites = new Map<string, string | null>();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
 const FLUSH_DELAY_MS = 400;
 
 function flush() {
-  if (timer) {
-    clearTimeout(timer);
-    timer = null;
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
   }
-  for (const [key, value] of pending) {
+  for (const [key, value] of pendingWrites) {
     if (value == null) Storage.removeItemSync(key);
     else Storage.setItemSync(key, value);
   }
-  pending.clear();
+  pendingWrites.clear();
 }
 
-function schedule() {
-  if (timer) return;
-  timer = setTimeout(flush, FLUSH_DELAY_MS);
+function scheduleFlush() {
+  if (flushTimer) return;
+  flushTimer = setTimeout(flush, FLUSH_DELAY_MS);
 }
 
-AppState.addEventListener('change', (state) => {
-  if (state !== 'active') flush();
+AppState.addEventListener('change', (appState) => {
+  if (appState !== 'active') flush();
 });
 
+function readItem(name: string): string | null {
+  // A pending write is newer than what is on disk.
+  if (pendingWrites.has(name)) return pendingWrites.get(name) ?? null;
+  return Storage.getItemSync(name);
+}
+
 export const deferredStorage: StateStorage = {
-  getItem: (name) => (pending.has(name) ? (pending.get(name) ?? null) : Storage.getItemSync(name)),
+  getItem: readItem,
   setItem: (name, value) => {
-    pending.set(name, value);
-    schedule();
+    pendingWrites.set(name, value);
+    scheduleFlush();
   },
   removeItem: (name) => {
-    pending.set(name, null);
-    schedule();
+    pendingWrites.set(name, null);
+    scheduleFlush();
   },
 };
 

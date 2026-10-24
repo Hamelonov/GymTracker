@@ -1,5 +1,5 @@
 import { estimateOneRm } from './oneRm';
-import type { ExerciseType, PrHit, PrType, SetType, SetValues } from './types';
+import type { ExerciseType, RecordHit, RecordType, SetType, SetValues } from './types';
 
 export interface RecordSet extends SetValues {
   type: SetType;
@@ -7,9 +7,9 @@ export interface RecordSet extends SetValues {
 }
 
 /** Current best values for an exercise, used to detect new PRs. */
-export type RecordTable = Partial<Record<PrType, number>>;
+export type RecordTable = Partial<Record<RecordType, number>>;
 
-export function prTypesFor(type: ExerciseType): PrType[] {
+export function recordTypesForExercise(type: ExerciseType): RecordType[] {
   switch (type) {
     case 'weight_reps':
     case 'weighted_bodyweight':
@@ -25,26 +25,28 @@ export function prTypesFor(type: ExerciseType): PrType[] {
   }
 }
 
+function isPositive(value: number | null): value is number {
+  return value != null && value > 0;
+}
+
 /** Value of a single set for a given PR type, or null if not applicable. */
-export function setMetric(set: RecordSet, prType: PrType): number | null {
+export function setMetric(set: RecordSet, prType: RecordType): number | null {
   if (!set.completed || set.type === 'warmup') return null;
   switch (prType) {
     case 'weight':
-      return set.weightKg != null && set.weightKg > 0 && (set.reps ?? 0) > 0 ? set.weightKg : null;
+      return isPositive(set.weightKg) && (set.reps ?? 0) > 0 ? set.weightKg : null;
     case 'one_rm':
-      return set.weightKg != null && set.weightKg > 0 && set.reps != null && set.reps > 0
-        ? estimateOneRm(set.weightKg, set.reps)
-        : null;
+      return isPositive(set.weightKg) && isPositive(set.reps) ? estimateOneRm(set.weightKg, set.reps) : null;
     case 'volume':
       return set.weightKg != null && set.reps != null && set.weightKg * set.reps > 0
         ? set.weightKg * set.reps
         : null;
     case 'reps':
-      return set.reps != null && set.reps > 0 ? set.reps : null;
+      return isPositive(set.reps) ? set.reps : null;
     case 'duration':
-      return set.durationSec != null && set.durationSec > 0 ? set.durationSec : null;
+      return isPositive(set.durationSec) ? set.durationSec : null;
     case 'distance':
-      return set.distanceM != null && set.distanceM > 0 ? set.distanceM : null;
+      return isPositive(set.distanceM) ? set.distanceM : null;
   }
 }
 
@@ -53,35 +55,36 @@ export function setMetric(set: RecordSet, prType: PrType): number | null {
  * existing records. The returned map is keyed by set index. The record table
  * is updated as we go so only the first set to beat a record counts.
  */
-export function detectPrs(
+export function detectPersonalRecords(
   sets: RecordSet[],
   exerciseType: ExerciseType,
   records: RecordTable,
-): Map<number, PrHit[]> {
+): Map<number, RecordHit[]> {
   const table: RecordTable = { ...records };
-  const hits = new Map<number, PrHit[]>();
-  const types = prTypesFor(exerciseType);
-  sets.forEach((set, i) => {
-    for (const prType of types) {
+  const hitsBySetIndex = new Map<number, RecordHit[]>();
+  const prTypes = recordTypesForExercise(exerciseType);
+  sets.forEach((set, setIndex) => {
+    for (const prType of prTypes) {
       const value = setMetric(set, prType);
       if (value == null) continue;
-      const prev = table[prType];
-      if (prev == null || value > prev + 1e-9) {
-        const list = hits.get(i) ?? [];
-        list.push({ type: prType, value, previous: prev ?? null });
-        hits.set(i, list);
-        table[prType] = value;
-      }
+      const previousRecord = table[prType];
+      // The epsilon ignores float noise so an equal value is not reported as a new record.
+      const beatsPreviousRecord = previousRecord == null || value > previousRecord + 1e-9;
+      if (!beatsPreviousRecord) continue;
+      const setHits = hitsBySetIndex.get(setIndex) ?? [];
+      setHits.push({ type: prType, value, previous: previousRecord ?? null });
+      hitsBySetIndex.set(setIndex, setHits);
+      table[prType] = value;
     }
   });
-  return hits;
+  return hitsBySetIndex;
 }
 
-export function bestOf(sets: RecordSet[], prType: PrType): number | null {
+export function bestValueOf(sets: RecordSet[], prType: RecordType): number | null {
   let best: number | null = null;
-  for (const s of sets) {
-    const v = setMetric(s, prType);
-    if (v != null && (best == null || v > best)) best = v;
+  for (const set of sets) {
+    const value = setMetric(set, prType);
+    if (value != null && (best == null || value > best)) best = value;
   }
   return best;
 }

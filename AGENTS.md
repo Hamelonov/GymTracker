@@ -39,3 +39,15 @@ Docs: https://docs.expo.dev/eas/index.md
 - If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+
+## Code style: readability first
+
+The owner is a React frontend developer who reads and edits this code by hand. Code must read like plain English.
+
+- **Full-word names, no abbreviations.** `colors` not `c`, `exercise` not `e`/`ex`, `workout` not `w`, `set` not `s`, `index` not `i`/`idx`, `previous` not `prev`, `value` not `v`, `event` not `e`, `transaction` not `tx`, `formatters` not `fmt`, `database` not `db`, `button` not `btn`, `wrapper` not `wrap`. Zustand selectors are `(state) => state.workout`. The translation function is `const { t: translate } = useTranslation()`. Allowed short forms: `id`, `i18n` (library name), `ms`/`kg`/`cm` inside unit names like `durationMs`, `weightKg`.
+- **Names say what things do.** Functions are verbs (`addSetToExercise`, `formatWeightWithUnit`), booleans read as yes/no questions (`isCompleted`, `hasNote`, `canComplete`).
+- **Small pieces.** A screen file holds layout and handlers; sheets, sections and rows live in named components under `src/features/<area>/`. Split a file once it grows past ~250 lines.
+- **No clever one-liners.** No nested ternaries deeper than one level: use a small helper function, a lookup object, or `if` statements. Prefer early returns.
+- **Comments explain why, not what.** Every non-obvious decision gets a one-line comment; obvious code gets none.
+- **Styles** live in `StyleSheet.create` at the bottom of the file with descriptive keys (`exerciseNameColumn`, not `col1`).
+- Before finishing: `npm run format`, `npm run typecheck`, `npm run lint`, `npm test`.

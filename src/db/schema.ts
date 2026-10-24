@@ -1,5 +1,12 @@
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import type { Equipment, ExerciseType, MeasurementType, MuscleGroup, PrType, SetType } from '@/domain/types';
+import type {
+  Equipment,
+  ExerciseType,
+  MeasurementType,
+  MuscleGroup,
+  RecordType,
+  SetType,
+} from '@/domain/types';
 
 export const exercises = sqliteTable(
   'exercises',
@@ -8,7 +15,10 @@ export const exercises = sqliteTable(
     nameEn: text('name_en').notNull(),
     nameRu: text('name_ru').notNull(),
     muscleGroup: text('muscle_group').$type<MuscleGroup>().notNull(),
-    secondaryMuscles: text('secondary_muscles', { mode: 'json' }).$type<MuscleGroup[]>().notNull().default([]),
+    secondaryMuscles: text('secondary_muscles', { mode: 'json' })
+      .$type<MuscleGroup[]>()
+      .notNull()
+      .default([]),
     equipment: text('equipment').$type<Equipment>().notNull(),
     type: text('type').$type<ExerciseType>().notNull(),
     /** Built-in how-to text, localized. */
@@ -21,7 +31,7 @@ export const exercises = sqliteTable(
     archived: integer('archived', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at').notNull(),
   },
-  (t) => [index('exercises_muscle_idx').on(t.muscleGroup)],
+  (table) => [index('exercises_muscle_idx').on(table.muscleGroup)],
 );
 
 export const routineFolders = sqliteTable('routine_folders', {
@@ -43,7 +53,7 @@ export const routines = sqliteTable(
     updatedAt: integer('updated_at').notNull(),
     lastPerformedAt: integer('last_performed_at'),
   },
-  (t) => [index('routines_folder_idx').on(t.folderId)],
+  (table) => [index('routines_folder_idx').on(table.folderId)],
 );
 
 export const routineExercises = sqliteTable(
@@ -61,7 +71,7 @@ export const routineExercises = sqliteTable(
     restSeconds: integer('rest_seconds'),
     note: text('note').notNull().default(''),
   },
-  (t) => [index('routine_exercises_routine_idx').on(t.routineId)],
+  (table) => [index('routine_exercises_routine_idx').on(table.routineId)],
 );
 
 export const routineSets = sqliteTable(
@@ -79,7 +89,7 @@ export const routineSets = sqliteTable(
     distanceM: real('distance_m'),
     rpe: real('rpe'),
   },
-  (t) => [index('routine_sets_exercise_idx').on(t.routineExerciseId)],
+  (table) => [index('routine_sets_exercise_idx').on(table.routineExerciseId)],
 );
 
 export const workouts = sqliteTable(
@@ -96,7 +106,7 @@ export const workouts = sqliteTable(
     setCount: integer('set_count').notNull().default(0),
     prCount: integer('pr_count').notNull().default(0),
   },
-  (t) => [index('workouts_started_idx').on(t.startedAt)],
+  (table) => [index('workouts_started_idx').on(table.startedAt)],
 );
 
 export const workoutExercises = sqliteTable(
@@ -115,9 +125,9 @@ export const workoutExercises = sqliteTable(
     note: text('note').notNull().default(''),
     restSeconds: integer('rest_seconds'),
   },
-  (t) => [
-    index('workout_exercises_workout_idx').on(t.workoutId),
-    index('workout_exercises_exercise_idx').on(t.exerciseId),
+  (table) => [
+    index('workout_exercises_workout_idx').on(table.workoutId),
+    index('workout_exercises_exercise_idx').on(table.exerciseId),
   ],
 );
 
@@ -137,9 +147,9 @@ export const sets = sqliteTable(
     rpe: real('rpe'),
     completed: integer('completed', { mode: 'boolean' }).notNull().default(true),
     completedAt: integer('completed_at'),
-    prTypes: text('pr_types', { mode: 'json' }).$type<PrType[]>().notNull().default([]),
+    prTypes: text('pr_types', { mode: 'json' }).$type<RecordType[]>().notNull().default([]),
   },
-  (t) => [index('sets_workout_exercise_idx').on(t.workoutExerciseId)],
+  (table) => [index('sets_workout_exercise_idx').on(table.workoutExerciseId)],
 );
 
 export const measurements = sqliteTable(
@@ -152,7 +162,7 @@ export const measurements = sqliteTable(
     measuredAt: integer('measured_at').notNull(),
     note: text('note').notNull().default(''),
   },
-  (t) => [index('measurements_type_idx').on(t.type, t.measuredAt)],
+  (table) => [index('measurements_type_idx').on(table.type, table.measuredAt)],
 );
 
 export const personalRecords = sqliteTable(
@@ -162,13 +172,13 @@ export const personalRecords = sqliteTable(
     exerciseId: text('exercise_id')
       .notNull()
       .references(() => exercises.id, { onDelete: 'cascade' }),
-    type: text('type').$type<PrType>().notNull(),
+    type: text('type').$type<RecordType>().notNull(),
     value: real('value').notNull(),
     setId: text('set_id'),
     workoutId: text('workout_id').references(() => workouts.id, { onDelete: 'cascade' }),
     achievedAt: integer('achieved_at').notNull(),
   },
-  (t) => [index('personal_records_exercise_idx').on(t.exerciseId, t.type)],
+  (table) => [index('personal_records_exercise_idx').on(table.exerciseId, table.type)],
 );
 
 export type ExerciseRow = typeof exercises.$inferSelect;

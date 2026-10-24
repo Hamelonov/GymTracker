@@ -7,9 +7,13 @@ export interface DraftSet extends RoutineSetInput {
   id: string;
 }
 export interface DraftExercise extends Omit<RoutineExerciseInput, 'sets'> {
+  /** Id of this row in the draft (the same exercise may appear twice), not the exercise id. */
   id: string;
   sets: DraftSet[];
 }
+
+/** Passing this as the superset group asks the store to create a new group number. */
+export const NEW_SUPERSET_GROUP = -1;
 
 interface RoutineDraftState {
   id: string | null;
@@ -17,77 +21,131 @@ interface RoutineDraftState {
   notes: string;
   folderId: string | null;
   exercises: DraftExercise[];
-  reset: (r?: RoutineDetail) => void;
-  setName: (v: string) => void;
-  setNotes: (v: string) => void;
-  setFolder: (v: string | null) => void;
-  addExercises: (ids: string[]) => void;
-  removeExercise: (id: string) => void;
-  move: (from: number, to: number) => void;
-  setRest: (id: string, v: number | null) => void;
-  setNote: (id: string, v: string) => void;
-  setSuperset: (ids: string[], group: number | null) => void;
-  addSet: (id: string) => void;
-  updateSet: (id: string, setId: string, patch: Partial<SetValues> & { type?: SetType }) => void;
-  removeSet: (id: string, setId: string) => void;
+  reset: (routine?: RoutineDetail) => void;
+  setName: (name: string) => void;
+  setNotes: (notes: string) => void;
+  setFolderId: (folderId: string | null) => void;
+  addExercises: (exerciseIds: string[]) => void;
+  removeExercise: (draftExerciseId: string) => void;
+  moveExercise: (fromIndex: number, toIndex: number) => void;
+  setRestSeconds: (draftExerciseId: string, restSeconds: number | null) => void;
+  setExerciseNote: (draftExerciseId: string, note: string) => void;
+  setSupersetGroup: (draftExerciseIds: string[], supersetGroup: number | null) => void;
+  addSetToExercise: (draftExerciseId: string) => void;
+  updateSet: (draftExerciseId: string, setId: string, patch: Partial<SetValues> & { type?: SetType }) => void;
+  removeSet: (draftExerciseId: string, setId: string) => void;
 }
 
-const newSet = (seed?: Partial<RoutineSetInput>): DraftSet => ({ id: newId(), type: 'normal', ...EMPTY_SET_VALUES, ...seed });
+const createDraftSet = (initialValues?: Partial<RoutineSetInput>): DraftSet => ({
+  id: newId(),
+  type: 'normal',
+  ...EMPTY_SET_VALUES,
+  ...initialValues,
+});
 
 export const useRoutineDraft = create<RoutineDraftState>((set, get) => {
-  const upd = (id: string, fn: (e: DraftExercise) => DraftExercise) => set({ exercises: get().exercises.map((e) => (e.id === id ? fn(e) : e)) });
+  const updateExercise = (draftExerciseId: string, update: (exercise: DraftExercise) => DraftExercise) =>
+    set({
+      exercises: get().exercises.map((exercise) =>
+        exercise.id === draftExerciseId ? update(exercise) : exercise,
+      ),
+    });
+
   return {
     id: null,
     name: '',
     notes: '',
     folderId: null,
     exercises: [],
-    reset: (r) =>
+    reset: (routine) =>
       set({
-        id: r?.id ?? null,
-        name: r?.name ?? '',
-        notes: r?.notes ?? '',
-        folderId: r?.folderId ?? null,
+        id: routine?.id ?? null,
+        name: routine?.name ?? '',
+        notes: routine?.notes ?? '',
+        folderId: routine?.folderId ?? null,
         exercises:
-          r?.exercises.map((e) => ({
+          routine?.exercises.map((exercise) => ({
             id: newId(),
-            exerciseId: e.exerciseId,
-            supersetGroup: e.supersetGroup,
-            restSeconds: e.restSeconds,
-            note: e.note,
-            sets: e.sets.map((s) => ({ id: newId(), type: s.type, weightKg: s.weightKg, reps: s.reps, durationSec: s.durationSec, distanceM: s.distanceM, rpe: s.rpe })),
+            exerciseId: exercise.exerciseId,
+            supersetGroup: exercise.supersetGroup,
+            restSeconds: exercise.restSeconds,
+            note: exercise.note,
+            sets: exercise.sets.map((routineSet) => ({
+              id: newId(),
+              type: routineSet.type,
+              weightKg: routineSet.weightKg,
+              reps: routineSet.reps,
+              durationSec: routineSet.durationSec,
+              distanceM: routineSet.distanceM,
+              rpe: routineSet.rpe,
+            })),
           })) ?? [],
       }),
     setName: (name) => set({ name }),
     setNotes: (notes) => set({ notes }),
-    setFolder: (folderId) => set({ folderId }),
-    addExercises: (ids) =>
+    setFolderId: (folderId) => set({ folderId }),
+    addExercises: (exerciseIds) =>
       set({
         exercises: [
           ...get().exercises,
-          ...ids.map((exerciseId) => ({ id: newId(), exerciseId, supersetGroup: null, restSeconds: null, note: '', sets: [newSet(), newSet(), newSet()] })),
+          ...exerciseIds.map((exerciseId) => ({
+            id: newId(),
+            exerciseId,
+            supersetGroup: null,
+            restSeconds: null,
+            note: '',
+            sets: [createDraftSet(), createDraftSet(), createDraftSet()],
+          })),
         ],
       }),
-    removeExercise: (id) => set({ exercises: get().exercises.filter((e) => e.id !== id) }),
-    move: (from, to) => {
-      const list = [...get().exercises];
-      const [item] = list.splice(from, 1);
-      if (!item) return;
-      list.splice(to, 0, item);
-      set({ exercises: list });
+    removeExercise: (draftExerciseId) =>
+      set({ exercises: get().exercises.filter((exercise) => exercise.id !== draftExerciseId) }),
+    moveExercise: (fromIndex, toIndex) => {
+      const reorderedExercises = [...get().exercises];
+      const [movedExercise] = reorderedExercises.splice(fromIndex, 1);
+      if (!movedExercise) return;
+      reorderedExercises.splice(toIndex, 0, movedExercise);
+      set({ exercises: reorderedExercises });
     },
-    setRest: (id, restSeconds) => upd(id, (e) => ({ ...e, restSeconds })),
-    setNote: (id, note) => upd(id, (e) => ({ ...e, note })),
-    setSuperset: (ids, group) => {
-      const g = group === -1 ? get().exercises.reduce((m, e) => Math.max(m, e.supersetGroup ?? 0), 0) + 1 : group;
-      set({ exercises: get().exercises.map((e) => (ids.includes(e.id) ? { ...e, supersetGroup: g } : e)) });
+    setRestSeconds: (draftExerciseId, restSeconds) =>
+      updateExercise(draftExerciseId, (exercise) => ({ ...exercise, restSeconds })),
+    setExerciseNote: (draftExerciseId, note) =>
+      updateExercise(draftExerciseId, (exercise) => ({ ...exercise, note })),
+    setSupersetGroup: (draftExerciseIds, supersetGroup) => {
+      const highestGroup = get().exercises.reduce(
+        (highest, exercise) => Math.max(highest, exercise.supersetGroup ?? 0),
+        0,
+      );
+      const groupToAssign = supersetGroup === NEW_SUPERSET_GROUP ? highestGroup + 1 : supersetGroup;
+      set({
+        exercises: get().exercises.map((exercise) =>
+          draftExerciseIds.includes(exercise.id) ? { ...exercise, supersetGroup: groupToAssign } : exercise,
+        ),
+      });
     },
-    addSet: (id) =>
-      upd(id, (e) => {
-        const last = e.sets[e.sets.length - 1];
-        return { ...e, sets: [...e.sets, newSet(last ? { weightKg: last.weightKg, reps: last.reps, durationSec: last.durationSec, distanceM: last.distanceM } : undefined)] };
+    addSetToExercise: (draftExerciseId) =>
+      updateExercise(draftExerciseId, (exercise) => {
+        // A new set copies the values of the last one, so typing is only needed when something changes.
+        const lastSet = exercise.sets[exercise.sets.length - 1];
+        const copiedValues = lastSet
+          ? {
+              weightKg: lastSet.weightKg,
+              reps: lastSet.reps,
+              durationSec: lastSet.durationSec,
+              distanceM: lastSet.distanceM,
+            }
+          : undefined;
+        return { ...exercise, sets: [...exercise.sets, createDraftSet(copiedValues)] };
       }),
-    updateSet: (id, setId, patch) => upd(id, (e) => ({ ...e, sets: e.sets.map((s) => (s.id === setId ? { ...s, ...patch } : s)) })),
-    removeSet: (id, setId) => upd(id, (e) => ({ ...e, sets: e.sets.filter((s) => s.id !== setId) })),
+    updateSet: (draftExerciseId, setId, patch) =>
+      updateExercise(draftExerciseId, (exercise) => ({
+        ...exercise,
+        sets: exercise.sets.map((draftSet) => (draftSet.id === setId ? { ...draftSet, ...patch } : draftSet)),
+      })),
+    removeSet: (draftExerciseId, setId) =>
+      updateExercise(draftExerciseId, (exercise) => ({
+        ...exercise,
+        sets: exercise.sets.filter((draftSet) => draftSet.id !== setId),
+      })),
   };
 });

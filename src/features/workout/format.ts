@@ -3,23 +3,25 @@ import { formatDistance, formatDuration, formatWeight } from '@/domain/units';
 
 /** Short "60 kg × 8" style summary of a set, respecting the exercise's fields. */
 export function formatSetValues(
-  v: SetValues,
+  values: SetValues,
   fields: SetFields,
   units: { weight: WeightUnit; distance: DistanceUnit },
-  opts: { unitLabel?: boolean } = {},
+  options: { unitLabel?: boolean } = {},
 ): string {
   const parts: string[] = [];
-  const unitLabel = opts.unitLabel ?? true;
+  const showUnitLabel = options.unitLabel ?? true;
   if (fields.weight) {
-    if (v.weightKg == null && v.reps == null) return '—';
-    const w = v.weightKg != null ? formatWeight(v.weightKg, units.weight, unitLabel) : '—';
-    const r = v.reps != null ? `${v.reps}` : '—';
-    parts.push(`${w} × ${r}`);
+    if (values.weightKg == null && values.reps == null) return '—';
+    const weightText =
+      values.weightKg != null ? formatWeight(values.weightKg, units.weight, showUnitLabel) : '—';
+    const repsText = values.reps != null ? `${values.reps}` : '—';
+    parts.push(`${weightText} × ${repsText}`);
   } else if (fields.reps) {
-    if (v.reps == null) return '—';
-    parts.push(`${v.reps}`);
+    if (values.reps == null) return '—';
+    parts.push(`${values.reps}`);
   }
-  if (fields.distance && v.distanceM != null) parts.push(formatDistance(v.distanceM, units.distance, unitLabel));
-  if (fields.duration && v.durationSec != null) parts.push(formatDuration(v.durationSec));
+  if (fields.distance && values.distanceM != null)
+    parts.push(formatDistance(values.distanceM, units.distance, showUnitLabel));
+  if (fields.duration && values.durationSec != null) parts.push(formatDuration(values.durationSec));
   return parts.length ? parts.join(' · ') : '—';
 }

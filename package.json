@@ -10,7 +10,9 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"plugins/**/*.js\" \"*.{js,ts,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"plugins/**/*.js\" \"*.{js,ts,json}\""
   },
   "jest": {
     "preset": "jest-expo",
@@ -68,6 +70,7 @@
     "eslint-config-expo": "^58.0.4",
     "jest": "^30.5.2",
     "jest-expo": "^58.0.12",
+    "prettier": "^3.9.10",
     "typescript": "~6.0.3"
   }
 }

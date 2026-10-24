@@ -8,25 +8,39 @@ const { withAppBuildGradle, withDangerousMod } = require('expo/config-plugins');
 const MARKER = '// gymtracker: dev variant';
 
 function withDevGradle(config) {
-  return withAppBuildGradle(config, (cfg) => {
-    if (cfg.modResults.language !== 'groovy') return cfg;
-    let src = cfg.modResults.contents;
-    if (src.includes(MARKER)) return cfg;
-    src = src.replace(/(buildTypes \{\s*\n(\s*)debug \{\n)/, (m, _all, ws) => `${m}${ws}    ${MARKER}\n${ws}    applicationIdSuffix ".dev"\n`);
-    cfg.modResults.contents = src;
-    return cfg;
+  return withAppBuildGradle(config, (config) => {
+    if (config.modResults.language !== 'groovy') return config;
+    let buildGradleSource = config.modResults.contents;
+    if (buildGradleSource.includes(MARKER)) return config;
+    buildGradleSource = buildGradleSource.replace(
+      /(buildTypes \{\s*\n(\s*)debug \{\n)/,
+      (match, _debugBlockStart, indentation) =>
+        `${match}${indentation}    ${MARKER}\n${indentation}    applicationIdSuffix ".dev"\n`,
+    );
+    config.modResults.contents = buildGradleSource;
+    return config;
   });
 }
 
 function withDevName(config) {
   return withDangerousMod(config, [
     'android',
-    (cfg) => {
+    (config) => {
       // A debug source set overrides app_name without clashing with the main strings.xml.
-      const dir = path.join(cfg.modRequest.platformProjectRoot, 'app', 'src', 'debug', 'res', 'values');
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(path.join(dir, 'strings.xml'), '<resources>\n  <string name="app_name">GymTracker Dev</string>\n</resources>\n');
-      return cfg;
+      const valuesDirectory = path.join(
+        config.modRequest.platformProjectRoot,
+        'app',
+        'src',
+        'debug',
+        'res',
+        'values',
+      );
+      fs.mkdirSync(valuesDirectory, { recursive: true });
+      fs.writeFileSync(
+        path.join(valuesDirectory, 'strings.xml'),
+        '<resources>\n  <string name="app_name">GymTracker Dev</string>\n</resources>\n',
+      );
+      return config;
     },
   ]);
 }

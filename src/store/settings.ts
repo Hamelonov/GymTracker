@@ -4,12 +4,12 @@ import { deferredStorage } from './kvStorage';
 import { DEFAULT_PLATES_KG } from '@/domain/plates';
 import type { DistanceUnit, MeasurementUnit, WeightUnit } from '@/domain/types';
 
-export type ThemePref = 'system' | 'light' | 'dark';
-export type LanguagePref = 'system' | 'ru' | 'en';
+export type ThemePreference = 'system' | 'light' | 'dark';
+export type LanguagePreference = 'system' | 'ru' | 'en';
 
 export interface SettingsState {
-  theme: ThemePref;
-  language: LanguagePref;
+  theme: ThemePreference;
+  language: LanguagePreference;
   weightUnit: WeightUnit;
   distanceUnit: DistanceUnit;
   measurementUnit: MeasurementUnit;
@@ -21,7 +21,7 @@ export interface SettingsState {
   showRpe: boolean;
   barWeightKg: number;
   platesKg: number[];
-  set: (patch: Partial<SettingsState>) => void;
+  update: (patch: Partial<SettingsState>) => void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -40,14 +40,15 @@ export const useSettings = create<SettingsState>()(
       showRpe: false,
       barWeightKg: 20,
       platesKg: DEFAULT_PLATES_KG,
-      set: (patch) => set(patch),
+      update: (patch) => set(patch),
     }),
     {
       name: 'settings',
       storage: createJSONStorage(() => deferredStorage),
-      partialize: (s) => {
-        const { set: _set, ...rest } = s;
-        return rest;
+      // Persist only the values, not the `set` action.
+      partialize: (state) => {
+        const { update: _setAction, ...persistedSettings } = state;
+        return persistedSettings;
       },
     },
   ),

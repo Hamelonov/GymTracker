@@ -13,9 +13,10 @@ export const usePickerResult = create<PickerResultState>((set, get) => ({
   exerciseIds: [],
   publish: (token, exerciseIds) => set({ token, exerciseIds }),
   consume: (token) => {
+    // Only the screen that opened the picker (same token) may read the result.
     if (get().token !== token) return null;
-    const ids = get().exerciseIds;
+    const pickedExerciseIds = get().exerciseIds;
     set({ token: null, exerciseIds: [] });
-    return ids;
+    return pickedExerciseIds;
   },
 }));

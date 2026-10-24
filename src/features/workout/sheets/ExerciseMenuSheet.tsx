@@ -1,0 +1,99 @@
+import { ArrowDown, ArrowUp, Link, Replace, Timer, Trash2, Unlink } from 'lucide-react-native';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
+import type { ExerciseRow } from '@/db/schema';
+import type { ActiveExercise } from '@/domain/types';
+import { formatDuration } from '@/domain/units';
+import { Icon, ListItem, Sheet, spacing, useColors } from '@/ui';
+import { exerciseDisplayName } from '../exerciseDisplayName';
+
+interface ExerciseMenuSheetProps {
+  visible: boolean;
+  onClose: () => void;
+  /** The exercise the menu was opened for; the sheet stays empty without it. */
+  workoutExercise: ActiveExercise | undefined;
+  exerciseDetails: ExerciseRow | undefined;
+  restSeconds: number;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onRestTimerPress: () => void;
+  onReplacePress: () => void;
+  onSupersetPress: () => void;
+  onMoveUpPress: () => void;
+  onMoveDownPress: () => void;
+  onRemovePress: () => void;
+}
+
+/** The "…" menu of an exercise card: rest timer, replace, superset, reorder and remove. */
+export function ExerciseMenuSheet({
+  visible,
+  onClose,
+  workoutExercise,
+  exerciseDetails,
+  restSeconds,
+  canMoveUp,
+  canMoveDown,
+  onRestTimerPress,
+  onReplacePress,
+  onSupersetPress,
+  onMoveUpPress,
+  onMoveDownPress,
+  onRemovePress,
+}: ExerciseMenuSheetProps) {
+  const colors = useColors();
+  const { t: translate, i18n } = useTranslation();
+  const title = workoutExercise ? exerciseDisplayName(exerciseDetails, i18n.language) : undefined;
+  const isInSuperset = workoutExercise?.supersetGroup != null;
+
+  return (
+    <Sheet visible={visible} onClose={onClose} title={title} unpadded>
+      {workoutExercise ? (
+        <View style={styles.menuList}>
+          <ListItem
+            title={translate('workout.restTimer')}
+            subtitle={restSeconds > 0 ? formatDuration(restSeconds) : translate('workout.restOff')}
+            left={<Icon icon={Timer} />}
+            onPress={onRestTimerPress}
+          />
+          <ListItem
+            title={translate('workout.replaceExercise')}
+            left={<Icon icon={Replace} />}
+            onPress={onReplacePress}
+          />
+          <ListItem
+            title={
+              isInSuperset ? translate('workout.removeFromSuperset') : translate('workout.createSuperset')
+            }
+            left={<Icon icon={isInSuperset ? Unlink : Link} />}
+            onPress={onSupersetPress}
+          />
+          {canMoveUp ? (
+            <ListItem
+              title={`${translate('workout.reorder')} ↑`}
+              left={<Icon icon={ArrowUp} />}
+              onPress={onMoveUpPress}
+            />
+          ) : null}
+          {canMoveDown ? (
+            <ListItem
+              title={`${translate('workout.reorder')} ↓`}
+              left={<Icon icon={ArrowDown} />}
+              onPress={onMoveDownPress}
+            />
+          ) : null}
+          <ListItem
+            title={translate('workout.removeExercise')}
+            titleColor={colors.danger}
+            left={<Icon icon={Trash2} color="danger" />}
+            onPress={onRemovePress}
+          />
+        </View>
+      ) : null}
+    </Sheet>
+  );
+}
+
+const styles = StyleSheet.create({
+  menuList: { paddingHorizontal: spacing.sm },
+});

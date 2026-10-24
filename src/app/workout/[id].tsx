@@ -6,64 +6,104 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { exerciseName } from '@/db/repo/exercises';
 import { createRoutine, routineInputFromWorkout } from '@/db/repo/routines';
-import { deleteWorkout, getWorkout, workoutToActive } from '@/db/repo/workouts';
+import { deleteWorkout, getWorkout, workoutToActiveWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import { formatDateTime } from '@/domain/dates';
-import { setFieldsFor } from '@/domain/types';
+import { getSetFieldsForExerciseType } from '@/domain/types';
 import { formatSetValues } from '@/features/workout/format';
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
 import { useSettings } from '@/store/settings';
-import { Card, Icon, IconButton, ListItem, Pressable, Screen, Sheet, Text, confirm, spacing, toast, useColors } from '@/ui';
+import {
+  Card,
+  Icon,
+  IconButton,
+  ListItem,
+  Pressable,
+  Screen,
+  Sheet,
+  Text,
+  confirm,
+  spacing,
+  toast,
+  useColors,
+} from '@/ui';
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const c = useColors();
-  const { t, i18n } = useTranslation();
+  const colors = useColors();
+  const { t: translate, i18n } = useTranslation();
   const settings = useSettings();
-  const [menu, setMenu] = useState(false);
-  const w = useQuery(() => (id ? getWorkout(id) : undefined), [id]);
-  const units = useMemo(() => ({ weight: settings.weightUnit, distance: settings.distanceUnit }), [settings.weightUnit, settings.distanceUnit]);
-  const active = useActiveWorkout((s) => s.workout);
-  const session = useActiveWorkout((s) => s.session);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const workout = useQuery(() => (id ? getWorkout(id) : undefined), [id]);
+  const units = useMemo(
+    () => ({ weight: settings.weightUnit, distance: settings.distanceUnit }),
+    [settings.weightUnit, settings.distanceUnit],
+  );
+  const activeWorkout = useActiveWorkout((state) => state.workout);
+  const session = useActiveWorkout((state) => state.session);
 
-  if (!w) {
-    return <Screen header={{ back: true }} />;
+  if (!workout) {
+    return <Screen header={{ backButton: true }} />;
   }
 
-  const ensureNoActive = async () => {
-    if (!active || session.mode === 'edit') return true;
-    const ok = await confirm({ title: t('home.inProgress'), message: t('workout.discardConfirm'), destructive: true, confirmLabel: t('common.discard') });
-    if (ok) {
+  /** Asks to discard a workout in progress before starting another. Resolves true when it is safe to go on. */
+  const ensureNoActiveWorkout = async () => {
+    if (!activeWorkout || session.mode === 'edit') return true;
+    const confirmed = await confirm({
+      title: translate('home.inProgress'),
+      message: translate('workout.discardConfirm'),
+      destructive: true,
+      confirmLabel: translate('common.discard'),
+    });
+    if (confirmed) {
       useRestTimer.getState().skip();
       useActiveWorkout.getState().clear();
     }
-    return ok;
+    return confirmed;
   };
 
-  const edit = async () => {
-    setMenu(false);
-    if (!(await ensureNoActive())) return;
-    useActiveWorkout.getState().startFromActive(workoutToActive(w), { mode: 'edit', workoutId: w.id, finishedAt: w.finishedAt });
+  const editWorkout = async () => {
+    setIsMenuOpen(false);
+    if (!(await ensureNoActiveWorkout())) return;
+    useActiveWorkout.getState().startFromActive(workoutToActiveWorkout(workout), {
+      mode: 'edit',
+      workoutId: workout.id,
+      finishedAt: workout.finishedAt,
+    });
     push('/workout/active');
   };
 
-  const repeat = async () => {
-    setMenu(false);
-    if (!(await ensureNoActive())) return;
-    const a = workoutToActive(w);
+  // Start a fresh workout with the same exercises; this workout's values become "previous".
+  const repeatWorkout = async () => {
+    setIsMenuOpen(false);
+    if (!(await ensureNoActiveWorkout())) return;
+    const workoutCopy = workoutToActiveWorkout(workout);
     useActiveWorkout.getState().startFromActive(
       {
-        ...a,
+        ...workoutCopy,
         id: `${Date.now().toString(36)}r`,
         startedAt: Date.now(),
         notes: '',
-        exercises: a.exercises.map((e) => ({
-          ...e,
-          id: `${e.id}r`,
+        exercises: workoutCopy.exercises.map((exercise) => ({
+          ...exercise,
+          id: `${exercise.id}r`,
           note: '',
-          sets: e.sets.map((s) => ({ ...s, id: `${s.id}r`, completed: false, completedAt: null, prTypes: undefined, previous: { weightKg: s.weightKg, reps: s.reps, durationSec: s.durationSec, distanceM: s.distanceM, rpe: s.rpe } })),
+          sets: exercise.sets.map((set) => ({
+            ...set,
+            id: `${set.id}r`,
+            completed: false,
+            completedAt: null,
+            prTypes: undefined,
+            previous: {
+              weightKg: set.weightKg,
+              reps: set.reps,
+              durationSec: set.durationSec,
+              distanceM: set.distanceM,
+              rpe: set.rpe,
+            },
+          })),
         })),
       },
       { mode: 'new' },
@@ -72,75 +112,126 @@ export default function WorkoutDetailScreen() {
   };
 
   const saveAsRoutine = () => {
-    setMenu(false);
-    const rid = createRoutine(routineInputFromWorkout(workoutToActive(w)));
-    toast(t('routine.saved'));
-    push({ pathname: '/routine/[id]', params: { id: rid } });
+    setIsMenuOpen(false);
+    const routineId = createRoutine(routineInputFromWorkout(workoutToActiveWorkout(workout)));
+    toast(translate('routine.saved'));
+    push({ pathname: '/routine/[id]', params: { id: routineId } });
   };
 
-  const remove = async () => {
-    setMenu(false);
-    if (!(await confirm({ title: t('history.deleteConfirm'), destructive: true, confirmLabel: t('common.delete') }))) return;
-    deleteWorkout(w.id);
+  const deleteThisWorkout = async () => {
+    setIsMenuOpen(false);
+    const confirmed = await confirm({
+      title: translate('history.deleteConfirm'),
+      destructive: true,
+      confirmLabel: translate('common.delete'),
+    });
+    if (!confirmed) return;
+    deleteWorkout(workout.id);
     router.back();
   };
 
   return (
-    <Screen header={{ back: true, title: w.name, subtitle: formatDateTime(w.startedAt, i18n.language), right: <IconButton icon={Ellipsis} variant="filled" onPress={() => setMenu(true)} haptic="selection" /> }}>
-      <WorkoutStats durationSec={w.durationSec} exerciseCount={w.exercises.length} setCount={w.setCount} prCount={w.prCount} style={{ marginBottom: spacing.lg }} />
-      {w.notes ? (
+    <Screen
+      header={{
+        backButton: true,
+        title: workout.name,
+        subtitle: formatDateTime(workout.startedAt, i18n.language),
+        right: (
+          <IconButton
+            icon={Ellipsis}
+            variant="filled"
+            onPress={() => setIsMenuOpen(true)}
+            haptic="selection"
+          />
+        ),
+      }}
+    >
+      <WorkoutStats
+        durationSec={workout.durationSec}
+        exerciseCount={workout.exercises.length}
+        setCount={workout.setCount}
+        prCount={workout.prCount}
+        style={{ marginBottom: spacing.lg }}
+      />
+      {workout.notes ? (
         <Text color="muted" style={{ marginBottom: spacing.lg }}>
-          {w.notes}
+          {workout.notes}
         </Text>
       ) : null}
 
-      {w.exercises.map((e) => {
-        const fields = setFieldsFor(e.exercise.type);
+      {workout.exercises.map((workoutExercise) => {
+        const fields = getSetFieldsForExerciseType(workoutExercise.exercise.type);
         return (
-          <Card key={e.id} raised style={{ marginBottom: spacing.md }}>
-            <Pressable onPress={() => push({ pathname: '/exercise/[id]', params: { id: e.exerciseId } })}>
-              <Text variant="h3">{exerciseName(e.exercise, i18n.language)}</Text>
+          <Card key={workoutExercise.id} raised style={{ marginBottom: spacing.md }}>
+            <Pressable
+              onPress={() => push({ pathname: '/exercise/[id]', params: { id: workoutExercise.exerciseId } })}
+            >
+              <Text variant="h3">{exerciseName(workoutExercise.exercise, i18n.language)}</Text>
             </Pressable>
-            {e.note ? (
+            {workoutExercise.note ? (
               <Text variant="caption" color="muted" style={{ marginTop: 4 }}>
-                {e.note}
+                {workoutExercise.note}
               </Text>
             ) : null}
             <View style={{ marginTop: spacing.md, gap: 6 }}>
-              {e.sets.map((s, i) => (
-                <View key={s.id} style={styles.setRow}>
-                  <View style={[styles.setNo, { backgroundColor: s.type === 'normal' ? c.surfaceAlt : c.text }]}>
-                    <Text variant="label" color={s.type === 'normal' ? c.text : c.bg}>
-                      {s.type === 'normal' ? i + 1 : t(`workout.setTypeShort.${s.type}`)}
-                    </Text>
-                  </View>
-                  <Text variant="bodyMedium" tabular style={{ flexShrink: 0 }}>
-                    {formatSetValues(s, fields, units)}
-                    {s.rpe != null ? `  @${s.rpe}` : ''}
-                  </Text>
-                  <View style={styles.prWrap}>
-                  {s.prTypes.map((p) => (
-                    <View key={p} style={[styles.pr, { backgroundColor: c.accent }]}>
-                      <Icon icon={Trophy} size={10} color="onAccent" />
-                      <Text variant="label" color="onAccent">
-                        {t(`pr.${p}`).toUpperCase()}
+              {workoutExercise.sets.map((set, index) => {
+                const isNormalSet = set.type === 'normal';
+                return (
+                  <View key={set.id} style={styles.setRow}>
+                    <View
+                      style={[
+                        styles.setNumberBadge,
+                        { backgroundColor: isNormalSet ? colors.surfaceAlt : colors.text },
+                      ]}
+                    >
+                      <Text variant="label" color={isNormalSet ? colors.text : colors.background}>
+                        {isNormalSet ? index + 1 : translate(`workout.setTypeShort.${set.type}`)}
                       </Text>
                     </View>
-                  ))}
+                    <Text variant="bodyMedium" tabular style={{ flexShrink: 0 }}>
+                      {formatSetValues(set, fields, units)}
+                      {set.rpe != null ? `  @${set.rpe}` : ''}
+                    </Text>
+                    <View style={styles.recordBadges}>
+                      {set.prTypes.map((recordType) => (
+                        <View
+                          key={recordType}
+                          style={[styles.recordBadge, { backgroundColor: colors.accent }]}
+                        >
+                          <Icon icon={Trophy} size={10} color="onAccent" />
+                          <Text variant="label" color="onAccent">
+                            {translate(`pr.${recordType}`).toUpperCase()}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                </View>
-              ))}
+                );
+              })}
             </View>
           </Card>
         );
       })}
 
-      <Sheet visible={menu} onClose={() => setMenu(false)} flush>
+      <Sheet visible={isMenuOpen} onClose={() => setIsMenuOpen(false)} unpadded>
         <View style={{ paddingHorizontal: spacing.sm }}>
-          <ListItem title={t('common.edit')} left={<Icon icon={Pencil} />} onPress={edit} />
-          <ListItem title={t('history.repeat')} left={<Icon icon={Repeat} />} onPress={repeat} />
-          <ListItem title={t('history.saveAsRoutine')} left={<Icon icon={Save} />} onPress={saveAsRoutine} />
-          <ListItem title={t('common.delete')} titleColor={c.danger} left={<Icon icon={Trash2} color="danger" />} onPress={remove} />
+          <ListItem title={translate('common.edit')} left={<Icon icon={Pencil} />} onPress={editWorkout} />
+          <ListItem
+            title={translate('history.repeat')}
+            left={<Icon icon={Repeat} />}
+            onPress={repeatWorkout}
+          />
+          <ListItem
+            title={translate('history.saveAsRoutine')}
+            left={<Icon icon={Save} />}
+            onPress={saveAsRoutine}
+          />
+          <ListItem
+            title={translate('common.delete')}
+            titleColor={colors.danger}
+            left={<Icon icon={Trash2} color="danger" />}
+            onPress={deleteThisWorkout}
+          />
         </View>
       </Sheet>
     </Screen>
@@ -149,7 +240,14 @@ export default function WorkoutDetailScreen() {
 
 const styles = StyleSheet.create({
   setRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  setNo: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  prWrap: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 4 },
-  pr: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, height: 20, borderRadius: 10 },
+  setNumberBadge: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  recordBadges: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 4 },
+  recordBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    height: 20,
+    borderRadius: 10,
+  },
 });

@@ -1,94 +1,86 @@
 import { useLocalSearchParams } from 'expo-router';
 import { push } from '@/lib/nav';
-import { Plus, Ruler, Trash2 } from 'lucide-react-native';
+import { Plus, Ruler } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
-import { deleteMeasurement, listMeasurements } from '@/db/repo/measurements';
+import { listMeasurements } from '@/db/repo/measurements';
 import { useQuery } from '@/db/version';
-import { formatDateTime, formatShortDate } from '@/domain/dates';
-import { measurementUnitKind, type MeasurementType } from '@/domain/types';
-import { cmToUnit, kgToUnit, roundDisplay } from '@/domain/units';
-import { ChartEmpty, LineChart } from '@/features/charts/LineChart';
+import { formatShortDate } from '@/domain/dates';
+import type { MeasurementType } from '@/domain/types';
+import { roundForDisplay } from '@/domain/units';
+import { type ChartPoint, EmptyChart, LineChart } from '@/features/charts/LineChart';
+import { MeasurementHistoryList } from '@/features/measurements/MeasurementHistoryList';
+import { MeasurementSummaryTiles } from '@/features/measurements/MeasurementSummaryTiles';
+import { convertToDisplayUnit, type MeasurementUnits } from '@/features/measurements/measurementUnits';
 import { useSettings } from '@/store/settings';
-import { Card, EmptyState, IconButton, ListItem, Screen, SectionTitle, Text, confirm, spacing, useColors } from '@/ui';
-import { formatMeasurement } from './index';
+import { EmptyState, IconButton, Screen, SectionTitle } from '@/ui';
+
+/** Roughly how many date labels fit under the chart. */
+const CHART_LABEL_COUNT = 5;
 
 export default function MeasurementTypeScreen() {
   const { type } = useLocalSearchParams<{ type: MeasurementType }>();
-  const { t, i18n } = useTranslation();
-  const c = useColors();
+  const { t: translate, i18n } = useTranslation();
   const settings = useSettings();
-  const rows = useQuery(() => (type ? listMeasurements(type) : []), [type]);
-  const units = useMemo(() => ({ weight: settings.weightUnit, length: settings.measurementUnit }) as const, [settings.weightUnit, settings.measurementUnit]);
-  const kind = type ? measurementUnitKind(type) : 'length';
-  const chart = useMemo(
-    () =>
-      [...rows].reverse().map((m, i) => ({
-        x: i,
-        y: roundDisplay(kind === 'weight' ? kgToUnit(m.value, units.weight) : kind === 'percent' ? m.value : cmToUnit(m.value, units.length), 1),
-        label: i % Math.max(1, Math.ceil(rows.length / 5)) === 0 ? formatShortDate(m.measuredAt, i18n.language) : '',
-      })),
-    [rows, kind, units, i18n.language],
+  const measurements = useQuery(() => (type ? listMeasurements(type) : []), [type]);
+  const units = useMemo<MeasurementUnits>(
+    () => ({ weight: settings.weightUnit, length: settings.measurementUnit }),
+    [settings.weightUnit, settings.measurementUnit],
   );
-  if (!type) return <Screen header={{ back: true }} />;
-  const latest = rows[0];
-  const first = rows[rows.length - 1];
-  const change = latest && first && rows.length > 1 ? latest.value - first.value : null;
+
+  const chartPoints = useMemo<ChartPoint[]>(() => {
+    if (!type) return [];
+    const labelEvery = Math.max(1, Math.ceil(measurements.length / CHART_LABEL_COUNT));
+    // The list is newest first; the chart reads left to right from oldest.
+    const oldestFirst = [...measurements].reverse();
+    return oldestFirst.map((measurement, index) => ({
+      x: index,
+      y: roundForDisplay(convertToDisplayUnit(type, measurement.value, units), 1),
+      label: index % labelEvery === 0 ? formatShortDate(measurement.measuredAt, i18n.language) : '',
+    }));
+  }, [type, measurements, units, i18n.language]);
+
+  if (!type) return <Screen header={{ backButton: true }} />;
+
+  const latest = measurements[0];
+  const first = measurements[measurements.length - 1];
+  const hasChange = latest && first && measurements.length > 1;
+  const change = hasChange ? latest.value - first.value : null;
+
   return (
-    <Screen header={{ back: true, title: t(`measurements.types.${type}`), right: <IconButton icon={Plus} variant="accent" onPress={() => push({ pathname: '/measurements/log', params: { type } })} haptic="light" /> }}>
-      {rows.length === 0 ? (
-        <EmptyState icon={Ruler} title={t('measurements.noData')} />
+    <Screen
+      header={{
+        backButton: true,
+        title: translate(`measurements.types.${type}`),
+        right: (
+          <IconButton
+            icon={Plus}
+            variant="accent"
+            onPress={() => push({ pathname: '/measurements/log', params: { type } })}
+            haptic="light"
+          />
+        ),
+      }}
+    >
+      {measurements.length === 0 ? (
+        <EmptyState icon={Ruler} title={translate('measurements.noData')} />
       ) : (
         <>
-          <View style={styles.tiles}>
-            <View style={[styles.tile, { backgroundColor: c.surface }]}>
-              <Text variant="label" color="muted">
-                {t('measurements.latest').toUpperCase()}
-              </Text>
-              <Text variant="h2" tabular>
-                {latest ? formatMeasurement(type, latest.value, units) : '—'}
-              </Text>
-            </View>
-            <View style={[styles.tile, { backgroundColor: c.surface }]}>
-              <Text variant="label" color="muted">
-                {t('measurements.change').toUpperCase()}
-              </Text>
-              <Text variant="h2" tabular color={change == null ? 'faint' : change > 0 ? 'success' : change < 0 ? 'danger' : 'text'}>
-                {change == null ? '—' : `${change > 0 ? '+' : ''}${formatMeasurement(type, change, units)}`}
-              </Text>
-            </View>
-          </View>
-          {chart.length > 0 ? <LineChart data={chart} formatY={(v) => String(roundDisplay(v, 1))} /> : <ChartEmpty text={t('measurements.noData')} />}
-          <SectionTitle title={t('exercise.history')} />
-          <Card padded={false}>
-            {rows.map((m, i) => (
-              <View key={m.id} style={i > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border } : null}>
-                <ListItem
-                  title={formatMeasurement(type, m.value, units)}
-                  subtitle={`${formatDateTime(m.measuredAt, i18n.language)}${m.note ? ` · ${m.note}` : ''}`}
-                  right={
-                    <IconButton
-                      icon={Trash2}
-                      size={18}
-                      color="muted"
-                      onPress={async () => {
-                        if (await confirm({ title: t('measurements.deleteConfirm'), destructive: true, confirmLabel: t('common.delete') })) deleteMeasurement(m.id);
-                      }}
-                    />
-                  }
-                  style={{ paddingHorizontal: spacing.lg }}
-                />
-              </View>
-            ))}
-          </Card>
+          <MeasurementSummaryTiles
+            type={type}
+            latestValue={latest ? latest.value : null}
+            change={change}
+            units={units}
+          />
+          {chartPoints.length > 0 ? (
+            <LineChart data={chartPoints} formatY={(value) => String(roundForDisplay(value, 1))} />
+          ) : (
+            <EmptyChart text={translate('measurements.noData')} />
+          )}
+          <SectionTitle title={translate('exercise.history')} />
+          <MeasurementHistoryList type={type} measurements={measurements} units={units} />
         </>
       )}
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  tiles: { flexDirection: 'row', gap: spacing.sm, marginVertical: spacing.md },
-  tile: { flex: 1, padding: spacing.lg, borderRadius: 16, gap: 4 },
-});

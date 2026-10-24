@@ -98,10 +98,15 @@ export interface SetFields {
 const WEIGHT_REPS: SetFields = Object.freeze({ weight: true, reps: true, duration: false, distance: false });
 const REPS: SetFields = Object.freeze({ weight: false, reps: true, duration: false, distance: false });
 const DURATION: SetFields = Object.freeze({ weight: false, reps: false, duration: true, distance: false });
-const DISTANCE_DURATION: SetFields = Object.freeze({ weight: false, reps: false, duration: true, distance: true });
+const DISTANCE_DURATION: SetFields = Object.freeze({
+  weight: false,
+  reps: false,
+  duration: true,
+  distance: true,
+});
 
 /** Returns a shared constant per type, so it is safe to pass to memoized components. */
-export function setFieldsFor(type: ExerciseType): SetFields {
+export function getSetFieldsForExerciseType(type: ExerciseType): SetFields {
   switch (type) {
     case 'weight_reps':
     case 'weighted_bodyweight':
@@ -136,7 +141,7 @@ export const EMPTY_SET_VALUES: SetValues = {
 
 export interface ActiveSet extends SetValues {
   /** Set only on saved workouts: which records this set achieved. */
-  prTypes?: PrType[];
+  prTypes?: RecordType[];
   id: string;
   type: SetType;
   completed: boolean;
@@ -163,10 +168,10 @@ export interface ActiveWorkout {
   exercises: ActiveExercise[];
 }
 
-export type PrType = 'weight' | 'one_rm' | 'volume' | 'reps' | 'duration' | 'distance';
+export type RecordType = 'weight' | 'one_rm' | 'volume' | 'reps' | 'duration' | 'distance';
 
-export interface PrHit {
-  type: PrType;
+export interface RecordHit {
+  type: RecordType;
   value: number;
   previous: number | null;
 }

@@ -1,7 +1,14 @@
 import { router } from 'expo-router';
 import { ArrowLeft, X } from 'lucide-react-native';
 import React from 'react';
-import { ScrollView, type ScrollViewProps, StyleSheet, View, type ViewStyle, type StyleProp } from 'react-native';
+import {
+  ScrollView,
+  type ScrollViewProps,
+  StyleSheet,
+  View,
+  type ViewStyle,
+  type StyleProp,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
 import { Pressable } from './Pressable';
@@ -13,28 +20,40 @@ export interface HeaderProps {
   title?: string;
   subtitle?: string;
   large?: boolean;
-  back?: boolean | 'close';
+  backButton?: boolean | 'close';
   right?: React.ReactNode;
   left?: React.ReactNode;
   onBack?: () => void;
 }
 
-export function Header({ title, subtitle, large, back, right, left, onBack }: HeaderProps) {
-  const c = useColors();
-  const goBack = onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/')));
+/** Goes back, or to the home tab when the screen was opened directly (nothing to go back to). */
+function goBackOrHome() {
+  if (router.canGoBack()) router.back();
+  else router.replace('/');
+}
+
+export function Header({ title, subtitle, large, backButton, right, left, onBack }: HeaderProps) {
+  const colors = useColors();
+  const handleBackPress = onBack ?? goBackOrHome;
+  const showsSmallTitle = !large && title;
+  const showsLargeTitle = large && title;
   return (
     <View style={[styles.header, large ? styles.headerLarge : null]}>
       <View style={styles.headerRow}>
         <View style={styles.headerSide}>
-          {back ? (
-            <Pressable onPress={goBack} hitSlop={12} style={[styles.iconBtn, { backgroundColor: c.surfaceAlt }]}>
-              <Icon icon={back === 'close' ? X : ArrowLeft} size={20} />
+          {backButton ? (
+            <Pressable
+              onPress={handleBackPress}
+              hitSlop={12}
+              style={[styles.backButton, { backgroundColor: colors.surfaceAlt }]}
+            >
+              <Icon icon={backButton === 'close' ? X : ArrowLeft} size={20} />
             </Pressable>
           ) : (
             left
           )}
         </View>
-        {!large && title ? (
+        {showsSmallTitle ? (
           <View style={styles.headerCenter}>
             <Text variant="h3" numberOfLines={1}>
               {title}
@@ -50,11 +69,11 @@ export function Header({ title, subtitle, large, back, right, left, onBack }: He
         )}
         <View style={[styles.headerSide, styles.headerRight]}>{right}</View>
       </View>
-      {large && title ? (
+      {showsLargeTitle ? (
         <View style={styles.largeTitle}>
           <Text variant="h1">{title}</Text>
           {subtitle ? (
-            <Text variant="body" color="muted" style={{ marginTop: 2 }}>
+            <Text variant="body" color="muted" style={styles.largeSubtitle}>
               {subtitle}
             </Text>
           ) : null}
@@ -66,7 +85,7 @@ export function Header({ title, subtitle, large, back, right, left, onBack }: He
 
 export interface ScreenProps extends ScrollViewProps {
   header?: HeaderProps;
-  scroll?: boolean;
+  scrollable?: boolean;
   padded?: boolean;
   bottomInset?: boolean;
   children?: React.ReactNode;
@@ -74,10 +93,19 @@ export interface ScreenProps extends ScrollViewProps {
   contentStyle?: StyleProp<ViewStyle>;
 }
 
-export function Screen({ header, scroll = true, padded = true, bottomInset = true, children, footer, contentStyle, ...rest }: ScreenProps) {
-  const c = useColors();
+export function Screen({
+  header,
+  scrollable = true,
+  padded = true,
+  bottomInset = true,
+  children,
+  footer,
+  contentStyle,
+  ...rest
+}: ScreenProps) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
-  const body = scroll ? (
+  const content = scrollable ? (
     <ScrollView
       keyboardShouldPersistTaps="handled"
       contentInsetAdjustmentBehavior="never"
@@ -93,14 +121,23 @@ export function Screen({ header, scroll = true, padded = true, bottomInset = tru
       {children}
     </ScrollView>
   ) : (
-    <View style={[styles.flex, padded ? styles.padded : null, contentStyle]}>{children}</View>
+    <View style={[styles.fill, padded ? styles.padded : null, contentStyle]}>{children}</View>
   );
   return (
-    <View style={[styles.flex, { backgroundColor: c.bg, paddingTop: insets.top }]}>
+    <View style={[styles.fill, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       {header ? <Header {...header} /> : null}
-      {body}
+      {content}
       {footer ? (
-        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md, borderTopColor: c.border, backgroundColor: c.bg }]}>
+        <View
+          style={[
+            styles.footer,
+            {
+              paddingBottom: insets.bottom + spacing.md,
+              borderTopColor: colors.border,
+              backgroundColor: colors.background,
+            },
+          ]}
+        >
           {footer}
         </View>
       ) : null}
@@ -109,7 +146,7 @@ export function Screen({ header, scroll = true, padded = true, bottomInset = tru
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  fill: { flex: 1 },
   padded: { paddingHorizontal: spacing.lg },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
   headerLarge: { paddingBottom: spacing.md },
@@ -118,6 +155,7 @@ const styles = StyleSheet.create({
   headerRight: { justifyContent: 'flex-end', flexShrink: 0 },
   headerCenter: { flex: 1, alignItems: 'center' },
   largeTitle: { marginTop: spacing.sm },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  largeSubtitle: { marginTop: 2 },
+  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
 });

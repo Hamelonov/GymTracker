@@ -20,28 +20,32 @@ export interface ChipProps {
  * render dozens of these at once, so no per-chip animation machinery.
  */
 export const Chip = memo(function Chip({ label, selected, onPress, icon, small }: ChipProps) {
-  const c = useColors();
-  const hapticsOn = useSettings((s) => s.haptics);
-  const content = (pressed: boolean) => (
-    <View style={[styles.chip, small ? styles.small : null, { backgroundColor: selected ? c.text : c.surfaceAlt, opacity: pressed ? 0.7 : 1 }]}>
+  const colors = useColors();
+  const areHapticsEnabled = useSettings((state) => state.haptics);
+
+  const renderChip = (isPressed: boolean) => (
+    <View
+      style={[
+        styles.chip,
+        small ? styles.small : null,
+        { backgroundColor: selected ? colors.text : colors.surfaceAlt, opacity: isPressed ? 0.7 : 1 },
+      ]}
+    >
       {icon}
-      <Text variant={small ? 'label' : 'caption'} color={selected ? c.bg : c.text}>
+      <Text variant={small ? 'label' : 'caption'} color={selected ? colors.background : colors.text}>
         {label}
       </Text>
     </View>
   );
-  if (!onPress) return content(false);
-  return (
-    <FastPressable
-     
-      onPress={() => {
-        if (hapticsOn) void Haptics.selectionAsync();
-        onPress();
-      }}
-    >
-      {({ pressed }) => content(pressed)}
-    </FastPressable>
-  );
+
+  if (!onPress) return renderChip(false);
+
+  const handlePress = () => {
+    if (areHapticsEnabled) void Haptics.selectionAsync();
+    onPress();
+  };
+
+  return <FastPressable onPress={handlePress}>{({ pressed }) => renderChip(pressed)}</FastPressable>;
 });
 
 const styles = StyleSheet.create({

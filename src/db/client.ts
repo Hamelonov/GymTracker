@@ -5,6 +5,6 @@ import * as schema from './schema';
 export const sqlite = openDatabaseSync('gymtracker.db', { enableChangeListener: true });
 sqlite.execSync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
 
-export const db = drizzle(sqlite, { schema });
-export type Db = typeof db;
+export const database = drizzle(sqlite, { schema });
+export type Database = typeof database;
 export { schema };

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
-import { useSettings } from '@/store/settings';
+import { type ThemePreference, useSettings } from '@/store/settings';
 import { darkColors, lightColors, type ColorScheme, type ThemeColors } from './tokens';
 
 interface Theme {
@@ -11,15 +11,23 @@ interface Theme {
 
 const ThemeContext = createContext<Theme>({ scheme: 'light', colors: lightColors, isDark: false });
 
+function resolveColorScheme(
+  themePreference: ThemePreference,
+  systemScheme: string | null | undefined,
+): ColorScheme {
+  if (themePreference !== 'system') return themePreference;
+  return systemScheme === 'dark' ? 'dark' : 'light';
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const system = useColorScheme();
-  const pref = useSettings((s) => s.theme);
-  const scheme: ColorScheme = pref === 'system' ? (system === 'dark' ? 'dark' : 'light') : pref;
-  const value = useMemo<Theme>(
+  const systemScheme = useColorScheme();
+  const themePreference = useSettings((state) => state.theme);
+  const scheme = resolveColorScheme(themePreference, systemScheme);
+  const theme = useMemo<Theme>(
     () => ({ scheme, colors: scheme === 'dark' ? darkColors : lightColors, isDark: scheme === 'dark' }),
     [scheme],
   );
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme() {

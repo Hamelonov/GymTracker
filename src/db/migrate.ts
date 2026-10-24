@@ -2,9 +2,9 @@ import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
 import Storage from 'expo-sqlite/kv-store';
 import { useEffect, useState } from 'react';
 import migrations from '../../drizzle/migrations';
-import { db } from './client';
+import { database } from './client';
 
-const TAG_KEY = 'migrations_tag';
+const MIGRATIONS_TAG_KEY = 'migrations_tag';
 
 interface Journal {
   entries: { tag: string }[];
@@ -12,9 +12,13 @@ interface Journal {
 
 const latestTag = (migrations.journal as Journal).entries.at(-1)?.tag ?? '';
 
-interface DbReadyState {
+interface DatabaseReadyState {
   success: boolean;
   error: Error | null;
+}
+
+function toError(value: unknown): Error {
+  return value instanceof Error ? value : new Error(String(value));
 }
 
 /**
@@ -22,25 +26,25 @@ interface DbReadyState {
  * latest migration (remembered in the key-value store) the async migrator is
  * skipped entirely, which saves over a second on every cold start.
  */
-export function useDbReady(): DbReadyState {
-  const [state, setState] = useState<DbReadyState>(() => ({
-    success: Storage.getItemSync(TAG_KEY) === latestTag,
+export function useDatabaseReady(): DatabaseReadyState {
+  const [state, setState] = useState<DatabaseReadyState>(() => ({
+    success: Storage.getItemSync(MIGRATIONS_TAG_KEY) === latestTag,
     error: null,
   }));
 
   useEffect(() => {
     if (state.success) return;
-    let cancelled = false;
-    migrate(db, migrations)
+    let isCancelled = false;
+    migrate(database, migrations)
       .then(() => {
-        Storage.setItemSync(TAG_KEY, latestTag);
-        if (!cancelled) setState({ success: true, error: null });
+        Storage.setItemSync(MIGRATIONS_TAG_KEY, latestTag);
+        if (!isCancelled) setState({ success: true, error: null });
       })
-      .catch((e: unknown) => {
-        if (!cancelled) setState({ success: false, error: e instanceof Error ? e : new Error(String(e)) });
+      .catch((error: unknown) => {
+        if (!isCancelled) setState({ success: false, error: toError(error) });
       });
     return () => {
-      cancelled = true;
+      isCancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

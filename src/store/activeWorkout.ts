@@ -5,7 +5,7 @@ import { newId } from '@/domain/ids';
 import type { ActiveExercise, ActiveSet, ActiveWorkout, SetType, SetValues } from '@/domain/types';
 import { EMPTY_SET_VALUES } from '@/domain/types';
 import type { RoutineDetail } from '@/db/repo/routines';
-import { lastPerformances } from '@/db/repo/exercises';
+import { getLastPerformances } from '@/db/repo/exercises';
 
 export type EditSession = { mode: 'new' } | { mode: 'edit'; workoutId: string; finishedAt: number };
 
@@ -14,32 +14,38 @@ interface ActiveWorkoutState {
   session: EditSession;
   /** Drives the minimized bar: true when the active screen is not on top. */
   minimized: boolean;
-  /** Route segment of the exercise currently targeted by the picker / superset dialog. */
   startEmpty: (name: string) => void;
   startFromRoutine: (routine: RoutineDetail, name?: string) => void;
-  startFromActive: (w: ActiveWorkout, session: EditSession) => void;
-  setMinimized: (v: boolean) => void;
+  startFromActive: (workout: ActiveWorkout, session: EditSession) => void;
+  setMinimized: (minimized: boolean) => void;
   clear: () => void;
   rename: (name: string) => void;
   setNotes: (notes: string) => void;
-  setStartedAt: (ts: number) => void;
+  setStartedAt: (startedAt: number) => void;
   addExercises: (exerciseIds: string[]) => void;
-  replaceExercise: (activeId: string, exerciseId: string) => void;
-  removeExercise: (activeId: string) => ActiveExercise | null;
-  restoreExercise: (ex: ActiveExercise, index: number) => void;
+  replaceExercise: (workoutExerciseId: string, exerciseId: string) => void;
+  removeExercise: (workoutExerciseId: string) => ActiveExercise | null;
+  restoreExercise: (exercise: ActiveExercise, index: number) => void;
   moveExercise: (from: number, to: number) => void;
-  setExerciseNote: (activeId: string, note: string) => void;
-  setExerciseRest: (activeId: string, restSeconds: number | null) => void;
-  setSuperset: (activeIds: string[], group: number | null) => void;
-  addSet: (activeId: string) => void;
-  updateSet: (activeId: string, setId: string, patch: Partial<SetValues> & { type?: SetType }) => void;
-  toggleSet: (activeId: string, setId: string) => { completed: boolean; restSeconds: number | null } | null;
-  removeSet: (activeId: string, setId: string) => { set: ActiveSet; index: number } | null;
-  restoreSet: (activeId: string, set: ActiveSet, index: number) => void;
+  setExerciseNote: (workoutExerciseId: string, note: string) => void;
+  setExerciseRest: (workoutExerciseId: string, restSeconds: number | null) => void;
+  setSuperset: (workoutExerciseIds: string[], group: number | null) => void;
+  addSet: (workoutExerciseId: string) => void;
+  updateSet: (
+    workoutExerciseId: string,
+    setId: string,
+    patch: Partial<SetValues> & { type?: SetType },
+  ) => void;
+  toggleSet: (
+    workoutExerciseId: string,
+    setId: string,
+  ) => { completed: boolean; restSeconds: number | null } | null;
+  removeSet: (workoutExerciseId: string, setId: string) => { set: ActiveSet; index: number } | null;
+  restoreSet: (workoutExerciseId: string, set: ActiveSet, index: number) => void;
   completeAllSets: () => void;
 }
 
-function makeSet(previous: SetValues | null, type: SetType = 'normal', seed?: SetValues): ActiveSet {
+function makeSet(previous: SetValues | null, type: SetType = 'normal', initialValues?: SetValues): ActiveSet {
   return {
     id: newId(),
     type,
@@ -47,24 +53,54 @@ function makeSet(previous: SetValues | null, type: SetType = 'normal', seed?: Se
     completedAt: null,
     previous,
     ...EMPTY_SET_VALUES,
-    ...(seed ?? {}),
+    ...(initialValues ?? {}),
   };
 }
 
-function nextSupersetGroup(exs: ActiveExercise[]): number {
-  return exs.reduce((m, e) => Math.max(m, e.supersetGroup ?? 0), 0) + 1;
+/** Empty sets prefilled with "previous" values from the last time the exercise was done. */
+function makeSetsFromLastPerformance(lastSets: SetValues[] | undefined): ActiveSet[] {
+  const setCount = Math.max(1, lastSets?.length ?? 0);
+  return Array.from({ length: setCount }, (_, setIndex) => makeSet(lastSets?.[setIndex] ?? null));
+}
+
+function nextSupersetGroup(exercises: ActiveExercise[]): number {
+  return exercises.reduce((maxGroup, exercise) => Math.max(maxGroup, exercise.supersetGroup ?? 0), 0) + 1;
+}
+
+function hasAnyValue(set: SetValues): boolean {
+  return set.weightKg != null || set.reps != null || set.durationSec != null || set.distanceM != null;
+}
+
+/** Values to copy from the previous performance into the empty fields of a set being completed. */
+function valuesToFillFromPrevious(set: ActiveSet): Partial<SetValues> {
+  const fill: Partial<SetValues> = {};
+  const previous = set.previous;
+  if (!previous) return fill;
+  if (set.weightKg == null && previous.weightKg != null) fill.weightKg = previous.weightKg;
+  if (set.reps == null && previous.reps != null) fill.reps = previous.reps;
+  if (set.durationSec == null && previous.durationSec != null) fill.durationSec = previous.durationSec;
+  if (set.distanceM == null && previous.distanceM != null) fill.distanceM = previous.distanceM;
+  return fill;
 }
 
 export const useActiveWorkout = create<ActiveWorkoutState>()(
   persist(
     (set, get) => {
-      const update = (fn: (w: ActiveWorkout) => ActiveWorkout) => {
-        const w = get().workout;
-        if (!w) return;
-        set({ workout: fn(w) });
+      const updateWorkout = (transform: (workout: ActiveWorkout) => ActiveWorkout) => {
+        const workout = get().workout;
+        if (!workout) return;
+        set({ workout: transform(workout) });
       };
-      const updateExercise = (activeId: string, fn: (e: ActiveExercise) => ActiveExercise) =>
-        update((w) => ({ ...w, exercises: w.exercises.map((e) => (e.id === activeId ? fn(e) : e)) }));
+      const updateExercise = (
+        workoutExerciseId: string,
+        transform: (exercise: ActiveExercise) => ActiveExercise,
+      ) =>
+        updateWorkout((workout) => ({
+          ...workout,
+          exercises: workout.exercises.map((exercise) =>
+            exercise.id === workoutExerciseId ? transform(exercise) : exercise,
+          ),
+        }));
 
       return {
         workout: null,
@@ -77,23 +113,28 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
             minimized: false,
           }),
         startFromRoutine: (routine, name) => {
-          const prev = lastPerformances(routine.exercises.map((e) => e.exerciseId));
-          const exercises: ActiveExercise[] = routine.exercises.map((re) => {
-            const p = prev.get(re.exerciseId);
-            const planned = re.sets.length > 0 ? re.sets : [{ type: 'normal' as SetType, ...EMPTY_SET_VALUES }];
+          const lastPerformanceByExerciseId = getLastPerformances(
+            routine.exercises.map((routineExercise) => routineExercise.exerciseId),
+          );
+          const exercises: ActiveExercise[] = routine.exercises.map((routineExercise) => {
+            const previousPerformance = lastPerformanceByExerciseId.get(routineExercise.exerciseId);
+            const plannedSets =
+              routineExercise.sets.length > 0
+                ? routineExercise.sets
+                : [{ type: 'normal' as SetType, ...EMPTY_SET_VALUES }];
             return {
               id: newId(),
-              exerciseId: re.exerciseId,
-              supersetGroup: re.supersetGroup,
+              exerciseId: routineExercise.exerciseId,
+              supersetGroup: routineExercise.supersetGroup,
               note: '',
-              restSeconds: re.restSeconds,
-              sets: planned.map((s, i) =>
-                makeSet(p?.sets[i] ?? null, s.type, {
-                  weightKg: s.weightKg,
-                  reps: s.reps,
-                  durationSec: s.durationSec,
-                  distanceM: s.distanceM,
-                  rpe: s.rpe,
+              restSeconds: routineExercise.restSeconds,
+              sets: plannedSets.map((plannedSet, setIndex) =>
+                makeSet(previousPerformance?.sets[setIndex] ?? null, plannedSet.type, {
+                  weightKg: plannedSet.weightKg,
+                  reps: plannedSet.reps,
+                  durationSec: plannedSet.durationSec,
+                  distanceM: plannedSet.distanceM,
+                  rpe: plannedSet.rpe,
                 }),
               ),
             };
@@ -111,136 +152,149 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
             minimized: false,
           });
         },
-        startFromActive: (w, session) => set({ workout: w, session, minimized: false }),
-        setMinimized: (v) => set({ minimized: v }),
+        startFromActive: (workout, session) => set({ workout, session, minimized: false }),
+        setMinimized: (minimized) => set({ minimized }),
         clear: () => set({ workout: null, session: { mode: 'new' }, minimized: false }),
-        rename: (name) => update((w) => ({ ...w, name })),
-        setNotes: (notes) => update((w) => ({ ...w, notes })),
-        setStartedAt: (ts) => update((w) => ({ ...w, startedAt: ts })),
+        rename: (name) => updateWorkout((workout) => ({ ...workout, name })),
+        setNotes: (notes) => updateWorkout((workout) => ({ ...workout, notes })),
+        setStartedAt: (startedAt) => updateWorkout((workout) => ({ ...workout, startedAt })),
         addExercises: (exerciseIds) => {
-          const prev = lastPerformances(exerciseIds);
-          update((w) => ({
-            ...w,
+          const lastPerformanceByExerciseId = getLastPerformances(exerciseIds);
+          updateWorkout((workout) => ({
+            ...workout,
             exercises: [
-              ...w.exercises,
-              ...exerciseIds.map((exerciseId) => {
-                const p = prev.get(exerciseId);
-                const count = Math.max(1, p?.sets.length ?? 0);
-                return {
-                  id: newId(),
-                  exerciseId,
-                  supersetGroup: null,
-                  note: '',
-                  restSeconds: null,
-                  sets: Array.from({ length: count }, (_, i) => makeSet(p?.sets[i] ?? null)),
-                };
-              }),
+              ...workout.exercises,
+              ...exerciseIds.map((exerciseId) => ({
+                id: newId(),
+                exerciseId,
+                supersetGroup: null,
+                note: '',
+                restSeconds: null,
+                sets: makeSetsFromLastPerformance(lastPerformanceByExerciseId.get(exerciseId)?.sets),
+              })),
             ],
           }));
         },
-        replaceExercise: (activeId, exerciseId) => {
-          const p = lastPerformances([exerciseId]).get(exerciseId);
-          updateExercise(activeId, (e) => ({
-            ...e,
+        replaceExercise: (workoutExerciseId, exerciseId) => {
+          const previousPerformance = getLastPerformances([exerciseId]).get(exerciseId);
+          updateExercise(workoutExerciseId, (exercise) => ({
+            ...exercise,
             exerciseId,
             note: '',
-            sets: Array.from({ length: Math.max(1, p?.sets.length ?? 0) }, (_, i) => makeSet(p?.sets[i] ?? null)),
+            sets: makeSetsFromLastPerformance(previousPerformance?.sets),
           }));
         },
-        removeExercise: (activeId) => {
-          const w = get().workout;
-          const ex = w?.exercises.find((e) => e.id === activeId) ?? null;
-          update((w2) => ({ ...w2, exercises: w2.exercises.filter((e) => e.id !== activeId) }));
-          return ex;
+        removeExercise: (workoutExerciseId) => {
+          const removedExercise =
+            get().workout?.exercises.find((exercise) => exercise.id === workoutExerciseId) ?? null;
+          updateWorkout((workout) => ({
+            ...workout,
+            exercises: workout.exercises.filter((exercise) => exercise.id !== workoutExerciseId),
+          }));
+          return removedExercise;
         },
-        restoreExercise: (ex, index) =>
-          update((w) => {
-            const list = [...w.exercises];
-            list.splice(Math.min(index, list.length), 0, ex);
-            return { ...w, exercises: list };
+        restoreExercise: (exercise, index) =>
+          updateWorkout((workout) => {
+            const exercises = [...workout.exercises];
+            exercises.splice(Math.min(index, exercises.length), 0, exercise);
+            return { ...workout, exercises };
           }),
         moveExercise: (from, to) =>
-          update((w) => {
-            const list = [...w.exercises];
-            const [item] = list.splice(from, 1);
-            if (!item) return w;
-            list.splice(to, 0, item);
-            return { ...w, exercises: list };
+          updateWorkout((workout) => {
+            const exercises = [...workout.exercises];
+            const [movedExercise] = exercises.splice(from, 1);
+            if (!movedExercise) return workout;
+            exercises.splice(to, 0, movedExercise);
+            return { ...workout, exercises };
           }),
-        setExerciseNote: (activeId, note) => updateExercise(activeId, (e) => ({ ...e, note })),
-        setExerciseRest: (activeId, restSeconds) => updateExercise(activeId, (e) => ({ ...e, restSeconds })),
-        setSuperset: (activeIds, group) =>
-          update((w) => {
-            const g = group === -1 ? nextSupersetGroup(w.exercises) : group;
-            return { ...w, exercises: w.exercises.map((e) => (activeIds.includes(e.id) ? { ...e, supersetGroup: g } : e)) };
+        setExerciseNote: (workoutExerciseId, note) =>
+          updateExercise(workoutExerciseId, (exercise) => ({ ...exercise, note })),
+        setExerciseRest: (workoutExerciseId, restSeconds) =>
+          updateExercise(workoutExerciseId, (exercise) => ({ ...exercise, restSeconds })),
+        setSuperset: (workoutExerciseIds, group) =>
+          updateWorkout((workout) => {
+            // -1 asks for a brand-new superset group.
+            const supersetGroup = group === -1 ? nextSupersetGroup(workout.exercises) : group;
+            return {
+              ...workout,
+              exercises: workout.exercises.map((exercise) =>
+                workoutExerciseIds.includes(exercise.id) ? { ...exercise, supersetGroup } : exercise,
+              ),
+            };
           }),
-        addSet: (activeId) =>
-          updateExercise(activeId, (e) => {
-            const last = e.sets[e.sets.length - 1];
-            const prevIndex = e.sets.length;
+        addSet: (workoutExerciseId) =>
+          updateExercise(workoutExerciseId, (exercise) => {
+            const lastSet = exercise.sets[exercise.sets.length - 1];
             // Seed the new set with the last set's values for fast entry.
-            const seed: SetValues | undefined = last
-              ? { weightKg: last.weightKg, reps: last.reps, durationSec: last.durationSec, distanceM: last.distanceM, rpe: null }
+            const initialValues: SetValues | undefined = lastSet
+              ? {
+                  weightKg: lastSet.weightKg,
+                  reps: lastSet.reps,
+                  durationSec: lastSet.durationSec,
+                  distanceM: lastSet.distanceM,
+                  rpe: null,
+                }
               : undefined;
-            const previous = last?.previous ? (e.sets[prevIndex]?.previous ?? null) : null;
-            return { ...e, sets: [...e.sets, makeSet(previous, last?.type === 'warmup' ? 'normal' : 'normal', seed)] };
+            // The last performance only covers the sets that already exist, so an added set has no "previous".
+            return {
+              ...exercise,
+              sets: [...exercise.sets, makeSet(null, 'normal', initialValues)],
+            };
           }),
-        updateSet: (activeId, setId, patch) =>
-          updateExercise(activeId, (e) => ({
-            ...e,
-            sets: e.sets.map((s) => (s.id === setId ? { ...s, ...patch } : s)),
+        updateSet: (workoutExerciseId, setId, patch) =>
+          updateExercise(workoutExerciseId, (exercise) => ({
+            ...exercise,
+            sets: exercise.sets.map((set) => (set.id === setId ? { ...set, ...patch } : set)),
           })),
-        toggleSet: (activeId, setId) => {
-          const w = get().workout;
-          const ex = w?.exercises.find((e) => e.id === activeId);
-          const s = ex?.sets.find((x) => x.id === setId);
-          if (!ex || !s) return null;
-          const completed = !s.completed;
+        toggleSet: (workoutExerciseId, setId) => {
+          const exercise = get().workout?.exercises.find((candidate) => candidate.id === workoutExerciseId);
+          const toggledSet = exercise?.sets.find((set) => set.id === setId);
+          if (!exercise || !toggledSet) return null;
+          const completed = !toggledSet.completed;
           // When completing an empty set, fall back to previous values so one tap logs "same as last time".
-          const fill: Partial<SetValues> = {};
-          if (completed && s.previous) {
-            if (s.weightKg == null && s.previous.weightKg != null) fill.weightKg = s.previous.weightKg;
-            if (s.reps == null && s.previous.reps != null) fill.reps = s.previous.reps;
-            if (s.durationSec == null && s.previous.durationSec != null) fill.durationSec = s.previous.durationSec;
-            if (s.distanceM == null && s.previous.distanceM != null) fill.distanceM = s.previous.distanceM;
-          }
-          updateExercise(activeId, (e) => ({
-            ...e,
-            sets: e.sets.map((x) => (x.id === setId ? { ...x, ...fill, completed, completedAt: completed ? Date.now() : null } : x)),
+          const fill = completed ? valuesToFillFromPrevious(toggledSet) : {};
+          updateExercise(workoutExerciseId, (currentExercise) => ({
+            ...currentExercise,
+            sets: currentExercise.sets.map((set) =>
+              set.id === setId
+                ? { ...set, ...fill, completed, completedAt: completed ? Date.now() : null }
+                : set,
+            ),
           }));
-          return { completed, restSeconds: ex.restSeconds };
+          return { completed, restSeconds: exercise.restSeconds };
         },
-        removeSet: (activeId, setId) => {
-          const w = get().workout;
-          const ex = w?.exercises.find((e) => e.id === activeId);
-          const index = ex?.sets.findIndex((s) => s.id === setId) ?? -1;
-          const s = index >= 0 ? ex?.sets[index] : undefined;
-          if (!s) return null;
-          updateExercise(activeId, (e) => ({ ...e, sets: e.sets.filter((x) => x.id !== setId) }));
-          return { set: s, index };
+        removeSet: (workoutExerciseId, setId) => {
+          const exercise = get().workout?.exercises.find((candidate) => candidate.id === workoutExerciseId);
+          const index = exercise?.sets.findIndex((set) => set.id === setId) ?? -1;
+          const removedSet = index >= 0 ? exercise?.sets[index] : undefined;
+          if (!removedSet) return null;
+          updateExercise(workoutExerciseId, (currentExercise) => ({
+            ...currentExercise,
+            sets: currentExercise.sets.filter((set) => set.id !== setId),
+          }));
+          return { set: removedSet, index };
         },
-        restoreSet: (activeId, s, index) =>
-          updateExercise(activeId, (e) => {
-            const list = [...e.sets];
-            list.splice(Math.min(index, list.length), 0, s);
-            return { ...e, sets: list };
+        restoreSet: (workoutExerciseId, restoredSet, index) =>
+          updateExercise(workoutExerciseId, (exercise) => {
+            const sets = [...exercise.sets];
+            sets.splice(Math.min(index, sets.length), 0, restoredSet);
+            return { ...exercise, sets };
           }),
         completeAllSets: () =>
-          update((w) => ({
-            ...w,
-            exercises: w.exercises.map((e) => ({
-              ...e,
-              sets: e.sets.map((s) => {
-                if (s.completed) return s;
-                const hasValue = s.weightKg != null || s.reps != null || s.durationSec != null || s.distanceM != null;
-                const prev = s.previous;
-                if (!hasValue && !prev) return s;
+          updateWorkout((workout) => ({
+            ...workout,
+            exercises: workout.exercises.map((exercise) => ({
+              ...exercise,
+              sets: exercise.sets.map((set) => {
+                if (set.completed) return set;
+                const previous = set.previous;
+                if (!hasAnyValue(set) && !previous) return set;
                 return {
-                  ...s,
-                  weightKg: s.weightKg ?? prev?.weightKg ?? null,
-                  reps: s.reps ?? prev?.reps ?? null,
-                  durationSec: s.durationSec ?? prev?.durationSec ?? null,
-                  distanceM: s.distanceM ?? prev?.distanceM ?? null,
+                  ...set,
+                  weightKg: set.weightKg ?? previous?.weightKg ?? null,
+                  reps: set.reps ?? previous?.reps ?? null,
+                  durationSec: set.durationSec ?? previous?.durationSec ?? null,
+                  distanceM: set.distanceM ?? previous?.distanceM ?? null,
                   completed: true,
                   completedAt: Date.now(),
                 };
@@ -252,7 +306,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
     {
       name: 'active-workout',
       storage: createJSONStorage(() => deferredStorage),
-      partialize: (s) => ({ workout: s.workout, session: s.session }),
+      partialize: (state) => ({ workout: state.workout, session: state.session }),
     },
   ),
 );

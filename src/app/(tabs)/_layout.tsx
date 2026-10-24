@@ -10,19 +10,19 @@ import { fonts, useColors } from '@/ui';
 export const TAB_BAR_HEIGHT = 60;
 
 export default function TabLayout() {
-  const c = useColors();
+  const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation();
+  const { t: translate } = useTranslation();
   return (
     <>
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: c.text,
-          tabBarInactiveTintColor: c.textFaint,
+          tabBarActiveTintColor: colors.text,
+          tabBarInactiveTintColor: colors.textFaint,
           tabBarStyle: {
-            backgroundColor: c.bg,
-            borderTopColor: c.border,
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
             borderTopWidth: StyleSheet.hairlineWidth,
             height: TAB_BAR_HEIGHT + insets.bottom,
             paddingBottom: insets.bottom,
@@ -30,24 +30,36 @@ export default function TabLayout() {
             elevation: 0,
           },
           tabBarLabelStyle: { fontFamily: fonts.semibold, fontSize: 11, marginTop: 2 },
-          sceneStyle: { backgroundColor: c.bg },
+          sceneStyle: { backgroundColor: colors.background },
         }}
       >
         <Tabs.Screen
           name="index"
-          options={{ title: t('tabs.workout'), tabBarIcon: ({ color }) => <Dumbbell size={23} color={color} strokeWidth={2.2} /> }}
+          options={{
+            title: translate('tabs.workout'),
+            tabBarIcon: ({ color }) => <Dumbbell size={23} color={color} strokeWidth={2.2} />,
+          }}
         />
         <Tabs.Screen
           name="history"
-          options={{ title: t('tabs.history'), tabBarIcon: ({ color }) => <History size={23} color={color} strokeWidth={2.2} /> }}
+          options={{
+            title: translate('tabs.history'),
+            tabBarIcon: ({ color }) => <History size={23} color={color} strokeWidth={2.2} />,
+          }}
         />
         <Tabs.Screen
           name="exercises"
-          options={{ title: t('tabs.exercises'), tabBarIcon: ({ color }) => <Library size={23} color={color} strokeWidth={2.2} /> }}
+          options={{
+            title: translate('tabs.exercises'),
+            tabBarIcon: ({ color }) => <Library size={23} color={color} strokeWidth={2.2} />,
+          }}
         />
         <Tabs.Screen
           name="profile"
-          options={{ title: t('tabs.profile'), tabBarIcon: ({ color }) => <User size={23} color={color} strokeWidth={2.2} /> }}
+          options={{
+            title: translate('tabs.profile'),
+            tabBarIcon: ({ color }) => <User size={23} color={color} strokeWidth={2.2} />,
+          }}
         />
       </Tabs>
       <ActiveWorkoutBar bottom={TAB_BAR_HEIGHT + insets.bottom} />

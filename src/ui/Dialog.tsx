@@ -17,34 +17,35 @@ interface DialogOptions {
 
 interface DialogState {
   options: DialogOptions | null;
-  resolve: ((ok: boolean) => void) | null;
-  open: (o: DialogOptions) => Promise<boolean>;
-  close: (ok: boolean) => void;
+  resolve: ((isConfirmed: boolean) => void) | null;
+  open: (options: DialogOptions) => Promise<boolean>;
+  close: (isConfirmed: boolean) => void;
 }
 
-export const useDialog = create<DialogState>((set, get) => ({
+export const useDialogStore = create<DialogState>((set, get) => ({
   options: null,
   resolve: null,
   open: (options) =>
     new Promise<boolean>((resolve) => {
+      // A new dialog replaces any open one, which counts as "cancelled".
       get().resolve?.(false);
       set({ options, resolve });
     }),
-  close: (ok) => {
-    get().resolve?.(ok);
+  close: (isConfirmed) => {
+    get().resolve?.(isConfirmed);
     set({ options: null, resolve: null });
   },
 }));
 
 /** Imperative confirm: `if (await confirm({ title })) …` */
 export function confirm(options: DialogOptions): Promise<boolean> {
-  return useDialog.getState().open(options);
+  return useDialogStore.getState().open(options);
 }
 
 export function DialogHost() {
-  const { t } = useTranslation();
-  const options = useDialog((s) => s.options);
-  const close = useDialog((s) => s.close);
+  const { t: translate } = useTranslation();
+  const options = useDialogStore((state) => state.options);
+  const close = useDialogStore((state) => state.close);
   return (
     <Sheet visible={options != null} onClose={() => close(false)}>
       {options ? (
@@ -57,13 +58,18 @@ export function DialogHost() {
           ) : null}
           <View style={styles.actions}>
             <Button
-              title={options.confirmLabel ?? t('common.confirm')}
+              title={options.confirmLabel ?? translate('common.confirm')}
               variant={options.destructive ? 'danger' : 'primary'}
               size="lg"
-              full
+              fullWidth
               onPress={() => close(true)}
             />
-            <Button title={options.cancelLabel ?? t('common.cancel')} variant="ghost" full onPress={() => close(false)} />
+            <Button
+              title={options.cancelLabel ?? translate('common.cancel')}
+              variant="ghost"
+              fullWidth
+              onPress={() => close(false)}
+            />
           </View>
         </View>
       ) : null}

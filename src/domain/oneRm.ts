@@ -5,10 +5,10 @@
 export function estimateOneRm(weightKg: number, reps: number): number {
   if (weightKg <= 0 || reps <= 0) return 0;
   if (reps === 1) return weightKg;
-  const capped = Math.min(reps, 30);
-  const epley = weightKg * (1 + capped / 30);
-  if (capped > 10) return epley;
-  const brzycki = weightKg * (36 / (37 - capped));
+  const cappedReps = Math.min(reps, 30);
+  const epley = weightKg * (1 + cappedReps / 30);
+  if (cappedReps > 10) return epley;
+  const brzycki = weightKg * (36 / (37 - cappedReps));
   return (epley + brzycki) / 2;
 }
 

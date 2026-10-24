@@ -6,12 +6,22 @@ import { Text } from './Text';
 import { useColors } from './ThemeProvider';
 import { spacing } from './tokens';
 
-export function EmptyState({ icon, title, hint, action }: { icon: LucideIcon; title: string; hint?: string; action?: React.ReactNode }) {
-  const c = useColors();
+export function EmptyState({
+  icon,
+  title,
+  hint,
+  action,
+}: {
+  icon: LucideIcon;
+  title: string;
+  hint?: string;
+  action?: React.ReactNode;
+}) {
+  const colors = useColors();
   return (
-    <View style={styles.wrap}>
-      <View style={[styles.iconWrap, { backgroundColor: c.accentSoft }]}>
-        <Icon icon={icon} size={28} color={c.text} />
+    <View style={styles.wrapper}>
+      <View style={[styles.iconCircle, { backgroundColor: colors.accentSoft }]}>
+        <Icon icon={icon} size={28} color={colors.text} />
       </View>
       <Text variant="h3" align="center">
         {title}
@@ -27,8 +37,15 @@ export function EmptyState({ icon, title, hint, action }: { icon: LucideIcon; ti
 }
 
 const styles = StyleSheet.create({
-  wrap: { alignItems: 'center', paddingVertical: spacing.xxl * 1.5, paddingHorizontal: spacing.xl },
-  iconWrap: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },
+  wrapper: { alignItems: 'center', paddingVertical: spacing.xxl * 1.5, paddingHorizontal: spacing.xl },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
   hint: { marginTop: spacing.sm, maxWidth: 300 },
   action: { marginTop: spacing.xl },
 });

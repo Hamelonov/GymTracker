@@ -19,16 +19,27 @@ export interface ListItemProps {
   titleColor?: string;
 }
 
-export function ListItem({ title, subtitle, left, right, chevron, onPress, onLongPress, style, compact, titleColor }: ListItemProps) {
-  const body = (
+export function ListItem({
+  title,
+  subtitle,
+  left,
+  right,
+  chevron,
+  onPress,
+  onLongPress,
+  style,
+  compact,
+  titleColor,
+}: ListItemProps) {
+  const row = (
     <View style={[styles.row, compact ? styles.compact : null, style]}>
       {left ? <View style={styles.left}>{left}</View> : null}
-      <View style={styles.body}>
+      <View style={styles.textColumn}>
         <Text variant="bodyMedium" numberOfLines={1} color={titleColor}>
           {title}
         </Text>
         {subtitle ? (
-          <Text variant="caption" color="muted" numberOfLines={2} style={{ marginTop: 2 }}>
+          <Text variant="caption" color="muted" numberOfLines={2} style={styles.subtitle}>
             {subtitle}
           </Text>
         ) : null}
@@ -37,17 +48,29 @@ export function ListItem({ title, subtitle, left, right, chevron, onPress, onLon
       {chevron ? <Icon icon={ChevronRight} size={18} color="faint" /> : null}
     </View>
   );
-  if (!onPress && !onLongPress) return body;
+
+  const isPressable = onPress || onLongPress;
+  if (!isPressable) return row;
+
   return (
-    <Pressable onPress={onPress} onLongPress={onLongPress} scaleTo={0.985} style={{ borderRadius: radius.md }}>
-      {body}
+    <Pressable onPress={onPress} onLongPress={onLongPress} scaleTo={0.985} style={styles.pressable}>
+      {row}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md, paddingHorizontal: spacing.sm, minHeight: 56 },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    minHeight: 56,
+  },
   compact: { paddingVertical: spacing.sm, minHeight: 44 },
   left: { alignItems: 'center', justifyContent: 'center' },
-  body: { flex: 1 },
+  textColumn: { flex: 1 },
+  subtitle: { marginTop: 2 },
+  pressable: { borderRadius: radius.md },
 });
