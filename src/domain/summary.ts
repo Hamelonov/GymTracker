@@ -49,37 +49,58 @@ export interface LineFormat {
   distance: (m: number) => string;
 }
 
+/** Sets done at one weight: "80 × 8/7/6". `weightKg` is null for bodyweight or cardio. */
+export interface SetGroup {
+  weightKg: number | null;
+  /** Reps per set, or formatted time / distance for cardio. */
+  values: string[];
+}
+
 /**
- * Compact one-line summary of an exercise's working sets, e.g.
- *   "80 kg × 8/7/6", "80 kg × 8/7 · 85 kg × 5", "8/7/7", "1:00/0:45".
- * Warm-up sets are left out. Consecutive sets with the same weight are grouped.
+ * Working sets of one exercise grouped the way people write them on a board:
+ * consecutive sets with the same weight form one group. Warm-ups are left out.
  */
-export function formatSetsLine(sets: LineSet[], fields: SetFields, fmt: LineFormat): string {
+export function groupSets(sets: LineSet[], fields: SetFields, fmt: LineFormat): SetGroup[] {
   const working = sets.filter((s) => s.type !== 'warmup');
-  if (working.length === 0) return '—';
+  if (working.length === 0) return [];
 
   if (fields.distance || (fields.duration && !fields.reps)) {
-    return working
-      .map((s) => {
-        const parts: string[] = [];
-        if (fields.distance && s.distanceM != null) parts.push(fmt.distance(s.distanceM));
-        if (fields.duration && s.durationSec != null) parts.push(fmt.duration(s.durationSec));
-        return parts.join(' ') || '—';
-      })
-      .join(fields.distance ? ' · ' : '/');
+    const values = working.map((s) => {
+      const parts: string[] = [];
+      if (fields.distance && s.distanceM != null) parts.push(fmt.distance(s.distanceM));
+      if (fields.duration && s.durationSec != null) parts.push(fmt.duration(s.durationSec));
+      return parts.join(' ') || '—';
+    });
+    return [{ weightKg: null, values }];
   }
 
-  const reps = (s: LineSet) => (s.reps != null ? String(s.reps) : '—');
-  if (!fields.weight) return working.map(reps).join('/');
+  const reps = (x: LineSet) => (x.reps != null ? String(x.reps) : '—');
+  if (!fields.weight) return [{ weightKg: null, values: working.map(reps) }];
 
-  const groups: { weightKg: number | null; reps: string[] }[] = [];
-  for (const s of working) {
-    const w = s.weightKg != null && s.weightKg > 0 ? s.weightKg : null;
+  const groups: SetGroup[] = [];
+  for (const x of working) {
+    const w = x.weightKg != null && x.weightKg > 0 ? x.weightKg : null;
     const last = groups[groups.length - 1];
-    if (last && last.weightKg === w) last.reps.push(reps(s));
-    else groups.push({ weightKg: w, reps: [reps(s)] });
+    if (last && last.weightKg === w) last.values.push(reps(x));
+    else groups.push({ weightKg: w, values: [reps(x)] });
   }
-  return groups.map((g) => (g.weightKg == null ? g.reps.join('/') : `${fmt.weight(g.weightKg)} × ${g.reps.join('/')}`)).join(' · ');
+  return groups;
+}
+
+/** One group as text: "80 × 8/7/6" or "8/7/7". */
+export function formatGroup(g: SetGroup, weight: (kg: number) => string): string {
+  const joined = g.values.join(g.values.some((v) => v.includes(' ')) ? ' · ' : '/');
+  return g.weightKg == null ? joined : `${weight(g.weightKg)} × ${joined}`;
+}
+
+/**
+ * Whole exercise on one line, groups separated by commas:
+ *   "82.5 × 7/6, 80 × 8", "8/7/7", "1:00/0:45".
+ */
+export function formatSetsLine(sets: LineSet[], fields: SetFields, fmt: LineFormat): string {
+  const groups = groupSets(sets, fields, fmt);
+  if (groups.length === 0) return '—';
+  return groups.map((g) => formatGroup(g, fmt.weight)).join(', ');
 }
 
 /** A set counts as filled when at least one of the exercise's fields has a value above zero. */

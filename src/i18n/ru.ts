@@ -167,6 +167,7 @@ const ru = {
     newRecords: 'Новые рекорды',
     firstTime: 'впервые',
     todayDone: 'Сегодня сделано',
+    repsFull: 'Повторы',
     minimize: 'Свернуть',
     elapsed: 'Прошло',
     nameLabel: 'Название тренировки',

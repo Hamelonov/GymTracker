@@ -8,9 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { exerciseName } from '@/db/repo/exercises';
 import { getWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
-import { formatSetsLine, pickRecordMetric, recordGain, type RecordMetric } from '@/domain/summary';
+import { formatGroup, groupSets, pickRecordMetric, recordGain, type RecordMetric } from '@/domain/summary';
 import { setFieldsFor } from '@/domain/types';
-import { formatDistance, formatDuration, formatWeight } from '@/domain/units';
+import { formatDistance, formatDuration, formatWeight, kgToUnit, roundDisplay, trimNumber, unitLabels } from '@/domain/units';
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
 import { useLastSave } from '@/store/lastSave';
 import { useSettings } from '@/store/settings';
@@ -71,16 +71,30 @@ export default function SummaryScreen() {
       .filter((r): r is NonNullable<typeof r> => r != null);
   }, [result, detail, fmt, t, i18n.language]);
 
-  // Everything done today: "Bench press — 80 kg × 8/7/6".
-  const todayRows = useMemo(
-    () =>
-      (detail?.exercises ?? []).map((e) => ({
+  // Everything done today, written like a training board:
+  //   Bench press   82,5 × 7/6, 80 × 8
+  // The first weight sits in the "Weight" column, reps in the "Reps" column,
+  // and further weights continue on the same line after a comma.
+  const todayRows = useMemo(() => {
+    const ru = i18n.language.startsWith('ru');
+    const num = (kg: number) => {
+      const v = trimNumber(roundDisplay(kgToUnit(kg, weightUnit), 2));
+      return ru ? v.replace('.', ',') : v;
+    };
+    return (detail?.exercises ?? []).map((e) => {
+      const groups = groupSets(e.sets, setFieldsFor(e.exercise.type), fmt);
+      const [first, ...rest] = groups;
+      const firstReps = first ? formatGroup({ ...first, weightKg: null }, num) : '—';
+      const tail = rest.map((g) => formatGroup(g, num)).join(', ');
+      return {
         id: e.id,
         name: exerciseName(e.exercise, i18n.language),
-        line: formatSetsLine(e.sets, setFieldsFor(e.exercise.type), fmt),
-      })),
-    [detail, fmt, i18n.language],
-  );
+        weight: first?.weightKg != null ? num(first.weightKg) : null,
+        reps: tail ? `${firstReps}, ${tail}` : firstReps,
+      };
+    });
+  }, [detail, fmt, i18n.language, weightUnit]);
+  const anyWeight = todayRows.some((r) => r.weight != null);
 
   const done = () => {
     useLastSave.getState().set(null);
@@ -172,13 +186,37 @@ export default function SummaryScreen() {
               </Text>
             </View>
             <Card raised style={{ backgroundColor: c.white, borderColor: 'transparent' }}>
-              {todayRows.map((r, i) => (
-                <View key={r.id} style={[styles.row, i > 0 ? styles.divider : null]}>
-                  <Text variant="bodyMedium" color={c.black}>
+              <View style={styles.boardRow}>
+                <View style={styles.boardName} />
+                {anyWeight ? (
+                  <>
+                    <Text variant="label" color={MUTED} style={styles.boardWeight}>
+                      {`${t('workout.weight')}, ${unitLabels[weightUnit] ?? weightUnit}`.toUpperCase()}
+                    </Text>
+                    <View style={styles.boardTimes} />
+                  </>
+                ) : null}
+                <Text variant="label" color={MUTED} style={styles.boardReps}>
+                  {t('workout.repsFull').toUpperCase()}
+                </Text>
+              </View>
+              {todayRows.map((r) => (
+                <View key={r.id} style={[styles.boardRow, styles.divider, styles.boardLine]}>
+                  <Text variant="bodyMedium" color={c.black} style={styles.boardName}>
                     {r.name}
                   </Text>
-                  <Text variant="h3" color={c.black} tabular>
-                    {r.line}
+                  {anyWeight ? (
+                    <>
+                      <Text variant="h3" color={c.black} tabular style={styles.boardWeight}>
+                        {r.weight ?? ''}
+                      </Text>
+                      <Text variant="h3" color={MUTED} style={styles.boardTimes}>
+                        {r.weight != null ? '×' : ''}
+                      </Text>
+                    </>
+                  ) : null}
+                  <Text variant="h3" color={c.black} tabular style={styles.boardReps}>
+                    {r.reps}
                   </Text>
                 </View>
               ))}
@@ -200,4 +238,10 @@ const styles = StyleSheet.create({
   cells: { flexDirection: 'row', marginTop: spacing.xs },
   cell: { width: '50%', gap: 2 },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  boardRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
+  boardLine: { paddingVertical: spacing.md },
+  boardName: { width: '34%' },
+  boardWeight: { width: 56, textAlign: 'right' },
+  boardTimes: { width: 14, textAlign: 'center' },
+  boardReps: { flex: 1 },
 });

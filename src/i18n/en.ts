@@ -158,6 +158,7 @@ const en = {
     newRecords: 'New records',
     firstTime: 'first time',
     todayDone: 'Done today',
+    repsFull: 'Reps',
     minimize: 'Minimize',
     elapsed: 'Elapsed',
     nameLabel: 'Workout name',

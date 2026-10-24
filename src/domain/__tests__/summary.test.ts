@@ -1,4 +1,4 @@
-import { formatSetsLine, isSetFilled, pickRecordMetric, recordGain, type LineSet } from '../summary';
+import { formatSetsLine, groupSets, isSetFilled, pickRecordMetric, recordGain, type LineSet } from '../summary';
 import { setFieldsFor, type PrHit, type SetType } from '../types';
 
 const fmt = {
@@ -52,7 +52,13 @@ describe('formatSetsLine', () => {
     expect(formatSetsLine([s(80, 8), s(80, 7), s(80, 6)], wr, fmt)).toBe('80 kg × 8/7/6');
   });
   it('splits groups when the weight changes', () => {
-    expect(formatSetsLine([s(80, 8), s(80, 7), s(85, 5)], wr, fmt)).toBe('80 kg × 8/7 · 85 kg × 5');
+    expect(formatSetsLine([s(82.5, 7), s(82.5, 6), s(80, 8)], wr, fmt)).toBe('82.5 kg × 7/6, 80 kg × 8');
+  });
+  it('exposes weight and reps separately for the table', () => {
+    expect(groupSets([s(82.5, 7), s(82.5, 6), s(80, 8)], wr, fmt)).toEqual([
+      { weightKg: 82.5, values: ['7', '6'] },
+      { weightKg: 80, values: ['8'] },
+    ]);
   });
   it('leaves warm-ups out', () => {
     expect(formatSetsLine([s(40, 10, 'warmup'), s(30, 12), s(30, 10)], wr, fmt)).toBe('30 kg × 12/10');
