@@ -3,13 +3,13 @@ import { AppState } from 'react-native';
 import type { StateStorage } from 'zustand/middleware';
 
 /**
- * Key-value storage for zustand `persist` that never writes on the tap path.
+ * Key-value хранилище для `persist` из `zustand`, которое никогда не пишет в момент тапа.
  *
- * Reads are synchronous (state is hydrated before the first render). Writes
- * are coalesced and flushed shortly after the UI has updated, and immediately
- * when the app goes to the background, so nothing is lost if Android kills it.
+ * Чтение синхронное (состояние гидрируется до первого рендера). Записи
+ * объединяются и сбрасываются вскоре после обновления интерфейса, а при уходе
+ * приложения в фон сразу, чтобы ничего не потерялось, если Android его убьёт.
  */
-// Values waiting to be written; null means "remove this key".
+// Значения, ожидающие записи; null означает «удалить этот ключ».
 const pendingWrites = new Map<string, string | null>();
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 const FLUSH_DELAY_MS = 400;
@@ -36,7 +36,7 @@ AppState.addEventListener('change', (appState) => {
 });
 
 function readItem(name: string): string | null {
-  // A pending write is newer than what is on disk.
+  // Ожидающая запись новее, чем то, что на диске.
   if (pendingWrites.has(name)) return pendingWrites.get(name) ?? null;
   return Storage.getItemSync(name);
 }
@@ -53,7 +53,7 @@ export const deferredStorage: StateStorage = {
   },
 };
 
-/** Write everything pending right now (e.g. before replacing all data). */
+/** Записывает всё ожидающее прямо сейчас (например, перед заменой всех данных). */
 export function flushStorage() {
   flush();
 }

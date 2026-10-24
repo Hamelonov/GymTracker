@@ -38,7 +38,7 @@ import {
   spacing,
 } from '@/ui';
 
-/** Which bottom sheet is open on the home screen (only one at a time). */
+/** Какой нижний лист открыт на главном экране (только один за раз). */
 type OpenSheet =
   | { kind: 'none' }
   | { kind: 'routineMenu'; routineId: string }
@@ -61,7 +61,7 @@ export default function HomeTab() {
   const [folderName, setFolderName] = useState('');
   const activeWorkout = useActiveWorkout((state) => state.workout);
   const session = useActiveWorkout((state) => state.session);
-  // Only once the workout screen has been left; never while it is opening.
+  // Только после ухода с экрана тренировки, но не во время его открытия.
   const isResumeBannerVisible = useActiveWorkout(
     (state) => !!state.workout && state.minimized && state.session.mode === 'new',
   );
@@ -75,7 +75,7 @@ export default function HomeTab() {
 
   const closeSheet = () => setOpenSheet({ kind: 'none' });
 
-  /** Asks to discard an unfinished workout before starting a new one. Returns false if the user cancels. */
+  /** Спрашивает, отбросить ли незавершённую тренировку перед началом новой. Возвращает false, если пользователь отменил. */
   const discardActiveWorkoutIfConfirmed = async () => {
     if (!activeWorkout || session.mode === 'edit') return true;
     const isConfirmed = await confirm({
@@ -122,7 +122,7 @@ export default function HomeTab() {
       : undefined;
   const selectedFolder =
     openSheet.kind === 'folderMenu' ? folders.find((folder) => folder.id === openSheet.folderId) : undefined;
-  // Routines whose folder was deleted are shown with the unfiled ones.
+  // Шаблоны с удалённой папкой показываются вместе с шаблонами без папки.
   const routinesWithoutFolder = routines.filter(
     (routine) => routine.folderId == null || !folders.some((folder) => folder.id === routine.folderId),
   );

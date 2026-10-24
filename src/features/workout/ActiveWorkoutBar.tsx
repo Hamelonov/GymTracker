@@ -10,8 +10,8 @@ import { Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
 import { useElapsedSeconds, useRestCountdown } from './timers';
 
 /**
- * Floating pill shown above the tab bar while a workout is in progress and
- * its screen is not open (the active screen toggles `minimized` on blur/focus).
+ * Плавающая «таблетка» над панелью вкладок, пока идёт тренировка и
+ * её экран не открыт (экран тренировки переключает `minimized` при потере/получении фокуса).
  */
 export function ActiveWorkoutBar({ bottom }: { bottom: number }) {
   const workout = useActiveWorkout((state) => state.workout);
@@ -32,7 +32,7 @@ export function ActiveWorkoutBar({ bottom }: { bottom: number }) {
   );
 }
 
-// A separate component so the timer hooks only tick while the pill is shown.
+// Отдельный компонент, чтобы хуки таймера тикали только пока «таблетка» показана.
 function MinimizedWorkoutPill({
   bottom,
   name,

@@ -34,7 +34,7 @@ export interface SetRowProps {
   showRpe: boolean;
   readOnly?: boolean;
   hideCheck?: boolean;
-  /** Id of the owning exercise; passed back to every handler. */
+  /** Id упражнения-владельца; передаётся обратно в каждый обработчик. */
   workoutExerciseId: string;
   onChange: (workoutExerciseId: string, setId: string, patch: Partial<SetValues>) => void;
   onToggle: (workoutExerciseId: string, setId: string) => void;
@@ -64,7 +64,7 @@ function NumberField({
   const [text, setText] = useState(() => format(value));
   const [isFocused, setIsFocused] = useState(false);
   const [previousValue, setPreviousValue] = useState(value);
-  // Pick up value changes made elsewhere, but never overwrite what the user is typing.
+  // Подхватываем изменения значений, сделанные в другом месте, но никогда не затираем то, что пользователь сейчас вводит.
   if (value !== previousValue) {
     setPreviousValue(value);
     if (!isFocused) setText(format(value));
@@ -115,7 +115,7 @@ function DeleteAction({ progress, onPress }: { progress: SharedValue<number>; on
   );
 }
 
-/** Formats a value from last time as a placeholder, or an empty string when there was none. */
+/** Форматирует значение с прошлого раза как плейсхолдер или пустую строку, если его не было. */
 function placeholderFromPrevious(
   previousValue: number | null | undefined,
   format: (value: number) => string,
@@ -142,8 +142,8 @@ export const SetRow = memo(function SetRow({
   const toggleCompleted = () => onToggleById(workoutExerciseId, set.id);
   const deleteSet = () => onDeleteById(workoutExerciseId, set.id);
   const openSetTypePicker = () => onTypePressById(workoutExerciseId, set.id);
-  // An empty set (nothing typed, or only zeros) cannot be marked done. Empty
-  // fields are filled from last time on completion, so those values count.
+  // Пустой подход (ничего не введено или одни нули) нельзя отметить выполненным. Пустые
+  // поля при завершении заполняются значениями с прошлого раза, поэтому они тоже считаются.
   const valuesOnCompletion: SetValues = {
     weightKg: set.weightKg ?? set.previous?.weightKg ?? null,
     reps: set.reps ?? set.previous?.reps ?? null,

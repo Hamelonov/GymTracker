@@ -8,7 +8,7 @@ interface SettingSwitchRowProps {
   onChange: (value: boolean) => void;
 }
 
-/** A settings list row with an on/off switch on the right. */
+/** Строка списка настроек с переключателем справа. */
 export function SettingSwitchRow({ title, value, onChange }: SettingSwitchRowProps) {
   const colors = useColors();
   return (

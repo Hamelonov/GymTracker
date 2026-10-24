@@ -11,7 +11,7 @@ export interface SegmentedProps<T extends string> {
   onChange: (value: T) => void;
 }
 
-/** Inner padding of the track; the indicator sits inside it. */
+/** Внутренний отступ дорожки; индикатор находится внутри него. */
 const TRACK_PADDING = 3;
 
 export function Segmented<T extends string>({ options, value, onChange }: SegmentedProps<T>) {

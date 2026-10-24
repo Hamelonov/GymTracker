@@ -26,7 +26,7 @@ export interface HeaderProps {
   onBack?: () => void;
 }
 
-/** Goes back, or to the home tab when the screen was opened directly (nothing to go back to). */
+/** Возвращает назад или на главную вкладку, если экран открыт напрямую (возвращаться некуда). */
 function goBackOrHome() {
   if (router.canGoBack()) router.back();
   else router.replace('/');

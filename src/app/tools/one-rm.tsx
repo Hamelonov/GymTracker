@@ -6,7 +6,7 @@ import { parseNumberInput, roundForDisplay, formatNumberWithoutTrailingZeros } f
 import { useSettings } from '@/store/settings';
 import { Card, Input, Screen, SectionTitle, Text, spacing, useColors } from '@/ui';
 
-/** Estimated one-rep max, or null until both fields hold positive numbers. */
+/** Расчётный одноповторный максимум или null, пока в обоих полях нет положительных чисел. */
 function estimateOneRmFromInput(weightText: string, repsText: string): number | null {
   const weight = parseNumberInput(weightText);
   const reps = parseNumberInput(repsText);

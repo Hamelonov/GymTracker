@@ -31,15 +31,15 @@ export function initI18n(preference: LanguagePreference) {
     interpolation: { escapeValue: false },
     returnNull: false,
     initAsync: false,
-    // Re-render when resource bundles are replaced (see the dev refresh below).
+    // Перерисовываем при замене пакетов ресурсов (см. dev-обновление ниже).
     react: { bindI18nStore: 'added' },
   });
   return i18n;
 }
 
-// Fast Refresh re-runs this module when a dictionary file changes, but i18next
-// is initialised only once. Push the fresh dictionaries so new strings show up
-// immediately instead of their raw keys.
+// Fast Refresh перезапускает этот модуль при изменении файла словаря, но `i18next`
+// инициализируется только один раз. Передаём свежие словари, чтобы новые строки появились
+// сразу, а не в виде сырых ключей.
 if (__DEV__ && i18n.isInitialized) {
   i18n.addResourceBundle('en', 'translation', en, true, true);
   i18n.addResourceBundle('ru', 'translation', ru, true, true);

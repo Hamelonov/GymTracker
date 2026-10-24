@@ -1,6 +1,6 @@
 /**
- * Estimated one-rep max. Blends Epley and Brzycki at low reps (where they are
- * both accurate) and falls back to Epley for higher reps.
+ * Расчётный одноповторный максимум. При малых повторах смешивает Эпли и Бжицки (там оба
+ * точны), а при больших повторах использует только Эпли.
  */
 export function estimateOneRm(weightKg: number, reps: number): number {
   if (weightKg <= 0 || reps <= 0) return 0;
@@ -12,7 +12,7 @@ export function estimateOneRm(weightKg: number, reps: number): number {
   return (epley + brzycki) / 2;
 }
 
-/** Weight you could lift for `targetReps` given a known 1RM (inverse Epley). */
+/** Вес, который можно поднять на `targetReps` при известном 1RM (обратная формула Эпли). */
 export function weightForReps(oneRm: number, targetReps: number): number {
   if (targetReps <= 1) return oneRm;
   return oneRm / (1 + targetReps / 30);

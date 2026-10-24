@@ -9,7 +9,7 @@ interface MoveToFolderSheetProps {
   visible: boolean;
   folders: RoutineFolderRow[];
   onClose: () => void;
-  /** `null` takes the routine out of any folder. */
+  /** `null` убирает шаблон из любой папки. */
   onSelectFolder: (folderId: string | null) => void;
 }
 

@@ -63,14 +63,14 @@ export function isBackup(value: unknown): value is Backup {
   );
 }
 
-/** Split rows into batches so a single INSERT never exceeds SQLite's variable limit. */
+/** Делит строки на пачки, чтобы один INSERT не превышал лимит переменных `SQLite`. */
 function splitIntoChunks<T>(items: T[], size = 200): T[][] {
   const chunks: T[][] = [];
   for (let index = 0; index < items.length; index += size) chunks.push(items.slice(index, index + size));
   return chunks;
 }
 
-/** Replace all data with the backup contents. Runs in a single transaction. */
+/** Заменяет все данные содержимым бэкапа. Выполняется в одной транзакции. */
 export function restoreBackup(backup: Backup): void {
   database.transaction((transaction) => {
     transaction.delete(personalRecords).run();
@@ -140,7 +140,7 @@ function csvCell(value: string | number | null | undefined): string {
   return needsQuotes ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
-/** Flat CSV: one row per set. */
+/** Плоский CSV: одна строка на подход. */
 export function workoutsCsv(unit: WeightUnit, language: string): string {
   const backup = createBackup();
   const exercisesById = new Map(backup.exercises.map((exercise) => [exercise.id, exercise]));

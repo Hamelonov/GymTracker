@@ -26,38 +26,38 @@ export interface SheetProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  /** Keep content area unpadded (e.g. for lists). */
+  /** Не добавлять отступы вокруг содержимого (например, для списков). */
   unpadded?: boolean;
 }
 
 const SLIDE_IN_TIMING = { duration: 170, easing: Easing.out(Easing.cubic) };
 const SLIDE_OUT_TIMING = { duration: 130, easing: Easing.in(Easing.cubic) };
-/** Far below any screen: marks "not laid out yet" and hides the sheet until then. */
+/** Далеко за нижним краем экрана: означает «ещё не измерено» и прячет шторку до этого момента. */
 const OFFSCREEN_POSITION = 4000;
 
 /**
- * Bottom sheet modal with backdrop. Uses the native Modal so it overlays
- * navigation. The slide is driven by hand from the sheet's measured height so
- * it travels exactly its own distance, even when the content resizes.
+ * Нижняя шторка-модалка с затемнением. Использует нативный `Modal`, поэтому перекрывает
+ * навигацию. Сдвиг считается вручную по измеренной высоте шторки, поэтому
+ * она проходит ровно свою длину, даже если содержимое меняет размер.
  */
 export function Sheet({ visible, onClose, title, children, unpadded }: SheetProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [isMounted, setIsMounted] = useState(visible);
   if (visible && !isMounted) setIsMounted(true);
-  // Keep the last rendered content while sliding out: parents usually drop the
-  // content the moment they close the sheet, which would collapse it mid-slide.
+  // Хранить последнее показанное содержимое на время ухода вниз: родители обычно убирают
+  // содержимое сразу при закрытии шторки, и она схлопнулась бы посреди анимации.
   const [displayedContent, setDisplayedContent] = useState<React.ReactNode>(children);
   if (visible && displayedContent !== children) setDisplayedContent(children);
 
   const translateY = useSharedValue(OFFSCREEN_POSITION);
   const backdropOpacity = useSharedValue(0);
-  // Latest measured height, read when the exit animation starts (a ref so a
-  // keyboard-driven resize mid-animation cannot restart the slide).
+  // Последняя измеренная высота, читается при старте анимации ухода (ref, чтобы
+  // изменение размера из-за клавиатуры посреди анимации не перезапускало сдвиг).
   const sheetHeightRef = useRef(0);
 
-  // Inside a translucent native Modal Android does not resize the window for the
-  // keyboard, so track its height ourselves and pad the sheet.
+  // В прозрачном нативном `Modal` Android не меняет размер окна под
+  // клавиатуру, поэтому отслеживаем её высоту сами и добавляем отступ шторке.
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   useEffect(() => {
     if (Platform.OS !== 'android' || !isMounted) return undefined;
@@ -76,7 +76,7 @@ export function Sheet({ visible, onClose, title, children, unpadded }: SheetProp
       const sheetHeight = event.nativeEvent.layout.height;
       sheetHeightRef.current = sheetHeight;
       if (translateY.get() >= OFFSCREEN_POSITION) {
-        // First layout after mount: start just below the screen edge and slide in.
+        // Первая раскладка после монтирования: начинаем чуть ниже края экрана и выезжаем.
         translateY.set(sheetHeight);
         translateY.set(withTiming(0, SLIDE_IN_TIMING));
         backdropOpacity.set(withTiming(1, SLIDE_IN_TIMING));

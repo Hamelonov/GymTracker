@@ -16,7 +16,7 @@ interface WeeklyChartProps {
   weightUnit: WeightUnit;
 }
 
-/** "Weekly" section: metric chips and a bar chart of that metric per week. */
+/** Раздел «По неделям»: чипы метрик и столбчатый график этой метрики по неделям. */
 export function WeeklyChart({ workouts, periodStart, now, weightUnit }: WeeklyChartProps) {
   const { t: translate, i18n } = useTranslation();
   const [metric, setMetric] = useState<WeeklyMetric>('workouts');

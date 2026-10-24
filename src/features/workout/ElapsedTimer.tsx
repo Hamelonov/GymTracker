@@ -4,9 +4,9 @@ import { Text, type TextProps } from '@/ui';
 import { useElapsedSeconds } from './timers';
 
 /**
- * Self-updating "m:ss" label. Keeping the 1-second tick inside this tiny
- * component means the rest of the active workout screen is not re-rendered
- * every second.
+ * Самообновляющаяся метка «м:сс». Секундный тик внутри этого крошечного
+ * компонента означает, что остальной экран активной тренировки
+ * не перерисовывается каждую секунду.
  */
 export function ElapsedTimer({
   startedAt,

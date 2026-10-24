@@ -1,15 +1,15 @@
 import type { RecordHit, RecordType, SetFields, SetType, SetValues } from './types';
 
-/** Which value a record row should show for an exercise. */
+/** Какое значение должна показывать строка рекорда для упражнения. */
 export type RecordMetric = 'weight' | 'reps' | 'duration' | 'distance';
 
 /**
- * Pick the value to show in the "new records" tile.
+ * Выбирает значение для плитки «новые рекорды».
  *
- * - Weighted exercises show weight when the weight record moved; if only reps
- *   improved (same weight, more reps) they show reps instead.
- * - Exercises without weight never show weight: distance, time or reps,
- *   whichever record moved, in that order.
+ * - Упражнения с весом показывают вес, если рекорд веса сдвинулся; если улучшились только повторы
+ *   (тот же вес, больше повторов), показывают повторы.
+ * - Упражнения без веса вес не показывают: дистанция, время или повторы,
+ *   что из этого сдвинулось, в таком порядке.
  */
 export function pickRecordMetric(fields: SetFields, hits: RecordHit[]): RecordMetric {
   const hasHit = (type: RecordType) => hits.some((hit) => hit.type === type);
@@ -26,13 +26,13 @@ export function pickRecordMetric(fields: SetFields, hits: RecordHit[]): RecordMe
 }
 
 export interface RecordGain {
-  /** Old record before this workout, or null when there was none. */
+  /** Старый рекорд до этой тренировки или null, если его не было. */
   previous: number | null;
-  /** New best value reached in this workout. */
+  /** Новое лучшее значение, достигнутое в этой тренировке. */
   best: number;
 }
 
-/** Old and new value for one record type, or null if that record did not move. */
+/** Старое и новое значение для одного типа рекорда или null, если рекорд не сдвинулся. */
 export function recordGain(hits: RecordHit[], type: RecordMetric): RecordGain | null {
   const hitsOfType = hits.filter((hit) => hit.type === type);
   if (hitsOfType.length === 0) return null;
@@ -52,10 +52,10 @@ export interface ValueFormatters {
   distance: (meters: number) => string;
 }
 
-/** Sets done at one weight: "80 × 8/7/6". `weightKg` is null for bodyweight or cardio. */
+/** Подходы с одним весом: «80 × 8/7/6». `weightKg` равен null для собственного веса или кардио. */
 export interface SetGroup {
   weightKg: number | null;
-  /** Reps per set, or formatted time / distance for cardio. */
+  /** Повторы по подходам или отформатированные время / дистанция для кардио. */
   values: string[];
 }
 
@@ -64,8 +64,8 @@ function formatReps(set: LineSet): string {
 }
 
 /**
- * Working sets of one exercise grouped the way people write them on a board:
- * consecutive sets with the same weight form one group. Warm-ups are left out.
+ * Рабочие подходы одного упражнения, сгруппированные так, как их пишут на доске:
+ * подряд идущие подходы с одним весом образуют группу. Разминка не учитывается.
  */
 export function groupSets(sets: LineSet[], fields: SetFields, formatters: ValueFormatters): SetGroup[] {
   const workingSets = sets.filter((set) => set.type !== 'warmup');
@@ -94,16 +94,16 @@ export function groupSets(sets: LineSet[], fields: SetFields, formatters: ValueF
   return groups;
 }
 
-/** One group as text: "80 × 8/7/6" or "8/7/7". */
+/** Одна группа текстом: «80 × 8/7/6» или «8/7/7». */
 export function formatGroup(group: SetGroup, formatWeight: (kg: number) => string): string {
-  // Cardio values like "1 km 5:00" contain spaces, so a slash between them would be hard to read.
+  // Значения кардио вроде «1 km 5:00» содержат пробелы, поэтому слэш между ними плохо читался бы.
   const separator = group.values.some((value) => value.includes(' ')) ? ' · ' : '/';
   const joinedValues = group.values.join(separator);
   return group.weightKg == null ? joinedValues : `${formatWeight(group.weightKg)} × ${joinedValues}`;
 }
 
 /**
- * Whole exercise on one line, groups separated by commas:
+ * Всё упражнение в одной строке, группы через запятую:
  *   "82.5 × 7/6, 80 × 8", "8/7/7", "1:00/0:45".
  */
 export function formatSetsLine(sets: LineSet[], fields: SetFields, formatters: ValueFormatters): string {
@@ -112,7 +112,7 @@ export function formatSetsLine(sets: LineSet[], fields: SetFields, formatters: V
   return groups.map((group) => formatGroup(group, formatters.weight)).join(', ');
 }
 
-/** A set counts as filled when at least one of the exercise's fields has a value above zero. */
+/** Подход считается заполненным, если хотя бы одно поле упражнения больше нуля. */
 export function isSetFilled(values: SetValues, fields: SetFields): boolean {
   const isPositive = (value: number | null) => value != null && value > 0;
   return (

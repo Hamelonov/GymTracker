@@ -7,9 +7,9 @@ let lastNavigationAt = 0;
 const DUPLICATE_WINDOW_MS = 800;
 
 /**
- * `router.push` that ignores a second identical navigation fired within a
- * short window. Rapid double taps on a slow device otherwise open the same
- * screen two or three times.
+ * `router.push`, который игнорирует вторую такую же навигацию в течение
+ * короткого окна. Иначе быстрые двойные тапы на медленном устройстве открывают один и тот же
+ * экран два-три раза.
  */
 export function push(href: Href): void {
   const navigationKey = typeof href === 'string' ? href : JSON.stringify(href);
@@ -20,7 +20,7 @@ export function push(href: Href): void {
   router.push(href);
 }
 
-/** Resets the guard, e.g. after a screen was closed so it can be reopened right away. */
+/** Сбрасывает защиту, например после закрытия экрана, чтобы его можно было сразу открыть снова. */
 export function resetNavigationGuard(): void {
   lastNavigationKey = '';
   lastNavigationAt = 0;

@@ -8,7 +8,7 @@ import { useQuery } from '@/db/version';
 import { dateLocale, toDayKey, getWeekStart } from '@/domain/dates';
 import { Card, Icon, Text, spacing, useColors } from '@/ui';
 
-/** Count consecutive weeks (including the current one if it has a workout) with at least one workout. */
+/** Считает подряд идущие недели (включая текущую, если в ней есть тренировка) хотя бы с одной тренировкой. */
 function countWeekStreak(workoutStartTimestamps: number[], now: number): number {
   if (workoutStartTimestamps.length === 0) return 0;
   const weeksWithWorkouts = new Set(
@@ -16,7 +16,7 @@ function countWeekStreak(workoutStartTimestamps: number[], now: number): number 
   );
   let checkedWeekStart = getWeekStart(now).getTime();
   let streak = 0;
-  // The current week may still be empty; then the streak counts from last week.
+  // Текущая неделя может быть ещё пустой; тогда серия считается с прошлой недели.
   if (!weeksWithWorkouts.has(checkedWeekStart)) checkedWeekStart = addDays(checkedWeekStart, -7).getTime();
   while (weeksWithWorkouts.has(checkedWeekStart)) {
     streak += 1;
@@ -25,7 +25,7 @@ function countWeekStreak(workoutStartTimestamps: number[], now: number): number 
   return streak;
 }
 
-/** Home card with the seven days of the current week and the weekly streak. */
+/** Карточка на главном экране с семью днями текущей недели и недельной серией. */
 export function WeekSummaryCard({ now }: { now: number }) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();

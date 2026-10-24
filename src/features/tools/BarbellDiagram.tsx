@@ -4,16 +4,16 @@ import { formatNumberWithoutTrailingZeros } from '@/domain/units';
 import { Text, radius, spacing, useColors } from '@/ui';
 
 interface BarbellDiagramProps {
-  /** Plates for one side of the bar, heaviest first. */
+  /** Блины для одной стороны грифа, от самого тяжёлого. */
   plates: number[];
-  /** Heaviest available plate; it gets the tallest drawing. */
+  /** Самый тяжёлый доступный блин; он рисуется самым высоким. */
   heaviestPlate: number;
 }
 
 const MIN_PLATE_HEIGHT = 48;
 const EXTRA_HEIGHT_FOR_HEAVIEST_PLATE = 72;
 
-/** Draws one side of a loaded barbell: the bar end followed by its plates. */
+/** Рисует одну сторону нагруженной штанги: конец грифа и следующие за ним блины. */
 export function BarbellDiagram({ plates, heaviestPlate }: BarbellDiagramProps) {
   const colors = useColors();
   return (
@@ -21,7 +21,7 @@ export function BarbellDiagram({ plates, heaviestPlate }: BarbellDiagramProps) {
       <View style={[styles.barEnd, { backgroundColor: colors.borderStrong }]} />
       {plates.map((plate, index) => {
         const plateHeight = MIN_PLATE_HEIGHT + (plate / heaviestPlate) * EXTRA_HEIGHT_FOR_HEAVIEST_PLATE;
-        // Alternate dark and yellow plates so neighbours are easy to tell apart.
+        // Чередуем тёмные и жёлтые блины, чтобы соседние легко различались.
         const isDarkPlate = index % 2 === 0;
         return (
           <View

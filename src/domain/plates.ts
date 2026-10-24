@@ -1,4 +1,4 @@
-/** Compute plates per side for a target weight on a bar. All values in the same unit. */
+/** Считает блины на каждую сторону для целевого веса на грифе. Все значения в одних единицах. */
 export function platesPerSide(
   target: number,
   bar: number,
@@ -11,7 +11,7 @@ export function platesPerSide(
   const heaviestFirst = [...available].sort((first, second) => second - first);
   const plates: number[] = [];
   for (const plate of heaviestFirst) {
-    // The small epsilon keeps float rounding (e.g. 2.5 + 1.25) from skipping a plate that fits.
+    // Маленький эпсилон не даёт округлению float (например, 2.5 + 1.25) пропустить подходящий блин.
     while (weightLeftPerSide + 1e-9 >= plate) {
       plates.push(plate);
       weightLeftPerSide -= plate;

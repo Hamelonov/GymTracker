@@ -30,7 +30,7 @@ export interface ExerciseListProps {
   excludeIds?: Set<string>;
 }
 
-/** An exercise with its display strings computed once, so list rows stay cheap to render. */
+/** Упражнение с заранее вычисленными строками для отображения, чтобы строки списка были дешёвыми для рендера. */
 interface ExerciseListItem {
   exercise: ExerciseRow;
   name: string;
@@ -38,7 +38,7 @@ interface ExerciseListItem {
   initial: string;
 }
 
-// Creating an Intl.Collator is slow, so one is cached per language.
+// Создание Intl.Collator медленное, поэтому для каждого языка он кэшируется.
 const collatorsByLanguage = new Map<string, Intl.Collator>();
 function getCollator(language: string): Intl.Collator {
   let collator = collatorsByLanguage.get(language);
@@ -57,7 +57,7 @@ interface ExerciseRowViewProps {
   onPress: (exercise: ExerciseRow) => void;
 }
 
-/** One row. Plain RN Pressable: the list renders many of these and must stay cheap. */
+/** Одна строка. Обычный RN Pressable: список рендерит много таких строк, и они должны быть дешёвыми. */
 const ExerciseRowView = memo(function ExerciseRowView({
   item,
   isSelected,
@@ -123,7 +123,7 @@ export function ExerciseList({
   const usageByExerciseId = useQuery(() => getExerciseUsage(), []);
   const language = i18n.language;
 
-  // Precompute display strings and the default order once per data/language change.
+  // Заранее считаем строки для отображения и порядок по умолчанию один раз при смене данных или языка.
   const sortedItems = useMemo<ExerciseListItem[]>(() => {
     const collator = getCollator(language);
     const items = allExercises.map((exercise) => {
@@ -137,7 +137,7 @@ export function ExerciseList({
         subtitle: `${translate(`muscles.${exercise.muscleGroup}`)} · ${translate(`equipment.${exercise.equipment}`)}${usageSuffix}`,
       };
     });
-    // Most used exercises first, then alphabetically.
+    // Сначала самые используемые упражнения, затем по алфавиту.
     items.sort((first, second) => {
       const firstUsageCount = usageByExerciseId.get(first.exercise.id)?.count ?? 0;
       const secondUsageCount = usageByExerciseId.get(second.exercise.id)?.count ?? 0;
@@ -157,13 +157,13 @@ export function ExerciseList({
         if (!worksFilteredMuscle) return false;
       }
       if (!normalizedSearch) return true;
-      // Search both languages so a name can be found whatever the interface language is.
+      // Ищем по обоим языкам, чтобы название находилось независимо от языка интерфейса.
       return (
         exercise.nameEn.toLowerCase().includes(normalizedSearch) ||
         exercise.nameRu.toLowerCase().includes(normalizedSearch)
       );
     });
-    // While searching, usage order is less useful than plain alphabetical order.
+    // Во время поиска порядок по использованию менее полезен, чем обычный алфавитный.
     if (normalizedSearch) {
       const collator = getCollator(language);
       filteredItems.sort((first, second) => collator.compare(first.name, second.name));

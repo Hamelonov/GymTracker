@@ -17,10 +17,10 @@ export interface ExerciseCardProps {
   units: { weight: WeightUnit; distance: DistanceUnit };
   showRpe: boolean;
   readOnly?: boolean;
-  /** Whether the exercise has a description to show (controls the book icon state). */
+  /** Есть ли у упражнения описание для показа (управляет состоянием иконки книги). */
   hasDescription: boolean;
   supersetColor?: string | null;
-  /** All handlers receive the active exercise id; pass stable references. */
+  /** Все обработчики получают id активного упражнения; передавайте стабильные ссылки. */
   onMenu: (workoutExerciseId: string) => void;
   onDescriptionPress: (workoutExerciseId: string) => void;
   onNotePress: (workoutExerciseId: string) => void;
@@ -57,7 +57,7 @@ export const ExerciseCard = memo(function ExerciseCard({
     [translate],
   );
   const hasNote = workoutExercise.note.trim().length > 0;
-  // Assisted exercises subtract the entered weight from bodyweight, hence the minus sign.
+  // Упражнения с помощью вычитают введённый вес из веса тела, отсюда знак минус.
   const weightSign = exerciseDetails?.type === 'assisted_bodyweight' ? '−' : '';
   const weightColumnLabel = weightSign + (unitLabels[units.weight] ?? units.weight).toUpperCase();
   const distanceColumnLabel = (unitLabels[units.distance] ?? units.distance).toUpperCase();

@@ -16,8 +16,8 @@ export interface ChipProps {
 }
 
 /**
- * Lightweight chip: plain RN Pressable with an opacity press state. Screens
- * render dozens of these at once, so no per-chip animation machinery.
+ * Лёгкий чип: обычный RN `Pressable` с изменением прозрачности при нажатии. На экранах
+ * таких чипов десятки одновременно, поэтому анимаций на каждый чип нет.
  */
 export const Chip = memo(function Chip({ label, selected, onPress, icon, small }: ChipProps) {
   const colors = useColors();

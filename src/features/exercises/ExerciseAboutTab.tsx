@@ -13,7 +13,7 @@ interface ExerciseAboutTabProps {
   timesPerformed: number;
 }
 
-/** Muscles, equipment, description and a few facts about the exercise. */
+/** Мышцы, оборудование, описание и несколько фактов об упражнении. */
 export function ExerciseAboutTab({ exercise, timesPerformed }: ExerciseAboutTabProps) {
   const { t: translate, i18n } = useTranslation();
   const description = exerciseDescription(exercise, i18n.language);

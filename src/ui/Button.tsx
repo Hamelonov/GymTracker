@@ -17,7 +17,7 @@ export interface ButtonProps extends Omit<AnimatedPressableProps, 'children' | '
   loading?: boolean;
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
-  /** Override the label color (e.g. a black button on a yellow screen). */
+  /** Переопределяет цвет подписи (например, чёрная кнопка на жёлтом экране). */
   textColor?: string;
 }
 

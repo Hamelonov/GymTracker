@@ -7,7 +7,7 @@ interface DatabaseVersionState {
   bump: () => void;
 }
 
-/** Monotonic counter bumped after every write; screens re-query when it changes. */
+/** Монотонный счётчик, растёт после каждой записи; экраны перезапрашивают данные при его изменении. */
 export const useDatabaseVersion = create<DatabaseVersionState>((set) => ({
   version: 0,
   bump: () => set((state) => ({ version: state.version + 1 })),
@@ -18,9 +18,9 @@ export function notifyDatabaseChanged() {
 }
 
 /**
- * Run a synchronous query and keep it fresh: re-runs when the database version
- * changes, when deps change, and whenever the screen regains focus.
- * `deps` should be primitives (ids, timestamps, joined strings).
+ * Выполняет синхронный запрос и держит результат свежим: перезапускает при смене версии базы,
+ * при смене зависимостей и каждый раз, когда экран снова получает фокус.
+ * `deps` должны быть примитивами (id, метки времени, склеенные строки).
  */
 export function useQuery<T>(query: () => T, deps: unknown[] = []): T {
   const version = useDatabaseVersion((state) => state.version);

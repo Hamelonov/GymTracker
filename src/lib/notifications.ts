@@ -62,7 +62,7 @@ export async function cancelScheduledNotification(notificationId: string | null)
   try {
     await Notifications.cancelScheduledNotificationAsync(notificationId);
   } catch {
-    // The notification may already have fired or been removed; nothing to do.
+    // Уведомление могло уже сработать или быть удалено; делать нечего.
   }
 }
 
@@ -70,6 +70,6 @@ export async function dismissAllPresentedNotifications(): Promise<void> {
   try {
     await Notifications.dismissAllNotificationsAsync();
   } catch {
-    // Dismissing is best effort; a failure must not break the app.
+    // Скрытие делается по возможности; сбой не должен ломать приложение.
   }
 }

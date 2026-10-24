@@ -16,7 +16,7 @@ export default function SettingsScreen() {
   const { t: translate } = useTranslation();
   const settings = useSettings();
 
-  // Switching units also resets plates and bar to that unit's standard set.
+  // Смена единиц также сбрасывает блины и гриф на стандартный набор для этих единиц.
   const handleWeightUnitChange = (weightUnit: WeightUnit) => {
     const isKg = weightUnit === 'kg';
     settings.update({

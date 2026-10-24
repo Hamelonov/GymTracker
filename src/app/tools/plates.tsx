@@ -40,7 +40,7 @@ export default function PlatesScreen() {
     settings.update({ barWeightKg });
   };
 
-  // Shown instead of the diagram when no plates are needed or the target is not set.
+  // Показывается вместо схемы, когда блины не нужны или цель не задана.
   const getNoPlatesMessage = (): string => {
     if (targetWeight == null) return '—';
     if (targetWeight <= barWeight) return formatWithUnit(barWeight);

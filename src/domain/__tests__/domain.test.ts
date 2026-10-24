@@ -65,7 +65,7 @@ describe('records', () => {
     });
     expect(hits.get(0)?.map((hit) => hit.type)).toEqual(['one_rm']);
     expect(hits.get(1)).toBeUndefined();
-    // 105×3 ≈ 113 kg 1RM, below the 100×5 estimate (≈115 kg) set just before.
+    // 105×3 ≈ 113 кг 1RM, ниже оценки для 100×5 (≈115 кг) из подхода прямо перед этим.
     expect(hits.get(2)?.map((hit) => hit.type)).toEqual(['weight']);
   });
   it('treats an empty record table as all-new records', () => {

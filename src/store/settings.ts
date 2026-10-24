@@ -45,7 +45,7 @@ export const useSettings = create<SettingsState>()(
     {
       name: 'settings',
       storage: createJSONStorage(() => deferredStorage),
-      // Persist only the values, not the `set` action.
+      // Сохраняем только значения, без действия `set`.
       partialize: (state) => {
         const { update: _setAction, ...persistedSettings } = state;
         return persistedSettings;

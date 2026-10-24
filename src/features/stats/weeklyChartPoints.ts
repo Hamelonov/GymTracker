@@ -16,7 +16,7 @@ interface WeekTotals {
 }
 
 const MAX_WEEKS_SHOWN = 26;
-/** Roughly how many date labels fit under the chart. */
+/** Примерно сколько подписей дат помещается под графиком. */
 const CHART_LABEL_COUNT = 6;
 
 function getMetricValue(week: WeekTotals, metric: WeeklyMetric, weightUnit: WeightUnit): number {
@@ -33,9 +33,9 @@ function getMetricValue(week: WeekTotals, metric: WeeklyMetric, weightUnit: Weig
 }
 
 interface WeeklyChartOptions {
-  /** Workouts in the period, oldest first. */
+  /** Тренировки за период, от старых к новым. */
   workouts: WorkoutRow[];
-  /** Start of the period, or 0 for "all time" (then the first workout starts it). */
+  /** Начало периода или 0 для «за всё время» (тогда началом считается первая тренировка). */
   periodStart: number;
   now: number;
   metric: WeeklyMetric;
@@ -43,7 +43,7 @@ interface WeeklyChartOptions {
   language: string;
 }
 
-/** One bar per week from the period start until now; weeks without workouts show as zero. */
+/** Один столбец на неделю от начала периода до сегодня; недели без тренировок показываются нулём. */
 export function buildWeeklyChartPoints({
   workouts,
   periodStart,

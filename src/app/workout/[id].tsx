@@ -48,7 +48,7 @@ export default function WorkoutDetailScreen() {
     return <Screen header={{ backButton: true }} />;
   }
 
-  /** Asks to discard a workout in progress before starting another. Resolves true when it is safe to go on. */
+  /** Спрашивает, отбросить ли тренировку в процессе перед началом другой. Возвращает true, когда можно продолжать. */
   const ensureNoActiveWorkout = async () => {
     if (!activeWorkout || session.mode === 'edit') return true;
     const confirmed = await confirm({
@@ -75,7 +75,7 @@ export default function WorkoutDetailScreen() {
     push('/workout/active');
   };
 
-  // Start a fresh workout with the same exercises; this workout's values become "previous".
+  // Начать новую тренировку с теми же упражнениями; значения этой тренировки станут «предыдущими».
   const repeatWorkout = async () => {
     setIsMenuOpen(false);
     if (!(await ensureNoActiveWorkout())) return;

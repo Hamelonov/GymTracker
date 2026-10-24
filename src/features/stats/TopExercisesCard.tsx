@@ -8,7 +8,7 @@ import { Card, ListItem, SectionTitle, Text, spacing } from '@/ui';
 
 type TopExercise = ReturnType<typeof topExercises>[number];
 
-/** "Top exercises" section: the most used exercises in the period with how often they were done. */
+/** Раздел «Топ упражнений»: самые используемые упражнения за период и сколько раз их делали. */
 export function TopExercisesCard({ exercises }: { exercises: TopExercise[] }) {
   const { t: translate, i18n } = useTranslation();
   return (

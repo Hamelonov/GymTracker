@@ -9,10 +9,10 @@ export interface FastPressableProps extends Omit<PressableProps, 'style' | 'chil
 }
 
 /**
- * React Native's Pressable keeps its "pressed" look for at least 130 ms after
- * the finger lifts (a built-in minimum that Pressable does not let you change).
- * This wrapper tracks the pressed look itself and clears it the moment the
- * press fires, so the UI never lags behind the action.
+ * `Pressable` в React Native держит вид «нажато» минимум 130 мс после
+ * отпускания пальца (встроенный минимум, который нельзя изменить).
+ * Эта обёртка сама следит за видом «нажато» и сбрасывает его в момент
+ * срабатывания нажатия, так что интерфейс не отстаёт от действия.
  */
 export function FastPressable({
   style,

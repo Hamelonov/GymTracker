@@ -106,7 +106,7 @@ export function deleteExercise(id: string): void {
   notifyDatabaseChanged();
 }
 
-/** How many workouts included each exercise, for "recent" / "most used" sorting. */
+/** В скольких тренировках участвовало каждое упражнение, для сортировки «недавние» / «частые». */
 export function getExerciseUsage(): Map<string, { count: number; lastAt: number }> {
   const rows = database
     .select({
@@ -168,7 +168,7 @@ export function getRecordDetails(exerciseId: string): RecordDetail[] {
     .all();
 }
 
-/** The sets logged the last time this exercise was performed (most recent workout). */
+/** Подходы, записанные в прошлый раз, когда делали это упражнение (последняя тренировка). */
 export function getLastPerformance(
   exerciseId: string,
 ): { sets: SetRow[]; note: string; workoutId: string; at: number } | null {

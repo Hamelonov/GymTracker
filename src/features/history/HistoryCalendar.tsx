@@ -10,7 +10,7 @@ interface HistoryCalendarProps {
   month: Date;
   monthEnd: Date;
   now: number;
-  /** Number of workouts per day key, for the days of the shown month. */
+  /** Количество тренировок по ключу дня для дней показанного месяца. */
   workoutCountByDay: Map<string, number>;
   monthWorkoutCount: number;
   selectedDay: string | null;
@@ -20,7 +20,7 @@ interface HistoryCalendarProps {
   onSelectDay: (dayKey: string | null) => void;
 }
 
-/** Month grid for the History tab: days with workouts are highlighted, tapping a day filters the list. */
+/** Сетка месяца для вкладки «История»: дни с тренировками выделены, нажатие на день фильтрует список. */
 export function HistoryCalendar({
   month,
   monthEnd,
@@ -98,10 +98,10 @@ export function HistoryCalendar({
   );
 }
 
-/** Days of the month laid out in full weeks; `null` cells pad the first and last week. */
+/** Дни месяца, разложенные по полным неделям; ячейки `null` дополняют первую и последнюю неделю. */
 function buildCalendarCells(month: Date, monthEnd: Date): (Date | null)[] {
   const firstDayOfMonth = startOfMonth(month);
-  // getDay() starts weeks on Sunday; shift so the grid starts on Monday.
+  // getDay() начинает неделю с воскресенья; сдвигаем, чтобы сетка начиналась с понедельника.
   const emptyCellsBeforeFirstDay = (getDay(firstDayOfMonth) + 6) % 7;
   const cells: (Date | null)[] = Array.from({ length: emptyCellsBeforeFirstDay }, () => null);
   for (let day = firstDayOfMonth; day <= monthEnd; day = addDays(day, 1)) cells.push(day);

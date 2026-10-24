@@ -12,7 +12,7 @@ interface FolderMenuSheetProps {
   onDelete: () => void;
 }
 
-/** Actions for a routine folder header: rename or delete. */
+/** Действия для заголовка папки шаблонов: переименовать или удалить. */
 export function FolderMenuSheet({ visible, folderName, onClose, onRename, onDelete }: FolderMenuSheetProps) {
   const colors = useColors();
   const { t: translate } = useTranslation();

@@ -18,7 +18,7 @@ import { useRoutineDraft } from '@/store/routineDraft';
 import { useSettings } from '@/store/settings';
 import { Button, Chip, Icon, Input, Screen, SectionTitle, spacing, toast } from '@/ui';
 
-/** Which bottom sheet is open in the routine editor (only one at a time). */
+/** Какой нижний лист открыт в редакторе шаблона (только один за раз). */
 type OpenSheet =
   | { kind: 'none' }
   | { kind: 'exerciseMenu'; draftExerciseId: string }
@@ -31,7 +31,7 @@ export default function RoutineEditScreen() {
   const { t: translate } = useTranslation();
   const settings = useSettings();
   const draft = useRoutineDraft();
-  // Lazy state initializer: resets the draft once per screen mount and creates the picker token.
+  // Ленивый инициализатор состояния: сбрасывает черновик один раз при монтировании экрана и создаёт токен выбора.
   const [pickerToken] = useState(() => {
     useRoutineDraft.getState().reset(id ? getRoutine(id) : undefined);
     return newId();
@@ -76,7 +76,7 @@ export default function RoutineEditScreen() {
         supersetGroup: draftExercise.supersetGroup,
         restSeconds: draftExercise.restSeconds,
         note: draftExercise.note,
-        // Draft-only set ids are dropped; the database creates its own.
+        // Id подходов, существующие только в черновике, отбрасываются; база данных создаёт свои.
         sets: draftExercise.sets.map(({ id: _draftSetId, ...setValues }) => setValues),
       })),
     };

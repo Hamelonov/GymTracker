@@ -14,7 +14,7 @@ interface SetTypeSheetProps {
   onDeleteSet: () => void;
 }
 
-/** Opened from the set number in the routine editor: change the set type or delete the set. */
+/** Открывается по номеру подхода в редакторе шаблона: изменить тип подхода или удалить его. */
 export function SetTypeSheet({ visible, onClose, onSelectSetType, onDeleteSet }: SetTypeSheetProps) {
   const colors = useColors();
   const { t: translate } = useTranslation();

@@ -10,14 +10,14 @@ const UNKNOWN_EXERCISE = { nameEn: '', nameRu: '', isCustom: true };
 
 interface SupersetPickerSheetProps {
   visible: boolean;
-  /** The exercise the user wants to pair; it is left out of the list. */
+  /** Упражнение, которое пользователь хочет объединить; в списке его нет. */
   draftExercise: DraftExercise | undefined;
   allDraftExercises: DraftExercise[];
   exercisesById: Map<string, ExerciseRow>;
   onClose: () => void;
 }
 
-/** Lists the other exercises of the routine to join into a superset with the selected one. */
+/** Список остальных упражнений шаблона, чтобы объединить их в суперсет с выбранным. */
 export function SupersetPickerSheet({
   visible,
   draftExercise,
@@ -40,7 +40,7 @@ export function SupersetPickerSheet({
               i18n.language,
             )}
             onPress={() => {
-              // Join the partner's existing superset, or start a new one if it has none.
+              // Присоединиться к существующему суперсету партнёра или создать новый, если его нет.
               if (draftExercise) {
                 setSupersetGroup(
                   [draftExercise.id, otherExercise.id],

@@ -3,12 +3,12 @@ import type { ExerciseRow } from '@/db/schema';
 
 const MISSING_EXERCISE = { nameEn: '', nameRu: '', isCustom: true };
 
-/** Exercise name in the app language, or an empty string when the exercise row is missing. */
+/** Название упражнения на языке приложения или пустая строка, если строки упражнения нет. */
 export function exerciseDisplayName(exerciseDetails: ExerciseRow | undefined, language: string): string {
   return exerciseName(exerciseDetails ?? MISSING_EXERCISE, language);
 }
 
-/** Exercise description in the app language, or an empty string when there is none. */
+/** Описание упражнения на языке приложения или пустая строка, если его нет. */
 export function exerciseDisplayDescription(
   exerciseDetails: ExerciseRow | undefined,
   language: string,

@@ -10,7 +10,7 @@ import { useActiveWorkout } from '@/store/activeWorkout';
 import { usePickerResult } from '@/store/picker';
 import { Button, Header, spacing, useColors } from '@/ui';
 
-/** workout: add to the active workout; routine: hand back to the routine editor; replace: swap one exercise. */
+/** workout: добавить в активную тренировку; routine: вернуть в редактор шаблона; replace: заменить одно упражнение. */
 type PickerMode = 'workout' | 'routine' | 'replace';
 
 export default function ExercisePickerScreen() {
@@ -54,7 +54,7 @@ export default function ExercisePickerScreen() {
         }
         bottomPadding={selectedExerciseIds.length > 0 ? 90 : 0}
         onPress={(exercise) => {
-          // Replacing takes exactly one exercise, so a tap finishes right away.
+          // Замена берёт ровно одно упражнение, поэтому экран закрывается сразу после нажатия.
           if (isReplaceMode) {
             finishWithExercises([exercise.id]);
             return;

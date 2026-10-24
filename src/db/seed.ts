@@ -7,7 +7,7 @@ import { SEED_EXERCISES, SEED_VERSION } from './seed/exercises';
 
 const SEED_VERSION_KEY = 'seed_version';
 
-/** Insert or refresh built-in exercises. User-owned fields are never touched. */
+/** Добавляет или обновляет встроенные упражнения. Поля пользователя не затрагиваются. */
 export function seedExercises(): void {
   const currentSeedVersion = Number(Storage.getItemSync(SEED_VERSION_KEY) ?? '0');
   if (currentSeedVersion >= SEED_VERSION) return;
@@ -65,8 +65,8 @@ export function seedExercises(): void {
         .run();
     }
   });
-  // A built-in exercise that changed type (e.g. dips: weighted → reps only)
-  // gets its records recomputed so stale weight/1RM records disappear.
+  // У встроенного упражнения, сменившего тип (например, отжимания на брусьях: с весом → только повторы),
+  // рекорды пересчитываются, чтобы устаревшие рекорды веса/1RM исчезли.
   const changedExerciseIds = SEED_EXERCISES.filter(
     ([id, , , , , , type]) => typeBeforeSeedById.has(id) && typeBeforeSeedById.get(id) !== type,
   ).map(([id]) => id);

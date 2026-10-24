@@ -22,9 +22,9 @@ function toError(value: unknown): Error {
 }
 
 /**
- * Runs pending Drizzle migrations once. When the database is already at the
- * latest migration (remembered in the key-value store) the async migrator is
- * skipped entirely, which saves over a second on every cold start.
+ * Один раз применяет ожидающие миграции Drizzle. Если база уже на
+ * последней миграции (она запоминается в key-value хранилище), асинхронный мигратор
+ * пропускается целиком, что экономит больше секунды при каждом холодном старте.
  */
 export function useDatabaseReady(): DatabaseReadyState {
   const [state, setState] = useState<DatabaseReadyState>(() => ({

@@ -55,7 +55,7 @@ export function Input({ label, hint, error, containerStyle, right, style, multil
   );
 }
 
-/** The line under the field: an error wins over a hint. */
+/** Строка под полем: ошибка приоритетнее подсказки. */
 function InputFootnote({ error, hint }: { error?: string; hint?: string }) {
   if (error) {
     return (

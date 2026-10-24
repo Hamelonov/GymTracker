@@ -17,15 +17,15 @@ const RECORD_LABEL_KEYS: Record<RecordMetric, string> = {
   distance: 'pr.distance',
 };
 
-/** One exercise that set a record: the value that moved, the old record and the gain. */
+/** Одно упражнение с рекордом: изменившееся значение, старый рекорд и прирост. */
 interface RecordRow {
   id: string;
   name: string;
   label: string;
   value: string;
-  /** Old record, shown only when this workout beat it. */
+  /** Старый рекорд, показывается только если эта тренировка его побила. */
   previousValue: string | null;
-  /** "+2.5 kg" style difference to the old record. */
+  /** Разница со старым рекордом в виде «+2.5 kg». */
   gainText: string | null;
   isFirstTime: boolean;
   workingSetCount: number;
@@ -66,7 +66,7 @@ interface NewRecordsBlockProps {
   formatters: ValueFormatters;
 }
 
-/** "New records" card of the summary screen; renders nothing when no record was set. */
+/** Карточка «Новые рекорды» на экране итогов; ничего не рисует, если рекордов нет. */
 export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRecordsBlockProps) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
@@ -147,7 +147,7 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
   );
 }
 
-/** Old record and gain under the new value, or "first time" for an exercise never done before. */
+/** Старый рекорд и прирост под новым значением или «в первый раз» для упражнения, которое раньше не делали. */
 function RecordChange({ row }: { row: RecordRow }) {
   const colors = useColors();
   const { t: translate } = useTranslation();

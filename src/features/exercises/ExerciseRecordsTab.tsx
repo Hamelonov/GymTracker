@@ -15,7 +15,7 @@ function formatRecordValue(recordType: RecordType, value: number, units: Units):
   if (recordType === 'reps') return String(Math.round(value));
   if (recordType === 'duration') return formatDuration(value);
   if (recordType === 'distance') return formatDistance(value, units.distance);
-  // An estimated 1RM has long decimals, so it is rounded to one decimal place.
+  // У расчётного 1ПМ длинная дробная часть, поэтому он округляется до одного знака после запятой.
   const weightKg = recordType === 'one_rm' ? Math.round(value * 10) / 10 : value;
   return formatWeight(weightKg, units.weight);
 }
@@ -25,7 +25,7 @@ interface ExerciseRecordsTabProps {
   units: Units;
 }
 
-/** Grid of personal records; tapping one opens the workout where it was set. */
+/** Сетка личных рекордов; нажатие открывает тренировку, в которой рекорд был установлен. */
 export function ExerciseRecordsTab({ records, units }: ExerciseRecordsTabProps) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();

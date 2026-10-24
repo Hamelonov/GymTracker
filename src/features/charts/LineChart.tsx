@@ -14,7 +14,7 @@ interface LineChartProps {
   kind?: 'line' | 'bar';
 }
 
-/** Small ranges get a tick on every 1 or 2 units; larger ranges let the chart pick its own ticks. */
+/** На малых диапазонах метка ставится на каждые 1 или 2 единицы; на больших диапазонах график выбирает метки сам. */
 function getYAxisTickStep(domainSpan: number): number | null {
   if (domainSpan <= 4) return 1;
   if (domainSpan <= 8) return 2;
@@ -27,7 +27,7 @@ export function LineChart({ data, height = 220, formatY, kind = 'line' }: LineCh
   if (data.length === 0) return null;
   const labelsByX = new Map(data.map((point) => [point.x, point.label]));
   const firstPoint = data[0]!;
-  // A single point cannot draw a line, so it gets unlabeled neighbours on both sides.
+  // Одна точка не рисует линию, поэтому по бокам от неё добавляются соседние точки без подписей.
   const chartData =
     data.length === 1
       ? [
@@ -113,7 +113,7 @@ export function LineChart({ data, height = 220, formatY, kind = 'line' }: LineCh
                 curveType="monotoneX"
                 animate={{ type: 'timing', duration: 180 }}
               />
-              {/* Dots only for real (labeled) points, and only while they are not too crowded. */}
+              {/* Точки только для настоящих (подписанных) значений и только пока их не слишком много. */}
               {data.length <= 40 ? (
                 <Scatter
                   points={points.y.filter((point) => labelsByX.get(Math.round(Number(point.xValue))))}

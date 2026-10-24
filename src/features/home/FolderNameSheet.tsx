@@ -4,7 +4,7 @@ import { Button, Input, Sheet, spacing } from '@/ui';
 
 interface FolderNameSheetProps {
   visible: boolean;
-  /** True when renaming an existing folder, false when creating a new one. */
+  /** True при переименовании существующей папки, false при создании новой. */
   isRenaming: boolean;
   folderName: string;
   onChangeFolderName: (folderName: string) => void;
@@ -12,7 +12,7 @@ interface FolderNameSheetProps {
   onSave: () => void;
 }
 
-/** Name input for creating or renaming a routine folder. */
+/** Ввод названия для создания или переименования папки шаблонов. */
 export function FolderNameSheet({
   visible,
   isRenaming,

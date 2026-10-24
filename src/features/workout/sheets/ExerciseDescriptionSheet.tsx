@@ -14,7 +14,7 @@ interface ExerciseDescriptionSheetProps {
   exerciseDetails: ExerciseRow | undefined;
 }
 
-/** The exercise's permanent description, readable and editable in place. */
+/** Постоянное описание упражнения, которое можно читать и редактировать на месте. */
 export function ExerciseDescriptionSheet({
   visible,
   onClose,
@@ -22,7 +22,7 @@ export function ExerciseDescriptionSheet({
   exerciseDetails,
 }: ExerciseDescriptionSheetProps) {
   const { t: translate, i18n } = useTranslation();
-  // null while reading; a string while the user edits the description.
+  // null при чтении; строка, пока пользователь редактирует описание.
   const [descriptionDraft, setDescriptionDraft] = useState<string | null>(null);
   const description = exerciseDisplayDescription(exerciseDetails, i18n.language);
 

@@ -7,12 +7,12 @@ import { BAR_WEIGHT_OPTIONS } from '@/features/tools/barWeights';
 import { useSettings } from '@/store/settings';
 import { Card, Chip, Text, spacing } from '@/ui';
 
-/** Card for choosing the bar weight and which plates the plate calculator may use. */
+/** Карточка для выбора веса грифа и того, какие блины может использовать калькулятор блинов. */
 export function PlateSettings() {
   const { t: translate } = useTranslation();
   const settings = useSettings();
   const availablePlates = settings.weightUnit === 'kg' ? DEFAULT_PLATES_KG : DEFAULT_PLATES_LB;
-  // Plates are stored in kg; compare them as labels in the current unit.
+  // Блины хранятся в кг; сравниваем их как подписи в текущих единицах.
   const selectedPlateLabels = new Set(
     settings.platesKg.map((plateKg) =>
       formatNumberWithoutTrailingZeros(roundForDisplay(kgToUnit(plateKg, settings.weightUnit), 2)),

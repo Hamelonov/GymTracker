@@ -15,7 +15,7 @@ interface MeasurementHistoryListProps {
   units: MeasurementUnits;
 }
 
-/** Every logged value of one measurement type, newest first, each with a delete button. */
+/** Все записанные значения одного типа замеров, от новых к старым, у каждого кнопка удаления. */
 export function MeasurementHistoryList({ type, measurements, units }: MeasurementHistoryListProps) {
   const { t: translate, i18n } = useTranslation();
   const colors = useColors();

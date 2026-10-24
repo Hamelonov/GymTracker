@@ -7,12 +7,12 @@ export interface DraftSet extends RoutineSetInput {
   id: string;
 }
 export interface DraftExercise extends Omit<RoutineExerciseInput, 'sets'> {
-  /** Id of this row in the draft (the same exercise may appear twice), not the exercise id. */
+  /** Id этой строки в черновике (одно упражнение может встретиться дважды), а не id упражнения. */
   id: string;
   sets: DraftSet[];
 }
 
-/** Passing this as the superset group asks the store to create a new group number. */
+/** Если передать это как группу суперсета, стор создаст новый номер группы. */
 export const NEW_SUPERSET_GROUP = -1;
 
 interface RoutineDraftState {
@@ -125,7 +125,7 @@ export const useRoutineDraft = create<RoutineDraftState>((set, get) => {
     },
     addSetToExercise: (draftExerciseId) =>
       updateExercise(draftExerciseId, (exercise) => {
-        // A new set copies the values of the last one, so typing is only needed when something changes.
+        // Новый подход копирует значения последнего, так что вводить нужно только то, что изменилось.
         const lastSet = exercise.sets[exercise.sets.length - 1];
         const copiedValues = lastSet
           ? {

@@ -12,13 +12,13 @@ interface ExerciseNoteSheetProps {
   exerciseDetails: ExerciseRow | undefined;
   noteDraft: string;
   onNoteDraftChange: (note: string) => void;
-  /** Note left on this exercise last time, offered as a one-tap copy. */
+  /** Заметка к этому упражнению с прошлого раза, предлагается скопировать одним нажатием. */
   lastNote: string | undefined;
-  /** Saves the draft and closes the sheet. Closing the sheet any other way saves too. */
+  /** Сохраняет черновик и закрывает лист. Закрытие листа любым другим способом тоже сохраняет. */
   onSave: () => void;
 }
 
-/** Today's note for one exercise of the workout. */
+/** Сегодняшняя заметка к одному упражнению тренировки. */
 export function ExerciseNoteSheet({
   visible,
   workoutExercise,

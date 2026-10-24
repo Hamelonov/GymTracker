@@ -15,7 +15,7 @@ interface ExerciseHistoryTabProps {
   units: { weight: WeightUnit; distance: DistanceUnit };
 }
 
-/** Every workout this exercise was done in, newest first, with its sets. */
+/** Все тренировки, в которых делалось это упражнение, от новых к старым, с их подходами. */
 export function ExerciseHistoryTab({ history, fields, units }: ExerciseHistoryTabProps) {
   const { t: translate, i18n } = useTranslation();
 

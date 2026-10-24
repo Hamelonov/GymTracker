@@ -17,7 +17,7 @@ export interface AnimatedPressableProps extends Omit<PressableProps, 'style'> {
   style?: StyleProp<ViewStyle>;
   scaleTo?: number;
   haptic?: HapticKind;
-  /** Ignore presses that arrive within this many ms of the previous one (double-tap guard). */
+  /** Игнорировать нажатия, пришедшие в пределах стольких мс после предыдущего (защита от двойного тапа). */
   debounceMs?: number;
   children?: React.ReactNode;
 }
@@ -37,7 +37,7 @@ function playHaptic(haptic: HapticKind) {
   void Haptics.impactAsync(impactStyle);
 }
 
-/** Pressable with a subtle spring scale, optional haptic tick and a double-tap guard. */
+/** `Pressable` с лёгкой пружинной анимацией масштаба, необязательной вибро-отдачей и защитой от двойного тапа. */
 export function Pressable({
   style,
   scaleTo = 0.97,
@@ -55,8 +55,8 @@ export function Pressable({
 
   const handlePress = useCallback<NonNullable<PressableProps['onPress']>>(
     (event) => {
-      // onPress fires on release, but React Native delays press-out by up to
-      // 130 ms; reset the press look right now instead of waiting for it.
+      // `onPress` срабатывает при отпускании, но React Native задерживает press-out до
+      // 130 мс; сбрасываем вид нажатия сразу, а не ждём.
       scale.set(1);
       const now = Date.now();
       if (now - lastPressTime.current < debounceMs) return;
@@ -76,7 +76,7 @@ export function Pressable({
         onPressIn?.(event);
       }}
       onPressOut={(event) => {
-        // Snap back immediately so nothing visual lags behind the action.
+        // Возвращаем сразу, чтобы визуально ничего не отставало от действия.
         scale.set(1);
         onPressOut?.(event);
       }}

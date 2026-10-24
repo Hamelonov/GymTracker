@@ -13,7 +13,7 @@ import { Card, Icon, Pressable, Text, spacing, useColors } from '@/ui';
 
 const MAX_EXERCISES_SHOWN = 5;
 
-/** Short text for the best set: "80 × 5" for weighted sets, otherwise reps or time. */
+/** Короткий текст для лучшего подхода: «80 × 5» для подходов с весом, иначе повторы или время. */
 function formatBestSet(bestSet: SetRow, weightUnit: WeightUnit): string {
   if (bestSet.weightKg != null)
     return `${formatWeight(bestSet.weightKg, weightUnit, false)} × ${bestSet.reps ?? '—'}`;

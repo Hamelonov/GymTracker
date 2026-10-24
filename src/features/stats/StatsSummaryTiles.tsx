@@ -13,7 +13,7 @@ interface StatsSummaryTilesProps {
   weightUnit: WeightUnit;
 }
 
-/** Grid of small number tiles: workouts, volume, time, sets and week streaks. */
+/** Сетка небольших плиток с числами: тренировки, объём, время, подходы и недельные серии. */
 export function StatsSummaryTiles({ totals, streak, weightUnit }: StatsSummaryTilesProps) {
   const { t: translate } = useTranslation();
   const weeksLabel = translate('stats.weeks');
@@ -51,6 +51,6 @@ function SummaryTile({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.lg },
-  // Three tiles per row; flexGrow fills the gaps between them.
+  // Три плитки в ряд; flexGrow заполняет промежутки между ними.
   tile: { width: '31%', flexGrow: 1, padding: spacing.md, borderRadius: radius.md, gap: 4 },
 });

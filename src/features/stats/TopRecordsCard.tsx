@@ -16,7 +16,7 @@ interface TopRecordsCardProps {
   weightUnit: WeightUnit;
 }
 
-/** "Records" section: the best estimated one-rep maxes across all exercises. */
+/** Раздел «Рекорды»: лучшие расчётные одноповторные максимумы по всем упражнениям. */
 export function TopRecordsCard({ records, weightUnit }: TopRecordsCardProps) {
   const { t: translate, i18n } = useTranslation();
   return (

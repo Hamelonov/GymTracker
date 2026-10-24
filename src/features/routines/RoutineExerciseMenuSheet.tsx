@@ -8,14 +8,14 @@ import { Icon, ListItem, Sheet, spacing, useColors } from '@/ui';
 interface RoutineExerciseMenuSheetProps {
   visible: boolean;
   draftExercise: DraftExercise | undefined;
-  /** Position of the exercise in the routine, used for the move up / move down items. */
+  /** Позиция упражнения в шаблоне, нужна для пунктов «переместить вверх / вниз». */
   exerciseIndex: number;
   exerciseCount: number;
   onClose: () => void;
   onOpenSupersetPicker: (draftExerciseId: string) => void;
 }
 
-/** Menu behind the "…" button of an exercise in the routine editor. */
+/** Меню за кнопкой «…» упражнения в редакторе шаблона. */
 export function RoutineExerciseMenuSheet({
   visible,
   draftExercise,

@@ -35,7 +35,7 @@ import { Button, Icon, confirm, spacing, toast, useColors } from '@/ui';
 
 const SUPERSET_COLORS = ['#F5A524', '#3E63DD', '#30A46C', '#E5484D', '#8E4EC6', '#12A594'];
 
-/** Each superset group gets its own color; groups beyond the palette reuse colors from the start. */
+/** У каждой группы суперсета свой цвет; группы сверх палитры используют цвета с начала. */
 function supersetColorForGroup(group: number | null): string | null {
   if (group == null) return null;
   return SUPERSET_COLORS[(group - 1) % SUPERSET_COLORS.length] ?? null;
@@ -43,7 +43,7 @@ function supersetColorForGroup(group: number | null): string | null {
 
 type SetPatch = Parameters<ReturnType<typeof useActiveWorkout.getState>['updateSet']>[2];
 
-/** Which bottom sheet is open, and for which exercise or set. */
+/** Какой нижний лист открыт и для какого упражнения или подхода. */
 type SheetState =
   | { kind: 'none' }
   | { kind: 'menu'; workoutExerciseId: string }
@@ -61,7 +61,7 @@ export default function ActiveWorkoutScreen() {
   const insets = useSafeAreaInsets();
   const workout = useActiveWorkout((state) => state.workout);
   const session = useActiveWorkout((state) => state.session);
-  // Reads the store at call time, so the handlers below never act on stale state.
+  // Читает хранилище в момент вызова, поэтому обработчики ниже никогда не работают с устаревшим состоянием.
   const getWorkoutStore = useActiveWorkout.getState;
   const settings = useSettings();
   const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
@@ -71,7 +71,7 @@ export default function ActiveWorkoutScreen() {
   useEffect(() => {
     if (settings.restNotifications) void ensureNotificationPermission();
   }, [settings.restNotifications]);
-  // The floating "workout in progress" bar is shown only while this screen is not focused.
+  // Плавающая панель «тренировка идёт» показывается только пока этот экран не в фокусе.
   useFocusEffect(
     useCallback(() => {
       getWorkoutStore().setMinimized(false);
@@ -97,7 +97,7 @@ export default function ActiveWorkoutScreen() {
     () => ({ weight: settings.weightUnit, distance: settings.distanceUnit }),
     [settings.weightUnit, settings.distanceUnit],
   );
-  // Rest set on this exercise in the workout, else on the exercise itself, else the app default.
+  // Отдых, заданный для этого упражнения в тренировке, иначе для самого упражнения, иначе значение по умолчанию в приложении.
   const restSecondsFor = useCallback(
     (workoutExerciseId: string) => {
       const workoutExercise = workout?.exercises.find((exercise) => exercise.id === workoutExerciseId);
@@ -109,8 +109,8 @@ export default function ActiveWorkoutScreen() {
     [workout?.exercises, exercisesById, settings.defaultRestSeconds],
   );
 
-  // Latest values for the stable handlers below. Handlers never change identity,
-  // so memoized cards and set rows re-render only when their own data changes.
+  // Последние значения для стабильных обработчиков ниже. Обработчики не меняют идентичность,
+  // поэтому мемоизированные карточки и строки подходов перерисовываются только при изменении их собственных данных.
   const latestValuesRef = useRef({
     restSecondsFor,
     autoStartRest: settings.autoStartRest,
@@ -132,7 +132,7 @@ export default function ActiveWorkoutScreen() {
       const latestValues = latestValuesRef.current;
       if (toggleResult?.completed && latestValues.mode === 'new' && latestValues.autoStartRest) {
         const restSeconds = latestValues.restSecondsFor(workoutExerciseId);
-        // Start the rest timer after this frame so the tick paints first.
+        // Запускаем таймер отдыха после этого кадра, чтобы сначала отрисовался тик.
         if (restSeconds > 0) requestAnimationFrame(() => startRest(restSeconds));
       }
     },
@@ -261,7 +261,7 @@ export default function ActiveWorkoutScreen() {
 
   const completedSets = workout.exercises.flatMap((exercise) => exercise.sets.filter((set) => set.completed));
   const workingSetCount = countWorkingSets(completedSets);
-  // Editing a finished workout shows its saved duration instead of a live timer.
+  // При редактировании завершённой тренировки показывается сохранённая длительность вместо живого таймера.
   const fixedDurationSeconds =
     session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000);
   const hasNoExercises = workout.exercises.length === 0;
@@ -299,7 +299,7 @@ export default function ActiveWorkoutScreen() {
     push({ pathname: '/exercise/picker', params: { mode: 'replace', target: currentExercise.id } });
   };
 
-  // In a superset: leave it. Not in one: pick a partner to create it with.
+  // Если в суперсете: выйти из него. Если нет: выбрать партнёра, с которым его создать.
   const toggleCurrentExerciseSuperset = () => {
     if (!currentExercise) return;
     if (currentExercise.supersetGroup != null) {
@@ -312,7 +312,7 @@ export default function ActiveWorkoutScreen() {
 
   const linkCurrentExerciseWith = (partner: ActiveExercise) => {
     if (!currentExercise) return;
-    // Join the partner's superset, or -1 to start a new one.
+    // Присоединиться к суперсету партнёра или -1, чтобы начать новый.
     getWorkoutStore().setSuperset([currentExercise.id, partner.id], partner.supersetGroup ?? -1);
     closeSheet();
   };

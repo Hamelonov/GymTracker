@@ -31,7 +31,7 @@ export default function ExerciseDetailScreen() {
     () => (exercise ? recordTypesForExercise(exercise.type) : []),
     [exercise],
   );
-  // Kept here (not in the charts tab) so the chosen metric survives switching tabs.
+  // Хранится здесь (а не во вкладке графиков), чтобы выбранная метрика сохранялась при переключении вкладок.
   const [selectedMetric, setSelectedMetric] = useState<ChartMetric | null>(null);
   const activeMetric =
     selectedMetric && availableMetrics.includes(selectedMetric)

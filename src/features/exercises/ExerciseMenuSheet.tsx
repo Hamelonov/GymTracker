@@ -15,7 +15,7 @@ interface ExerciseMenuSheetProps {
   onClose: () => void;
 }
 
-/** Edit, archive and (for custom exercises) delete actions on the exercise detail screen. */
+/** Действия на экране упражнения: изменить, архивировать и (для своих упражнений) удалить. */
 export function ExerciseMenuSheet({
   visible,
   exercise,
@@ -57,7 +57,7 @@ export function ExerciseMenuSheet({
             onClose();
           }}
         />
-        {/* Built-in exercises can only be archived, never deleted. */}
+        {/* Встроенные упражнения можно только архивировать, но не удалять. */}
         {exercise.isCustom ? (
           <ListItem
             title={translate('common.delete')}

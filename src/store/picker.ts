@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-/** Hand-off channel for the exercise picker modal → whoever opened it. */
+/** Канал передачи результата из модалки выбора упражнения тому, кто её открыл. */
 interface PickerResultState {
   token: string | null;
   exerciseIds: string[];
@@ -13,7 +13,7 @@ export const usePickerResult = create<PickerResultState>((set, get) => ({
   exerciseIds: [],
   publish: (token, exerciseIds) => set({ token, exerciseIds }),
   consume: (token) => {
-    // Only the screen that opened the picker (same token) may read the result.
+    // Прочитать результат может только экран, открывший выбор (тот же токен).
     if (get().token !== token) return null;
     const pickedExerciseIds = get().exerciseIds;
     set({ token: null, exerciseIds: [] });

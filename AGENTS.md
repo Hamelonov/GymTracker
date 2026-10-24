@@ -48,6 +48,6 @@ The owner is a React frontend developer who reads and edits this code by hand. C
 - **Names say what things do.** Functions are verbs (`addSetToExercise`, `formatWeightWithUnit`), booleans read as yes/no questions (`isCompleted`, `hasNote`, `canComplete`).
 - **Small pieces.** A screen file holds layout and handlers; sheets, sections and rows live in named components under `src/features/<area>/`. Split a file once it grows past ~250 lines.
 - **No clever one-liners.** No nested ternaries deeper than one level: use a small helper function, a lookup object, or `if` statements. Prefer early returns.
-- **Comments explain why, not what.** Every non-obvious decision gets a one-line comment; obvious code gets none.
+- **Comments are written in Russian** and explain why, not what. Every non-obvious decision gets a one-line comment; obvious code gets none. Code identifiers stay in English.
 - **Styles** live in `StyleSheet.create` at the bottom of the file with descriptive keys (`exerciseNameColumn`, not `col1`).
 - Before finishing: `npm run format`, `npm run typecheck`, `npm run lint`, `npm test`.

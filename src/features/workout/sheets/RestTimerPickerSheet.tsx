@@ -9,14 +9,14 @@ const REST_OPTIONS_IN_SECONDS = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300];
 interface RestTimerPickerSheetProps {
   visible: boolean;
   onClose: () => void;
-  /** Rest currently used by the exercise, or null when no exercise is selected. */
+  /** Отдых, используемый упражнением сейчас, или null, если упражнение не выбрано. */
   selectedSeconds: number | null;
   defaultRestSeconds: number;
-  /** Called with the chosen rest, or with null to go back to the default rest. */
+  /** Вызывается с выбранным отдыхом или с null, чтобы вернуться к отдыху по умолчанию. */
   onRestSelect: (seconds: number | null) => void;
 }
 
-/** Grid of rest durations for one exercise, plus a button to use the default rest. */
+/** Сетка длительностей отдыха для одного упражнения и кнопка для отдыха по умолчанию. */
 export function RestTimerPickerSheet({
   visible,
   onClose,

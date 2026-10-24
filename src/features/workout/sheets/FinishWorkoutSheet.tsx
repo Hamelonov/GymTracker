@@ -7,14 +7,14 @@ interface FinishWorkoutSheetProps {
   visible: boolean;
   onClose: () => void;
   startedAt: number;
-  /** Fixed duration when editing a finished workout; undefined keeps the live timer. */
+  /** Фиксированная длительность при редактировании завершённой тренировки; undefined оставляет живой таймер. */
   durationSec: number | undefined;
   exerciseCount: number;
   setCount: number;
   onFinishPress: () => void;
 }
 
-/** Last look at the workout stats before saving it. */
+/** Последний взгляд на статистику тренировки перед сохранением. */
 export function FinishWorkoutSheet({
   visible,
   onClose,

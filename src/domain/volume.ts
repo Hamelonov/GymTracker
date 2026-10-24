@@ -9,7 +9,7 @@ function isWorkingSet(set: VolumeSet): boolean {
   return set.completed && set.type !== 'warmup';
 }
 
-/** Working-set volume in kg: weight × reps, ignoring warm-ups and incomplete sets. */
+/** Объём рабочих подходов в кг: вес × повторы, без разминки и незавершённых подходов. */
 export function setVolume(set: VolumeSet): number {
   if (!isWorkingSet(set)) return 0;
   if (set.weightKg == null || set.reps == null) return 0;

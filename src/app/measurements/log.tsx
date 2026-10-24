@@ -105,7 +105,7 @@ export default function LogMeasurementScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Negative margin lets the chips scroll edge to edge past the screen padding.
+  // Отрицательный отступ позволяет чипам прокручиваться от края до края экрана, за пределами его полей.
   chipsScroller: { marginHorizontal: -spacing.lg },
   chips: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   fieldSpacing: { marginTop: spacing.lg },

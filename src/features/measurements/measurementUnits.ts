@@ -13,13 +13,13 @@ import {
   unitToKg,
 } from '@/domain/units';
 
-/** The user's chosen units for body measurements. */
+/** Выбранные пользователем единицы для замеров тела. */
 export interface MeasurementUnits {
   weight: WeightUnit;
   length: MeasurementUnit;
 }
 
-/** Unit shown next to a value: "kg"/"lb" for body weight, "%" for body fat, "cm"/"in" for the rest. */
+/** Единица рядом со значением: «kg»/«lb» для веса тела, «%» для процента жира, «cm»/«in» для остальных. */
 export function getMeasurementUnitLabel(type: MeasurementType, units: MeasurementUnits): string {
   const kind = measurementUnitKind(type);
   if (kind === 'weight') return units.weight;
@@ -27,7 +27,7 @@ export function getMeasurementUnitLabel(type: MeasurementType, units: Measuremen
   return units.length;
 }
 
-/** Converts a stored value (kg, % or cm) into the user's unit. */
+/** Переводит сохранённое значение (кг, % или см) в единицы пользователя. */
 export function convertToDisplayUnit(
   type: MeasurementType,
   storedValue: number,
@@ -39,7 +39,7 @@ export function convertToDisplayUnit(
   return cmToUnit(storedValue, units.length);
 }
 
-/** Converts a value typed in the user's unit into the stored unit (kg, % or cm). */
+/** Переводит значение, введённое в единицах пользователя, в сохраняемые единицы (кг, % или см). */
 export function convertToStoredUnit(
   type: MeasurementType,
   displayValue: number,
@@ -51,7 +51,7 @@ export function convertToStoredUnit(
   return unitToCm(displayValue, units.length);
 }
 
-/** A stored value as text in the user's unit, e.g. "82.5 kg" or "18 %". */
+/** Сохранённое значение в виде текста в единицах пользователя, например «82.5 kg» или «18 %». */
 export function formatMeasurement(type: MeasurementType, value: number, units: MeasurementUnits): string {
   const displayValue = formatNumberWithoutTrailingZeros(
     roundForDisplay(convertToDisplayUnit(type, value, units), 1),

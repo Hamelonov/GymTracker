@@ -262,7 +262,7 @@ export function markRoutinePerformed(id: string, performedAt: number): void {
   database.update(routines).set({ lastPerformedAt: performedAt }).where(eq(routines.id, id)).run();
 }
 
-/** Build routine input from a workout (for "save as routine" / "update routine"). */
+/** Собирает данные программы из тренировки (для «сохранить как программу» / «обновить программу»). */
 export function routineInputFromWorkout(
   workout: ActiveWorkout,
   base?: Pick<RoutineInput, 'name' | 'notes' | 'folderId'>,

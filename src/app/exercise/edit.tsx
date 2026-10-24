@@ -16,10 +16,10 @@ import { formatDuration } from '@/domain/units';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { Button, Chip, Input, Screen, SectionTitle, Text, radius, spacing, useColors } from '@/ui';
 
-/** null means "use the default rest time from settings". */
+/** null означает «использовать время отдыха по умолчанию из настроек». */
 const REST_TIME_OPTIONS_SECONDS = [null, 0, 30, 60, 90, 120, 180, 240];
 
-/** Built-in exercises keep their library name, so the name field only starts filled for custom ones. */
+/** Встроенные упражнения сохраняют название из библиотеки, поэтому поле названия заполнено только у своих. */
 function getInitialName(existingExercise: ExerciseRow | undefined): string {
   if (!existingExercise || !existingExercise.isCustom) return '';
   return existingExercise.nameEn;
@@ -39,7 +39,7 @@ export default function ExerciseEditScreen() {
   const { t: translate } = useTranslation();
   const colors = useColors();
   const existingExercise = id ? getExercise(id) : undefined;
-  // Built-in exercises only allow editing the description and rest time.
+  // У встроенных упражнений можно менять только описание и время отдыха.
   const isBuiltinExercise = !!existingExercise && !existingExercise.isCustom;
   const [name, setName] = useState(() => getInitialName(existingExercise));
   const [muscleGroup, setMuscleGroup] = useState<MuscleGroup>(existingExercise?.muscleGroup ?? 'chest');
@@ -52,7 +52,7 @@ export default function ExerciseEditScreen() {
   const [restSeconds, setRestSeconds] = useState<number | null>(existingExercise?.restSeconds ?? null);
 
   const canSave = isBuiltinExercise || name.trim().length > 0;
-  // The Russian translation of the language name tells us the interface is in Russian.
+  // Русский перевод названия языка показывает, что интерфейс на русском.
   const isRussianInterface = translate('settings.langRu') === 'Русский';
 
   const getRestOptionLabel = (seconds: number | null) => {
@@ -84,7 +84,7 @@ export default function ExerciseEditScreen() {
       return;
     }
     const createdExercise = createExercise(editableFields);
-    // Opened from the picker during a workout: add the new exercise straight to the workout.
+    // Открыто из выбора упражнения во время тренировки: сразу добавляем новое упражнение в тренировку.
     if (addToWorkout === 'true') {
       useActiveWorkout.getState().addExercises([createdExercise.id]);
       router.dismissTo('/workout/active');

@@ -3,9 +3,9 @@ import { getWeekStart } from '@/domain/dates';
 const WEEK_MS = 7 * 86400000;
 
 export interface WeekStreak {
-  /** Weeks in a row with at least one workout, ending this week or last week. */
+  /** Недели подряд хотя бы с одной тренировкой, заканчивающиеся этой или прошлой неделей. */
   current: number;
-  /** Longest run of weeks in a row with at least one workout. */
+  /** Самая длинная серия недель подряд хотя бы с одной тренировкой. */
   best: number;
 }
 
@@ -26,7 +26,7 @@ export function calculateWeekStreak(workoutStartTimes: number[], now: number): W
 
   const trainedWeeks = new Set(trainedWeekStarts);
   let weekCursor = getWeekStart(now).getTime();
-  // This week is still in progress, so a streak that ended last week is still current.
+  // Эта неделя ещё идёт, поэтому серия, закончившаяся на прошлой неделе, всё ещё считается текущей.
   if (!trainedWeeks.has(weekCursor)) weekCursor -= WEEK_MS;
   let current = 0;
   while (trainedWeeks.has(weekCursor)) {

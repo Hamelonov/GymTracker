@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
-/** Current timestamp captured on mount and refreshed whenever the screen gains focus. */
+/** Текущее время, фиксируется при монтировании и обновляется, когда экран получает фокус. */
 export function useNow(): number {
   const [now, setNow] = useState(() => Date.now());
   useFocusEffect(

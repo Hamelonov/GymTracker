@@ -8,7 +8,7 @@ import { formatMeasurement, type MeasurementUnits } from './measurementUnits';
 interface MeasurementSummaryTilesProps {
   type: MeasurementType;
   latestValue: number | null;
-  /** Latest minus first value, or null when there are fewer than two entries. */
+  /** Последнее значение минус первое или null, если записей меньше двух. */
   change: number | null;
   units: MeasurementUnits;
 }
@@ -26,7 +26,7 @@ function formatChange(type: MeasurementType, change: number | null, units: Measu
   return `${sign}${formatMeasurement(type, change, units)}`;
 }
 
-/** Two tiles at the top of a measurement screen: the latest value and the change since the first entry. */
+/** Две плитки вверху экрана замера: последнее значение и изменение с первой записи. */
 export function MeasurementSummaryTiles({ type, latestValue, change, units }: MeasurementSummaryTilesProps) {
   const { t: translate } = useTranslation();
   const colors = useColors();

@@ -5,7 +5,7 @@ export const METERS_PER_KILOMETER = 1000;
 export const METERS_PER_MILE = 1609.344;
 export const CENTIMETERS_PER_INCH = 2.54;
 
-/** Display labels for units; swapped when the UI language changes. */
+/** Подписи единиц для отображения; меняются при смене языка интерфейса. */
 export const unitLabels: Record<string, string> = {
   kg: 'kg',
   lb: 'lb',
@@ -46,7 +46,7 @@ export function unitToCm(value: number, unit: MeasurementUnit): number {
   return unit === 'cm' ? value : value * CENTIMETERS_PER_INCH;
 }
 
-/** Round to a sensible display precision (max 2 decimals, strip trailing zeros). */
+/** Округляет до разумной точности для показа (максимум 2 знака, лишние нули убираются). */
 export function roundForDisplay(value: number, decimals = 2): number {
   const factor = 10 ** decimals;
   return Math.round(value * factor) / factor;
@@ -100,7 +100,7 @@ export function formatDuration(
   return `${minutes}:${padToTwoDigits(seconds)}`;
 }
 
-/** Parse user-typed number input: accepts comma decimal separator, empty → null. */
+/** Разбирает число, введённое пользователем: принимает запятую как разделитель, пусто → null. */
 export function parseNumberInput(text: string): number | null {
   const normalized = text.trim().replace(',', '.');
   if (normalized === '' || normalized === '.' || normalized === '-') return null;
@@ -108,7 +108,7 @@ export function parseNumberInput(text: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-/** Parse "m:ss" / "h:mm:ss" or plain seconds into seconds. */
+/** Разбирает «m:ss» / «h:mm:ss» или просто секунды в секунды. */
 export function parseDurationInput(text: string): number | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
@@ -124,7 +124,7 @@ export function parseDurationInput(text: string): number | null {
   return seconds == null ? null : Math.round(seconds);
 }
 
-/** Format seconds as "m:ss" for editable inputs. */
+/** Форматирует секунды как «m:ss» для редактируемых полей. */
 export function durationToInput(totalSeconds: number | null): string {
   if (totalSeconds == null) return '';
   const minutes = Math.floor(totalSeconds / 60);

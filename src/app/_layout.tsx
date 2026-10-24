@@ -35,7 +35,7 @@ export default function RootLayout() {
   const { success: isDatabaseReady, error: databaseError } = useDatabaseReady();
   const language = useSettings((state) => state.language);
 
-  // Runs once, during the first render, so translations exist before any screen renders.
+  // Выполняется один раз, во время первого рендера, чтобы переводы были готовы до отрисовки любого экрана.
   useMemo(() => initI18n(language), []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => setLanguage(language), [language]);
 
@@ -85,7 +85,7 @@ function Navigation() {
       <Stack
         screenOptions={{
           headerShown: false,
-          // Android-native durations: ios_from_right is 200 ms, slide_from_* is 400 ms.
+          // Длительности как в Android: ios_from_right занимает 200 мс, slide_from_* — 400 мс.
           animation: 'ios_from_right',
           contentStyle: { backgroundColor: colors.background },
         }}

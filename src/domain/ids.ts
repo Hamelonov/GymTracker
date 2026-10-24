@@ -1,6 +1,6 @@
 let counter = 0;
 
-/** Compact, collision-resistant ids without a native crypto dependency. */
+/** Компактные id, устойчивые к коллизиям, без зависимости от нативного crypto. */
 export function newId(): string {
   counter = (counter + 1) % 0xffff;
   const timePart = Date.now().toString(36);

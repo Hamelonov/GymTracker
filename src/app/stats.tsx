@@ -24,7 +24,7 @@ type Period = '3m' | '6m' | '1y' | 'all';
 
 const MONTHS_BY_PERIOD: Record<Exclude<Period, 'all'>, number> = { '3m': 3, '6m': 6, '1y': 12 };
 
-/** Timestamp where the period begins; 0 means "all time". */
+/** Метка времени начала периода; 0 означает «за всё время». */
 function getPeriodStart(period: Period, now: number): number {
   if (period === 'all') return 0;
   return subMonths(now, MONTHS_BY_PERIOD[period]).getTime();

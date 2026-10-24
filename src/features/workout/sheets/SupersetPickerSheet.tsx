@@ -9,13 +9,13 @@ import { exerciseDisplayName } from '../exerciseDisplayName';
 interface SupersetPickerSheetProps {
   visible: boolean;
   onClose: () => void;
-  /** Every exercise of the workout except the one the superset starts from. */
+  /** Все упражнения тренировки, кроме того, с которого начинается суперсет. */
   partnerCandidates: ActiveExercise[];
   exercisesById: Map<string, ExerciseRow>;
   onPartnerPress: (partner: ActiveExercise) => void;
 }
 
-/** Lists the other exercises of the workout to pair into a superset. */
+/** Список остальных упражнений тренировки, чтобы объединить их в суперсет. */
 export function SupersetPickerSheet({
   visible,
   onClose,

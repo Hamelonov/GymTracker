@@ -15,7 +15,7 @@ import { convertToDisplayUnit, type MeasurementUnits } from '@/features/measurem
 import { useSettings } from '@/store/settings';
 import { EmptyState, IconButton, Screen, SectionTitle } from '@/ui';
 
-/** Roughly how many date labels fit under the chart. */
+/** Примерно сколько подписей дат помещается под графиком. */
 const CHART_LABEL_COUNT = 5;
 
 export default function MeasurementTypeScreen() {
@@ -31,7 +31,7 @@ export default function MeasurementTypeScreen() {
   const chartPoints = useMemo<ChartPoint[]>(() => {
     if (!type) return [];
     const labelEvery = Math.max(1, Math.ceil(measurements.length / CHART_LABEL_COUNT));
-    // The list is newest first; the chart reads left to right from oldest.
+    // Список идёт от новых к старым; график читается слева направо, от старых к новым.
     const oldestFirst = [...measurements].reverse();
     return oldestFirst.map((measurement, index) => ({
       x: index,

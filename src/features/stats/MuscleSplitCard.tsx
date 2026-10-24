@@ -4,10 +4,10 @@ import { StyleSheet, View } from 'react-native';
 import { MUSCLE_GROUPS, type MuscleGroup } from '@/domain/types';
 import { Card, SectionTitle, Text, spacing, useColors } from '@/ui';
 
-/** Smallest bar width in percent, so a muscle with very few sets still shows a visible bar. */
+/** Минимальная ширина полосы в процентах, чтобы у мышцы с очень малым числом подходов всё равно была заметная полоса. */
 const MIN_BAR_PERCENT = 3;
 
-/** "Muscle split" section: working sets per muscle group as horizontal bars, biggest first. */
+/** Раздел «Распределение по мышцам»: рабочие подходы по группам мышц в виде горизонтальных полос, от большего к меньшему. */
 export function MuscleSplitCard({ setsByMuscle }: { setsByMuscle: Map<MuscleGroup, number> }) {
   const { t: translate } = useTranslation();
   const colors = useColors();

@@ -28,7 +28,7 @@ interface ToastState {
   dismiss: () => void;
 }
 
-// A toast with a button stays longer so there is time to press it.
+// Тост с кнопкой висит дольше, чтобы успеть нажать.
 const DURATION_WITH_ACTION_MS = 5000;
 const DURATION_PLAIN_MS = 2500;
 

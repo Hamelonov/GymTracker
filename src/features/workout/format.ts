@@ -1,7 +1,7 @@
 import type { SetValues, SetFields, WeightUnit, DistanceUnit } from '@/domain/types';
 import { formatDistance, formatDuration, formatWeight } from '@/domain/units';
 
-/** Short "60 kg × 8" style summary of a set, respecting the exercise's fields. */
+/** Короткая сводка подхода вида «60 kg × 8» с учётом полей упражнения. */
 export function formatSetValues(
   values: SetValues,
   fields: SetFields,

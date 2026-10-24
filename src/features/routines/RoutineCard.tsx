@@ -10,7 +10,7 @@ import { Button, Card, Icon, Pressable, Text, spacing, useColors } from '@/ui';
 
 interface RoutineCardProps {
   routine: RoutineSummary;
-  /** Exercises by id, used to show the exercise names of the routine. */
+  /** Упражнения по id, нужны для показа названий упражнений шаблона. */
   exercises: Map<string, ExerciseRow>;
   onStart: () => void;
   onMenu: () => void;

@@ -16,7 +16,7 @@ export type SeedExercise = [
 export const SEED_VERSION = 2;
 
 export const SEED_EXERCISES: SeedExercise[] = [
-  // ───────── Chest
+  // ───────── Грудь
   [
     'bb-bench-press',
     'Bench Press (Barbell)',
@@ -150,7 +150,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
     'Поставь скамью так, чтобы гриф касался низа груди. Сними со стопоров, опусти под контролем и выжми.',
   ],
 
-  // ───────── Back
+  // ───────── Спина
   [
     'deadlift',
     'Deadlift (Barbell)',
@@ -405,7 +405,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
     'Гриф на уровне чуть ниже колен. Тяни до полного выпрямления, сжимая ягодицы и верх спины.',
   ],
 
-  // ───────── Shoulders
+  // ───────── Плечи
   [
     'ohp',
     'Overhead Press (Barbell)',
@@ -517,7 +517,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
     'Хват чуть шире плеч, тяни гриф вдоль тела локтями вверх до уровня груди.',
   ],
 
-  // ───────── Biceps
+  // ───────── Бицепс
   [
     'bb-curl',
     'Bicep Curl (Barbell)',
@@ -607,7 +607,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
     'Сидя, локоть упирается во внутреннюю часть бедра, поднимай к плечу и сжимай.',
   ],
 
-  // ───────── Triceps
+  // ───────── Трицепс
   [
     'close-grip-bench',
     'Close Grip Bench Press',
@@ -708,7 +708,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
     'Руки вместе под грудью, локти прижаты, опускайся и отжимайся.',
   ],
 
-  // ───────── Legs
+  // ───────── Ноги
   [
     'bb-squat',
     'Squat (Barbell)',
@@ -952,7 +952,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
     'Мах руками, запрыгни на тумбу с мягким приземлением на согнутые колени, сойди шагом.',
   ],
 
-  // ───────── Abs
+  // ───────── Пресс
   [
     'plank',
     'Plank',
@@ -1064,7 +1064,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
     'Ноги зафиксированы, опускай корпус назад под контролем, поднимайся без рывка шеей.',
   ],
 
-  // ───────── Forearms & neck
+  // ───────── Предплечья и шея
   [
     'wrist-curl',
     'Wrist Curl',
@@ -1121,7 +1121,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
     'Хват сверху, поднимай штангу, держа запястья прямыми.',
   ],
 
-  // ───────── Full body / Olympic / kettlebell
+  // ───────── Всё тело / олимпийские / гири
   [
     'power-clean',
     'Power Clean',
@@ -1211,7 +1211,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
     'Низкая позиция, руки прямые, толкай ногами короткими мощными шагами.',
   ],
 
-  // ───────── Cardio
+  // ───────── Кардио
   [
     'treadmill',
     'Treadmill',
@@ -1312,7 +1312,7 @@ export const SEED_EXERCISES: SeedExercise[] = [
     'Быстрая ходьба. Записывай дистанцию и время.',
   ],
 
-  // ───────── Neck
+  // ───────── Шея
   [
     'neck-curl',
     'Neck Curl',

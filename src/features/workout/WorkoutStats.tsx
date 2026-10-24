@@ -6,26 +6,26 @@ import { Text, radius, spacing, useColors } from '@/ui';
 import { ElapsedTimer } from './ElapsedTimer';
 
 export interface WorkoutStatsProps {
-  /** Live timer from this start time. Ignored when `durationSec` is given. */
+  /** Живой таймер от этого времени начала. Игнорируется, если задан `durationSec`. */
   startedAt?: number;
-  /** Fixed duration for finished or edited workouts. */
+  /** Фиксированная длительность для завершённых или редактируемых тренировок. */
   durationSec?: number;
   exerciseCount: number;
   setCount: number;
-  /** Shown as a fourth cell only when greater than zero. */
+  /** Показывается четвёртой ячейкой, только если больше нуля. */
   prCount?: number;
-  /** `inverse` is the black card used on the yellow summary screen. */
+  /** `inverse` — чёрная карточка, используемая на жёлтом экране итогов. */
   variant?: 'surface' | 'inverse';
   style?: StyleProp<ViewStyle>;
 }
 
 /**
- * The one "workout at a glance" block: Time · Exercises · Sets (· PRs).
- * Used on the active workout screen, the finish sheet, the summary screen and
- * the workout detail page, so a change here applies everywhere.
+ * Единый блок «тренировка с первого взгляда»: Время · Упражнения · Подходы (· Рекорды).
+ * Используется на экране активной тренировки, в листе завершения, на экране итогов и
+ * на странице тренировки, поэтому изменение здесь действует везде.
  *
- * Three cells sit in one row; four cells wrap into a 2 × 2 grid so long labels
- * and big numbers always fit.
+ * Три ячейки стоят в одной строке; четыре переносятся в сетку 2 × 2, чтобы длинные подписи
+ * и большие числа всегда помещались.
  */
 export function WorkoutStats({
   startedAt,

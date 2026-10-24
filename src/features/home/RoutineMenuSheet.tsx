@@ -15,7 +15,7 @@ interface RoutineMenuSheetProps {
   onOpenMoveToFolder: (routineId: string) => void;
 }
 
-/** Actions for one routine card: start, edit, duplicate, move to folder, delete. */
+/** Действия для карточки шаблона: начать, изменить, дублировать, переместить в папку, удалить. */
 export function RoutineMenuSheet({
   visible,
   routine,

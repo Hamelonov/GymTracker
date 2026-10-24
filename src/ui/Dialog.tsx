@@ -27,7 +27,7 @@ export const useDialogStore = create<DialogState>((set, get) => ({
   resolve: null,
   open: (options) =>
     new Promise<boolean>((resolve) => {
-      // A new dialog replaces any open one, which counts as "cancelled".
+      // Новый диалог заменяет открытый, а это считается «отменой».
       get().resolve?.(false);
       set({ options, resolve });
     }),
@@ -37,7 +37,7 @@ export const useDialogStore = create<DialogState>((set, get) => ({
   },
 }));
 
-/** Imperative confirm: `if (await confirm({ title })) …` */
+/** Императивное подтверждение: `if (await confirm({ title })) …` */
 export function confirm(options: DialogOptions): Promise<boolean> {
   return useDialogStore.getState().open(options);
 }

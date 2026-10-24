@@ -10,7 +10,7 @@ import { formatDuration, kgToUnit, metersToUnit, roundForDisplay } from '@/domai
 import { EmptyChart, LineChart, type ChartPoint } from '@/features/charts/LineChart';
 import { Chip, spacing } from '@/ui';
 
-/** Charts use the same metrics as personal records. */
+/** Графики используют те же метрики, что и личные рекорды. */
 export type ChartMetric = RecordType;
 
 type Units = { weight: WeightUnit; distance: DistanceUnit };
@@ -24,7 +24,7 @@ const METRIC_LABEL_KEYS: Record<ChartMetric, string> = {
   distance: 'exercise.chartDistance',
 };
 
-/** Value of one set for the chosen metric, already converted to the user's units; null if the set has no such value. */
+/** Значение одного подхода для выбранной метрики, уже переведённое в единицы пользователя; null, если у подхода нет такого значения. */
 function getSetMetricValue(set: SetRow, metric: ChartMetric, units: Units): number | null {
   switch (metric) {
     case 'weight':
@@ -46,13 +46,13 @@ function getSetMetricValue(set: SetRow, metric: ChartMetric, units: Units): numb
   }
 }
 
-/** One chart point per workout: volume is summed over the sets, every other metric takes the best set. */
+/** Одна точка графика на тренировку: объём суммируется по подходам, остальные метрики берут лучший подход. */
 function getWorkoutMetricValue(
   entry: ExerciseHistoryEntry,
   metric: ChartMetric,
   units: Units,
 ): number | null {
-  // Warm-up sets would drag the chart down, so they are ignored.
+  // Разминочные подходы занизили бы график, поэтому они игнорируются.
   const workingSets = entry.sets.filter((set) => set.type !== 'warmup');
   let workoutValue: number | null = null;
   for (const set of workingSets) {
@@ -82,7 +82,7 @@ export function ExerciseChartsTab({
   const { t: translate, i18n } = useTranslation();
 
   const chartPoints = useMemo(() => {
-    // History comes newest first; the chart goes left to right in time.
+    // История идёт от новых к старым; график идёт слева направо по времени.
     const oldestFirstHistory = [...history].reverse();
     const points: ChartPoint[] = [];
     oldestFirstHistory.forEach((entry, index) => {

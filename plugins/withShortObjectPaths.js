@@ -1,7 +1,7 @@
-// Expo config plugin for the Android build: keeps CMake object-file paths under
-// the Windows MAX_PATH limit (260 chars). Without it the native build fails on
-// Windows with "Filename longer than 260 characters" (app) or
-// "mkdir(...): No such file or directory" (libraries).
+// Config-плагин Expo для сборки Android: удерживает пути объектных файлов `CMake` в пределах
+// лимита Windows MAX_PATH (260 символов). Без него нативная сборка на
+// Windows падает с «Filename longer than 260 characters» (приложение) или
+// «mkdir(...): No such file or directory» (библиотеки).
 const { withAppBuildGradle, withProjectBuildGradle } = require('expo/config-plugins');
 
 const MARKER = '// gymtracker: build tweaks';

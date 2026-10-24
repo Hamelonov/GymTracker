@@ -11,7 +11,7 @@ import { exerciseDisplayName } from '../exerciseDisplayName';
 interface ExerciseMenuSheetProps {
   visible: boolean;
   onClose: () => void;
-  /** The exercise the menu was opened for; the sheet stays empty without it. */
+  /** Упражнение, для которого открыто меню; без него лист остаётся пустым. */
   workoutExercise: ActiveExercise | undefined;
   exerciseDetails: ExerciseRow | undefined;
   restSeconds: number;
@@ -25,7 +25,7 @@ interface ExerciseMenuSheetProps {
   onRemovePress: () => void;
 }
 
-/** The "…" menu of an exercise card: rest timer, replace, superset, reorder and remove. */
+/** Меню «…» карточки упражнения: таймер отдыха, замена, суперсет, порядок и удаление. */
 export function ExerciseMenuSheet({
   visible,
   onClose,

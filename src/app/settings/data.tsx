@@ -16,7 +16,7 @@ function padToTwoDigits(number: number): string {
   return String(number).padStart(2, '0');
 }
 
-/** Current local time as `YYYYMMDD-HHmm`, used in exported file names. */
+/** Текущее локальное время в виде `YYYYMMDD-HHmm`, используется в именах экспортируемых файлов. */
 function formatFileTimestamp(): string {
   const date = new Date();
   const datePart = `${date.getFullYear()}${padToTwoDigits(date.getMonth() + 1)}${padToTwoDigits(date.getDate())}`;
@@ -24,7 +24,7 @@ function formatFileTimestamp(): string {
   return `${datePart}-${timePart}`;
 }
 
-/** Writes the text to a cache file and opens the system share sheet for it. */
+/** Записывает текст в файл кэша и открывает для него системное окно «Поделиться». */
 async function shareTextFile(fileName: string, content: string, mimeType: string) {
   const file = new File(Paths.cache, fileName);
   if (file.exists) file.delete();

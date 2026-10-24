@@ -28,7 +28,7 @@ export interface SaveResult {
   durationSec: number;
 }
 
-/** Persist a finished workout and update personal records inside one transaction. */
+/** Сохраняет завершённую тренировку и обновляет личные рекорды в одной транзакции. */
 export function saveWorkout(
   workout: ActiveWorkout,
   finishedAt: number,
@@ -36,7 +36,7 @@ export function saveWorkout(
 ): SaveResult {
   const exerciseIds = [...new Set(workout.exercises.map((exercise) => exercise.exerciseId))];
   const exercisesById = getExercisesByIds(exerciseIds);
-  // When editing a saved workout, records are rebuilt from scratch after the transaction.
+  // При редактировании сохранённой тренировки рекорды пересобираются с нуля после транзакции.
   const recordTables = options.existingId ? new Map<string, RecordTable>() : getRecordTables(exerciseIds);
   const workoutId = options.existingId ?? workout.id;
   const prs: SaveResult['prs'] = [];
@@ -170,7 +170,7 @@ interface BestRecord {
   achievedAt: number;
 }
 
-/** Recompute personal records for the given exercises from scratch (after edits/deletes). */
+/** Пересчитывает личные рекорды для указанных упражнений с нуля (после правок/удалений). */
 export function rebuildRecords(exerciseIds: string[]): void {
   if (exerciseIds.length === 0) return;
   const exercisesById = getExercisesByIds(exerciseIds);
@@ -194,7 +194,7 @@ export function rebuildRecords(exerciseIds: string[]): void {
         .all();
       const recordTable: RecordTable = {};
       const bestByType: Partial<Record<RecordType, BestRecord>> = {};
-      // Group by workout exercise so set-index PR flags stay consistent.
+      // Группируем по упражнению в тренировке, чтобы флаги рекордов по индексу подхода были согласованными.
       const rowsByWorkoutExerciseId = new Map<string, typeof rows>();
       for (const row of rows) {
         const group = rowsByWorkoutExerciseId.get(row.workoutExerciseId) ?? [];
@@ -270,7 +270,7 @@ export function listWorkouts(
   return attachExercises(pagedQuery.all());
 }
 
-/** Rough "heaviest set" score: weight dominates, then reps, time and distance. */
+/** Грубая оценка «самого тяжёлого подхода»: главное вес, затем повторы, время и дистанция. */
 function bestSetScore(set: SetRow): number {
   return (set.weightKg ?? 0) * 1000 + (set.reps ?? 0) + (set.durationSec ?? 0) + (set.distanceM ?? 0);
 }
@@ -398,7 +398,7 @@ export function deleteWorkout(id: string): void {
   notifyDatabaseChanged();
 }
 
-/** Convert a saved workout back into an editable active-workout structure. */
+/** Превращает сохранённую тренировку обратно в редактируемую структуру активной тренировки. */
 export function workoutToActiveWorkout(workout: WorkoutDetail): ActiveWorkout {
   return {
     id: workout.id,
@@ -429,7 +429,7 @@ export function workoutToActiveWorkout(workout: WorkoutDetail): ActiveWorkout {
   };
 }
 
-/** Start timestamps of every workout, newest first. Cheap input for streak math. */
+/** Время начала каждой тренировки, новые первыми. Дешёвые входные данные для подсчёта серий. */
 export function listWorkoutStartTimes(): number[] {
   return database
     .select({ startedAt: workouts.startedAt })
@@ -439,7 +439,7 @@ export function listWorkoutStartTimes(): number[] {
     .map((row) => row.startedAt);
 }
 
-/** "YYYY-MM-DD" in local time. */
+/** «YYYY-MM-DD» по местному времени. */
 function localDayKey(timestamp: number): string {
   const date = new Date(timestamp);
   const month = String(date.getMonth() + 1).padStart(2, '0');

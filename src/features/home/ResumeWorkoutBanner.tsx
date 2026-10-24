@@ -8,7 +8,7 @@ interface ResumeWorkoutBannerProps {
   onPress: () => void;
 }
 
-/** Yellow banner on the home screen that leads back to a minimized workout. */
+/** Жёлтый баннер на главном экране, возвращающий к свёрнутой тренировке. */
 export function ResumeWorkoutBanner({ workoutName, onPress }: ResumeWorkoutBannerProps) {
   const colors = useColors();
   const { t: translate } = useTranslation();

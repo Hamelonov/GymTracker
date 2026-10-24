@@ -18,7 +18,7 @@ import { Button, Icon, Pressable, Text, fonts, radius, spacing, useColors } from
 
 interface RoutineExerciseEditorProps {
   draftExercise: DraftExercise;
-  /** Library entry for the exercise; undefined while it is still loading. */
+  /** Запись из библиотеки для упражнения; undefined, пока она ещё загружается. */
   exercise: ExerciseRow | undefined;
   units: { weight: WeightUnit; distance: DistanceUnit };
   defaultRestSeconds: number;
@@ -27,7 +27,7 @@ interface RoutineExerciseEditorProps {
   onOpenSetTypeSheet: (draftExerciseId: string, setId: string) => void;
 }
 
-/** One exercise card in the routine editor: name, rest time, note and the planned sets. */
+/** Одна карточка упражнения в редакторе шаблона: название, время отдыха, заметка и запланированные подходы. */
 export function RoutineExerciseEditor({
   draftExercise,
   exercise,
@@ -47,7 +47,7 @@ export function RoutineExerciseEditor({
   const restSeconds = draftExercise.restSeconds;
 
   const getRestLabel = () => {
-    // null means "use the exercise default", 0 means the rest timer is turned off.
+    // null означает «использовать значение упражнения по умолчанию», 0 означает, что таймер отдыха выключен.
     if (restSeconds == null) return formatDuration(exercise?.restSeconds ?? defaultRestSeconds);
     if (restSeconds === 0) return translate('workout.restOff');
     return formatDuration(restSeconds);
@@ -123,7 +123,7 @@ export function RoutineExerciseEditor({
         ) : null}
       </View>
       {draftExercise.sets.map((draftSet, index) => {
-        // SetRow is built for live workouts; a routine set is shown as a never-completed one.
+        // SetRow рассчитан на живые тренировки; подход шаблона показывается как никогда не завершённый.
         const setAsActive: ActiveSet = { ...draftSet, completed: false, completedAt: null, previous: null };
         return (
           <SetRow

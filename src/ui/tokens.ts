@@ -32,7 +32,7 @@ export interface ThemeColors {
   overlay: string;
   tabBar: string;
   inputBackground: string;
-  /** Fixed brand colors that do not flip with the theme. */
+  /** Фирменные цвета, которые не меняются вместе с темой. */
   black: string;
   white: string;
 }

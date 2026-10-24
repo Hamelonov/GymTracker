@@ -6,7 +6,7 @@ export interface RecordSet extends SetValues {
   completed: boolean;
 }
 
-/** Current best values for an exercise, used to detect new PRs. */
+/** Текущие лучшие значения упражнения, нужны для обнаружения новых рекордов. */
 export type RecordTable = Partial<Record<RecordType, number>>;
 
 export function recordTypesForExercise(type: ExerciseType): RecordType[] {
@@ -29,7 +29,7 @@ function isPositive(value: number | null): value is number {
   return value != null && value > 0;
 }
 
-/** Value of a single set for a given PR type, or null if not applicable. */
+/** Значение одного подхода для заданного типа рекорда или null, если не применимо. */
 export function setMetric(set: RecordSet, prType: RecordType): number | null {
   if (!set.completed || set.type === 'warmup') return null;
   switch (prType) {
@@ -51,9 +51,9 @@ export function setMetric(set: RecordSet, prType: RecordType): number | null {
 }
 
 /**
- * Walk the sets of one exercise in order and report which sets beat the
- * existing records. The returned map is keyed by set index. The record table
- * is updated as we go so only the first set to beat a record counts.
+ * Проходит по подходам одного упражнения по порядку и сообщает, какие побили
+ * существующие рекорды. Возвращаемая карта индексируется номером подхода. Таблица рекордов
+ * обновляется по ходу, так что засчитывается только первый подход, побивший рекорд.
  */
 export function detectPersonalRecords(
   sets: RecordSet[],
@@ -68,7 +68,7 @@ export function detectPersonalRecords(
       const value = setMetric(set, prType);
       if (value == null) continue;
       const previousRecord = table[prType];
-      // The epsilon ignores float noise so an equal value is not reported as a new record.
+      // Эпсилон гасит шум float, чтобы равное значение не считалось новым рекордом.
       const beatsPreviousRecord = previousRecord == null || value > previousRecord + 1e-9;
       if (!beatsPreviousRecord) continue;
       const setHits = hitsBySetIndex.get(setIndex) ?? [];

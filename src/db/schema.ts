@@ -21,10 +21,10 @@ export const exercises = sqliteTable(
       .default([]),
     equipment: text('equipment').$type<Equipment>().notNull(),
     type: text('type').$type<ExerciseType>().notNull(),
-    /** Built-in how-to text, localized. */
+    /** Встроенное описание техники, локализованное. */
     descriptionEn: text('description_en').notNull().default(''),
     descriptionRu: text('description_ru').notNull().default(''),
-    /** User's own fixed description. Overrides the built-in one when set. */
+    /** Собственное описание пользователя. Если задано, заменяет встроенное. */
     description: text('description'),
     isCustom: integer('is_custom', { mode: 'boolean' }).notNull().default(false),
     restSeconds: integer('rest_seconds'),
@@ -121,7 +121,7 @@ export const workoutExercises = sqliteTable(
       .references(() => exercises.id, { onDelete: 'cascade' }),
     position: integer('position').notNull(),
     supersetGroup: integer('superset_group'),
-    /** Per-session note ("how it went today"). */
+    /** Заметка к тренировке («как сегодня прошло»). */
     note: text('note').notNull().default(''),
     restSeconds: integer('rest_seconds'),
   },
@@ -157,7 +157,7 @@ export const measurements = sqliteTable(
   {
     id: text('id').primaryKey(),
     type: text('type').$type<MeasurementType>().notNull(),
-    /** Stored in base units: kg, %, cm. */
+    /** Хранится в базовых единицах: кг, %, см. */
     value: real('value').notNull(),
     measuredAt: integer('measured_at').notNull(),
     note: text('note').notNull().default(''),

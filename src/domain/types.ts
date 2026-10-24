@@ -87,7 +87,7 @@ export type WeightUnit = 'kg' | 'lb';
 export type DistanceUnit = 'km' | 'mi';
 export type MeasurementUnit = 'cm' | 'in';
 
-/** Which inputs a set row shows for a given exercise type. */
+/** Какие поля ввода показывает строка подхода для данного типа упражнения. */
 export interface SetFields {
   weight: boolean;
   reps: boolean;
@@ -105,7 +105,7 @@ const DISTANCE_DURATION: SetFields = Object.freeze({
   distance: true,
 });
 
-/** Returns a shared constant per type, so it is safe to pass to memoized components. */
+/** Возвращает общую константу для каждого типа, поэтому безопасно передавать в мемоизированные компоненты. */
 export function getSetFieldsForExerciseType(type: ExerciseType): SetFields {
   switch (type) {
     case 'weight_reps':
@@ -122,7 +122,7 @@ export function getSetFieldsForExerciseType(type: ExerciseType): SetFields {
   }
 }
 
-/** A set as entered by the user. Weight is always stored in kg, distance in meters. */
+/** Подход в том виде, как его ввёл пользователь. Вес всегда хранится в кг, дистанция в метрах. */
 export interface SetValues {
   weightKg: number | null;
   reps: number | null;
@@ -140,13 +140,13 @@ export const EMPTY_SET_VALUES: SetValues = {
 };
 
 export interface ActiveSet extends SetValues {
-  /** Set only on saved workouts: which records this set achieved. */
+  /** Задаётся только у сохранённых тренировок: какие рекорды поставил этот подход. */
   prTypes?: RecordType[];
   id: string;
   type: SetType;
   completed: boolean;
   completedAt: number | null;
-  /** Values from the last time this exercise was performed (same set index). */
+  /** Значения с прошлого выполнения этого упражнения (тот же номер подхода). */
   previous: SetValues | null;
 }
 

@@ -8,15 +8,15 @@ const REST_TIME_OPTIONS_SECONDS = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300];
 
 interface RestTimeSheetProps {
   visible: boolean;
-  /** Currently chosen rest; null means the exercise uses the default rest time. */
+  /** Текущий выбранный отдых; null означает, что упражнение использует время отдыха по умолчанию. */
   selectedRestSeconds: number | null | undefined;
   defaultRestSeconds: number;
   onClose: () => void;
-  /** Called with null when the user picks "use default". */
+  /** Вызывается с null, когда пользователь выбирает «по умолчанию». */
   onSelectRestSeconds: (restSeconds: number | null) => void;
 }
 
-/** Grid of rest durations for one exercise of a routine. */
+/** Сетка длительностей отдыха для одного упражнения шаблона. */
 export function RestTimeSheet({
   visible,
   selectedRestSeconds,

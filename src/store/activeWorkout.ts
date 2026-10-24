@@ -12,7 +12,7 @@ export type EditSession = { mode: 'new' } | { mode: 'edit'; workoutId: string; f
 interface ActiveWorkoutState {
   workout: ActiveWorkout | null;
   session: EditSession;
-  /** Drives the minimized bar: true when the active screen is not on top. */
+  /** Управляет свёрнутой панелью: true, когда экран активной тренировки не на переднем плане. */
   minimized: boolean;
   startEmpty: (name: string) => void;
   startFromRoutine: (routine: RoutineDetail, name?: string) => void;
@@ -57,7 +57,7 @@ function makeSet(previous: SetValues | null, type: SetType = 'normal', initialVa
   };
 }
 
-/** Empty sets prefilled with "previous" values from the last time the exercise was done. */
+/** Пустые подходы, заранее заполненные «прошлыми» значениями с прошлого выполнения упражнения. */
 function makeSetsFromLastPerformance(lastSets: SetValues[] | undefined): ActiveSet[] {
   const setCount = Math.max(1, lastSets?.length ?? 0);
   return Array.from({ length: setCount }, (_, setIndex) => makeSet(lastSets?.[setIndex] ?? null));
@@ -71,7 +71,7 @@ function hasAnyValue(set: SetValues): boolean {
   return set.weightKg != null || set.reps != null || set.durationSec != null || set.distanceM != null;
 }
 
-/** Values to copy from the previous performance into the empty fields of a set being completed. */
+/** Значения, которые копируются из прошлого выполнения в пустые поля завершаемого подхода. */
 function valuesToFillFromPrevious(set: ActiveSet): Partial<SetValues> {
   const fill: Partial<SetValues> = {};
   const previous = set.previous;
@@ -213,7 +213,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
           updateExercise(workoutExerciseId, (exercise) => ({ ...exercise, restSeconds })),
         setSuperset: (workoutExerciseIds, group) =>
           updateWorkout((workout) => {
-            // -1 asks for a brand-new superset group.
+            // -1 означает создать новую группу суперсета.
             const supersetGroup = group === -1 ? nextSupersetGroup(workout.exercises) : group;
             return {
               ...workout,
@@ -225,7 +225,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
         addSet: (workoutExerciseId) =>
           updateExercise(workoutExerciseId, (exercise) => {
             const lastSet = exercise.sets[exercise.sets.length - 1];
-            // Seed the new set with the last set's values for fast entry.
+            // Заполняем новый подход значениями последнего для быстрого ввода.
             const initialValues: SetValues | undefined = lastSet
               ? {
                   weightKg: lastSet.weightKg,
@@ -235,7 +235,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
                   rpe: null,
                 }
               : undefined;
-            // The last performance only covers the sets that already exist, so an added set has no "previous".
+            // Прошлое выполнение покрывает только уже существующие подходы, поэтому у добавленного нет «прошлого».
             return {
               ...exercise,
               sets: [...exercise.sets, makeSet(null, 'normal', initialValues)],
@@ -251,7 +251,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
           const toggledSet = exercise?.sets.find((set) => set.id === setId);
           if (!exercise || !toggledSet) return null;
           const completed = !toggledSet.completed;
-          // When completing an empty set, fall back to previous values so one tap logs "same as last time".
+          // При завершении пустого подхода берём прошлые значения, чтобы один тап записывал «как в прошлый раз».
           const fill = completed ? valuesToFillFromPrevious(toggledSet) : {};
           updateExercise(workoutExerciseId, (currentExercise) => ({
             ...currentExercise,

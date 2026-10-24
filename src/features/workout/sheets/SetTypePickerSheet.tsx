@@ -14,7 +14,7 @@ interface SetTypePickerSheetProps {
   onDeleteSetPress: () => void;
 }
 
-/** Opened from a set number: change the set type or delete the set. */
+/** Открывается по номеру подхода: изменить тип подхода или удалить его. */
 export function SetTypePickerSheet({
   visible,
   onClose,

@@ -6,7 +6,7 @@ import { Button, Icon, Pressable, Text, spacing, useColors } from '@/ui';
 
 interface ActiveWorkoutHeaderProps {
   workoutName: string;
-  /** Workout date, shown under the name only while editing a finished workout. */
+  /** Дата тренировки, показывается под названием только при редактировании завершённой тренировки. */
   dateText: string | null;
   finishButtonTitle: string;
   canFinish: boolean;
@@ -15,7 +15,7 @@ interface ActiveWorkoutHeaderProps {
   onFinishPress: () => void;
 }
 
-/** Top bar of the active workout: minimize, tappable workout name, finish button. */
+/** Верхняя панель активной тренировки: свернуть, название тренировки (нажимается), кнопка завершения. */
 export function ActiveWorkoutHeader({
   workoutName,
   dateText,

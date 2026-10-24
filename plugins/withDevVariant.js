@@ -1,6 +1,6 @@
-// Expo config plugin: the debug (development) build gets its own application id
-// (".dev") and the launcher name "GymTracker Dev", so it installs next to the
-// release build, which keeps the plain id and the name "GymTracker".
+// Config-плагин Expo: debug-сборка (разработческая) получает собственный application id
+// (".dev") и имя в лаунчере «GymTracker Dev», поэтому ставится рядом с
+// release-сборкой, у которой обычный id и имя «GymTracker».
 const fs = require('fs');
 const path = require('path');
 const { withAppBuildGradle, withDangerousMod } = require('expo/config-plugins');
@@ -26,7 +26,7 @@ function withDevName(config) {
   return withDangerousMod(config, [
     'android',
     (config) => {
-      // A debug source set overrides app_name without clashing with the main strings.xml.
+      // Debug source set переопределяет app_name, не конфликтуя с основным strings.xml.
       const valuesDirectory = path.join(
         config.modRequest.platformProjectRoot,
         'app',

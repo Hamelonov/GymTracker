@@ -3,12 +3,12 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Icon, Text, spacing } from '@/ui';
 
-// The summary cards are always white on the yellow screen, in light and dark theme alike,
-// so their secondary colors are fixed instead of coming from the theme.
+// Карточки итогов всегда белые на жёлтом экране, и в светлой, и в тёмной теме,
+// поэтому их второстепенные цвета фиксированы, а не берутся из темы.
 export const SUMMARY_MUTED_TEXT_COLOR = '#6A6A66';
 export const SUMMARY_DIVIDER_COLOR = '#E6E6E2';
 
-/** Icon and title above each card on the summary screen. */
+/** Иконка и заголовок над каждой карточкой на экране итогов. */
 export function SummaryBlockHeader({ icon, title }: { icon: LucideIcon; title: string }) {
   return (
     <View style={styles.blockHeader}>
