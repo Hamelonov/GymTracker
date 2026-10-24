@@ -1,4 +1,4 @@
-import type { ActiveExercise, ActiveSet, ActiveWorkout, SetValues } from '@/domain/types';
+import type { ActiveExercise, ActiveSet, ActiveWorkout, ExtraField, SetValues } from '@/domain/types';
 import { applyQuickEntry, type QuickEntryCommit } from '../activeWorkoutQuickEntry';
 
 const values = (partial: Partial<SetValues> = {}): SetValues => ({
@@ -7,6 +7,7 @@ const values = (partial: Partial<SetValues> = {}): SetValues => ({
   durationSec: null,
   distanceM: null,
   rpe: null,
+  rir: null,
   ...partial,
 });
 
@@ -32,6 +33,7 @@ const workoutWith = (exercises: ActiveExercise[]): ActiveWorkout => ({
 const commitOf = (exerciseId: string, sets: (Partial<SetValues> & { type?: ActiveSet['type'] })[]) => ({
   exerciseId,
   sets: sets.map(({ type, ...rest }) => ({ type: type ?? 'normal', ...values(rest) })),
+  extraFields: [] as ExtraField[],
 });
 
 const noHistory = new Map<string, { sets: SetValues[] }>();
@@ -62,6 +64,7 @@ test('заполняет запланированные пустые подхо�
     supersetGroup: null,
     note: '',
     restSeconds: null,
+    extraFields: [],
     sets: [
       plannedSet('a', { completed: true, completedAt: 5, weightKg: 60, reps: 10 }),
       plannedSet('b', { previous }),
@@ -125,4 +128,32 @@ test('для таймера отдыха запоминается последн
   const outcome = applyQuickEntry(workoutWith([]), commits, noHistory, 1000);
   expect(outcome.workoutExerciseIds).toHaveLength(2);
   expect(outcome.lastWorkoutExerciseIdWithNewSets).toBe(outcome.workout.exercises[0]?.id);
+});
+
+test('поля из записи добавляются к полям карточки без дублей и в общем порядке', () => {
+  const card: ActiveExercise = {
+    id: 'card',
+    exerciseId: 'squat',
+    supersetGroup: null,
+    note: '',
+    restSeconds: null,
+    extraFields: ['rpe'],
+    sets: [],
+  };
+  const commits: QuickEntryCommit[] = [
+    { ...commitOf('squat', [{ weightKg: 70, reps: 7, rir: 1 }]), extraFields: ['rir'] },
+    { ...commitOf('pullup', [{ weightKg: 10, reps: 8 }]), extraFields: ['weight'] },
+  ];
+  const outcome = applyQuickEntry(workoutWith([card]), commits, noHistory, 1000);
+  expect(outcome.workout.exercises[0]?.extraFields).toEqual(['rir', 'rpe']);
+  expect(outcome.workout.exercises[1]?.extraFields).toEqual(['weight']);
+});
+
+test('новая карточка из быстрой записи получает запомненные поля упражнения', () => {
+  const commits: QuickEntryCommit[] = [
+    { ...commitOf('squat', [{ weightKg: 70, reps: 7 }]), extraFields: [] },
+  ];
+  const remembered = new Map<string, ExtraField[]>([['squat', ['rpe']]]);
+  const outcome = applyQuickEntry(workoutWith([]), commits, noHistory, 1000, remembered);
+  expect(outcome.workout.exercises[0]?.extraFields).toEqual(['rpe']);
 });

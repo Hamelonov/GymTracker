@@ -59,8 +59,10 @@ export interface SetGroup {
   values: string[];
 }
 
+/** «9» или «9(1)» — повторы и RIR в скобках, в той же записи, что принимает быстрый ввод. */
 function formatReps(set: LineSet): string {
-  return set.reps != null ? String(set.reps) : '—';
+  if (set.reps == null) return '—';
+  return set.rir != null ? `${set.reps}(${set.rir})` : String(set.reps);
 }
 
 /**
@@ -72,24 +74,21 @@ export function groupSets(sets: LineSet[], fields: SetFields, formatters: ValueF
   if (workingSets.length === 0) return [];
 
   const isCardio = fields.distance || (fields.duration && !fields.reps);
-  if (isCardio) {
-    const values = workingSets.map((set) => {
-      const parts: string[] = [];
-      if (fields.distance && set.distanceM != null) parts.push(formatters.distance(set.distanceM));
-      if (fields.duration && set.durationSec != null) parts.push(formatters.duration(set.durationSec));
-      return parts.join(' ') || '—';
-    });
-    return [{ weightKg: null, values }];
-  }
+  const formatValue = (set: LineSet): string => {
+    if (!isCardio) return formatReps(set);
+    const parts: string[] = [];
+    if (fields.distance && set.distanceM != null) parts.push(formatters.distance(set.distanceM));
+    if (fields.duration && set.durationSec != null) parts.push(formatters.duration(set.durationSec));
+    return parts.join(' ') || '—';
+  };
 
-  if (!fields.weight) return [{ weightKg: null, values: workingSets.map(formatReps) }];
-
+  // Вес группирует подходы и у упражнений без поля веса: дополнительный вес у подтягиваний — «10 кг × 8 / 8».
   const groups: SetGroup[] = [];
   for (const set of workingSets) {
     const weightKg = set.weightKg != null && set.weightKg > 0 ? set.weightKg : null;
     const lastGroup = groups[groups.length - 1];
-    if (lastGroup && lastGroup.weightKg === weightKg) lastGroup.values.push(formatReps(set));
-    else groups.push({ weightKg, values: [formatReps(set)] });
+    if (lastGroup && lastGroup.weightKg === weightKg) lastGroup.values.push(formatValue(set));
+    else groups.push({ weightKg, values: [formatValue(set)] });
   }
   return groups;
 }

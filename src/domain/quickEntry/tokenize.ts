@@ -12,6 +12,7 @@ export type Token = { start: number } & (
   | { kind: 'timeUnit'; unit: 'sec' | 'min' | 'hour' }
   | { kind: 'setType'; type: 'warmup' | 'failure' | 'drop' }
   | { kind: 'per' }
+  | { kind: 'rir'; value: number } // «(1)» после повторов — повторы в запасе
 );
 
 type UnitToken = Extract<Token, { kind: 'weightUnit' | 'distanceUnit' | 'timeUnit' }>;
@@ -23,6 +24,7 @@ const DOT_NUMBER_PATTERN = /\d+(?:\.\d+)?/y;
 const COMMA_NUMBER_PATTERN = /\d+,\d{1,2}(?=\s*(?:кг|kg|кило|lbs?|фунт|[хx×*]))/y;
 const WORD_PATTERN = /\p{L}[\p{L}\d]*(?:-[\p{L}\d]+)*/uy;
 const PER_BEFORE_DIGIT_PATTERN = /по(?=\d)/y;
+const RIR_PATTERN = /\(\s*(\d+)\s*\)/y;
 const LETTER_OR_DIGIT = /[\p{L}\d]/u;
 const LETTER = /\p{L}/u;
 
@@ -126,8 +128,29 @@ export function tokenize(line: string): Token[] {
 
   const tryReadSetTypeSuffix = (): boolean => {
     const setType = SET_TYPE_LETTERS[text[position] ?? ''];
-    if (!setType || !isRightAfterNumber(true) || isLetterOrDigit(text[position + 1])) return false;
+    // Буква типа клеится к числу повторов или к скобкам RIR: «7о» и «7(1)о».
+    const isGluedToRir = lastToken()?.kind === 'rir' && text[position - 1] === ')';
+    if (!setType || !(isRightAfterNumber(true) || isGluedToRir) || isLetterOrDigit(text[position + 1])) {
+      return false;
+    }
     tokens.push({ kind: 'setType', type: setType, start: position });
+    position += 1;
+    return true;
+  };
+
+  /** «9(1)» и «9 (1)»: скобки с числом сразу после повторов (или после суффикса типа подхода). */
+  const tryReadRir = (): boolean => {
+    const previousKind = lastToken()?.kind;
+    if (previousKind !== 'number' && previousKind !== 'setType') return false;
+    const match = matchAt(RIR_PATTERN, text, position);
+    // Больше 10 повторов в запасе не бывает: такие скобки — ошибка, а не RIR.
+    if (match && Number(match[1]) <= 10) {
+      tokens.push({ kind: 'rir', value: Number(match[1]), start: position });
+      position += match[0].length;
+      return true;
+    }
+    // Скобка после числа, но внутри не RIR («(-1)»): отдаём её парсеру, чтобы ошибка указала на неё.
+    tokens.push({ kind: 'word', text: '(', start: position });
     position += 1;
     return true;
   };
@@ -213,6 +236,8 @@ export function tokenize(line: string): Token[] {
       position += wordText.length;
       continue;
     }
+
+    if (character === '(' && tryReadRir()) continue;
 
     // Прочие знаки препинания просто пропускаем.
     position += 1;

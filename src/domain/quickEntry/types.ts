@@ -12,6 +12,8 @@ export interface ParsedSet {
   durationSec: number | null;
   /** Уже в метрах. */
   distanceM: number | null;
+  /** Повторы в запасе из скобок: «9(1)». */
+  rir: number | null;
 }
 
 export interface ParsedLine {

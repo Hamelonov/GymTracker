@@ -10,6 +10,7 @@ const set = (partial: Partial<ParsedSet>): ParsedSet => ({
   reps: null,
   durationSec: null,
   distanceM: null,
+  rir: null,
   ...partial,
 });
 
@@ -121,5 +122,29 @@ test('повторы — только целое число больше нул�
   expect(parseLine('Присед 0', 0, options)).toEqual({
     ok: false,
     error: { lineIndex: 0, rawText: 'Присед 0', reason: 'unexpectedText', fragment: '0' },
+  });
+});
+
+test('RIR в скобках', () => {
+  expect(setsOf('Присед 70х9(1)/8(1)/8(0)')).toEqual([
+    set({ weightKg: 70, reps: 9, rir: 1 }),
+    set({ weightKg: 70, reps: 8, rir: 1 }),
+    set({ weightKg: 70, reps: 8, rir: 0 }),
+  ]);
+  const failureFirst = setsOf('Жим 60х8о(1)');
+  const rirFirst = setsOf('Жим 60х8(1)о');
+  expect(failureFirst).toEqual([set({ weightKg: 60, reps: 8, rir: 1, type: 'failure' })]);
+  expect(rirFirst).toEqual(failureFirst);
+  expect(setsOf('Присед 70кг 3 по 8(2)').map((parsedSet) => parsedSet.rir)).toEqual([2, 2, 2]);
+  expect(parseLine('Присед 70х8(-1)', 0, options)).toEqual({
+    ok: false,
+    error: { lineIndex: 0, rawText: 'Присед 70х8(-1)', reason: 'unexpectedText', fragment: '(-1)' },
+  });
+});
+
+test('RIR больше 10 — ошибка разбора', () => {
+  expect(parseLine('Присед 70х8(15)', 0, options)).toEqual({
+    ok: false,
+    error: { lineIndex: 0, rawText: 'Присед 70х8(15)', reason: 'unexpectedText', fragment: '(15)' },
   });
 });

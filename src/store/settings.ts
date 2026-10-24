@@ -18,7 +18,6 @@ export interface SettingsState {
   restNotifications: boolean;
   haptics: boolean;
   keepAwake: boolean;
-  showRpe: boolean;
   barWeightKg: number;
   platesKg: number[];
   update: (patch: Partial<SettingsState>) => void;
@@ -37,7 +36,6 @@ export const useSettings = create<SettingsState>()(
       restNotifications: true,
       haptics: true,
       keepAwake: true,
-      showRpe: false,
       barWeightKg: 20,
       platesKg: DEFAULT_PLATES_KG,
       update: (patch) => set(patch),

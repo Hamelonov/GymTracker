@@ -160,3 +160,31 @@ test('х сразу после единицы веса и «по» без про
     { kind: 'number', value: 7 },
   ]);
 });
+
+test('RIR в скобках после повторов', () => {
+  expect(tokenize('9(1)/8(1)/8(0)')).toMatchObject([
+    { kind: 'number', value: 9 },
+    { kind: 'rir', value: 1 },
+    { kind: 'slash' },
+    { kind: 'number', value: 8 },
+    { kind: 'rir', value: 1 },
+    { kind: 'slash' },
+    { kind: 'number', value: 8 },
+    { kind: 'rir', value: 0 },
+  ]);
+  expect(tokenize('9 (1)')).toMatchObject([
+    { kind: 'number', value: 9 },
+    { kind: 'rir', value: 1 },
+  ]);
+  expect(tokenize('8(1)о')).toMatchObject([
+    { kind: 'number', value: 8 },
+    { kind: 'rir', value: 1 },
+    { kind: 'setType', type: 'failure' },
+  ]);
+  expect(tokenize('8о(1)')).toMatchObject([
+    { kind: 'number', value: 8 },
+    { kind: 'setType', type: 'failure' },
+    { kind: 'rir', value: 1 },
+  ]);
+  expect(tokenize('(abc)')).toMatchObject([{ kind: 'word', text: 'abc' }]);
+});

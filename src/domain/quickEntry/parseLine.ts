@@ -22,6 +22,7 @@ const EMPTY_PARSED_SET: ParsedSet = {
   reps: null,
   durationSec: null,
   distanceM: null,
+  rir: null,
 };
 
 const SECONDS_BY_TIME_UNIT = { sec: 1, min: 60, hour: 3600 } as const;
@@ -99,11 +100,17 @@ function readDistance(cursor: Cursor, options: ParseOptions): number | null {
   return unitToMeters(numberToken.value, unitToken.unit);
 }
 
-function readSetTypeSuffix(cursor: Cursor): ParsedSet['type'] {
-  const token = peek(cursor);
-  if (token?.kind !== 'setType') return 'normal';
-  cursor.index += 1;
-  return token.type;
+/** Суффиксы после числа повторов: тип подхода («7о») и RIR («7(1)») в любом порядке, каждый не больше раза. */
+function readRepsSuffixes(cursor: Cursor): { type: ParsedSet['type']; rir: number | null } {
+  let type: ParsedSet['type'] = 'normal';
+  let rir: number | null = null;
+  for (;;) {
+    const token = peek(cursor);
+    if (token?.kind === 'setType' && type === 'normal') type = token.type;
+    else if (token?.kind === 'rir' && rir == null) rir = token.value;
+    else return { type, rir };
+    cursor.index += 1;
+  }
 }
 
 /** Одно значение подхода: повторы, время, дистанция или дистанция со временем в любом порядке. */
@@ -119,7 +126,7 @@ function readSingleValue(cursor: Cursor, options: ParseOptions): ParsedSet | nul
   const numberToken = peek(cursor);
   if (numberToken?.kind !== 'number' || !isValidRepCount(numberToken.value)) return null;
   cursor.index += 1;
-  return { ...EMPTY_PARSED_SET, reps: numberToken.value, type: readSetTypeSuffix(cursor) };
+  return { ...EMPTY_PARSED_SET, reps: numberToken.value, ...readRepsSuffixes(cursor) };
 }
 
 /** Значение с учётом «3 по 7»: три одинаковых подхода. */

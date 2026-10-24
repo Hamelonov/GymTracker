@@ -2,6 +2,7 @@ import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core
 import type {
   Equipment,
   ExerciseType,
+  ExtraField,
   MeasurementType,
   MuscleGroup,
   RecordType,
@@ -30,6 +31,11 @@ export const exercises = sqliteTable(
     restSeconds: integer('rest_seconds'),
     archived: integer('archived', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at').notNull(),
+    /** Дополнительные поля, которые включаются сами при каждом добавлении упражнения в тренировку. */
+    rememberedExtraFields: text('remembered_extra_fields', { mode: 'json' })
+      .$type<ExtraField[]>()
+      .notNull()
+      .default([]),
   },
   (table) => [index('exercises_muscle_idx').on(table.muscleGroup)],
 );
@@ -124,6 +130,8 @@ export const workoutExercises = sqliteTable(
     /** Заметка к тренировке («как сегодня прошло»). */
     note: text('note').notNull().default(''),
     restSeconds: integer('rest_seconds'),
+    /** Дополнительные колонки, включённые на карточке в этой тренировке. */
+    extraFields: text('extra_fields', { mode: 'json' }).$type<ExtraField[]>().notNull().default([]),
   },
   (table) => [
     index('workout_exercises_workout_idx').on(table.workoutId),
@@ -145,6 +153,7 @@ export const sets = sqliteTable(
     durationSec: integer('duration_sec'),
     distanceM: real('distance_m'),
     rpe: real('rpe'),
+    rir: integer('rir'),
     completed: integer('completed', { mode: 'boolean' }).notNull().default(true),
     completedAt: integer('completed_at'),
     prTypes: text('pr_types', { mode: 'json' }).$type<RecordType[]>().notNull().default([]),

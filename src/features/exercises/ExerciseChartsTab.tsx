@@ -10,15 +10,18 @@ import { formatDuration, kgToUnit, metersToUnit, roundForDisplay } from '@/domai
 import { EmptyChart, LineChart, type ChartPoint } from '@/features/charts/LineChart';
 import { Chip, spacing } from '@/ui';
 
-/** Графики используют те же метрики, что и личные рекорды. */
-export type ChartMetric = RecordType;
+/** Графики используют те же метрики, что и личные рекорды; объём из приложения убран. */
+export type ChartMetric = Exclude<RecordType, 'volume'>;
+
+export function isChartMetric(type: RecordType): type is ChartMetric {
+  return type !== 'volume';
+}
 
 type Units = { weight: WeightUnit; distance: DistanceUnit };
 
 const METRIC_LABEL_KEYS: Record<ChartMetric, string> = {
   weight: 'exercise.chartHeaviest',
   one_rm: 'exercise.chartOneRm',
-  volume: 'exercise.chartVolume',
   reps: 'exercise.chartReps',
   duration: 'exercise.chartDuration',
   distance: 'exercise.chartDistance',
@@ -33,10 +36,6 @@ function getSetMetricValue(set: SetRow, metric: ChartMetric, units: Units): numb
       return set.weightKg != null && set.reps
         ? kgToUnit(estimateOneRm(set.weightKg, set.reps), units.weight)
         : null;
-    case 'volume':
-      return set.weightKg != null && set.reps != null
-        ? kgToUnit(set.weightKg * set.reps, units.weight)
-        : null;
     case 'reps':
       return set.reps;
     case 'duration':
@@ -46,7 +45,7 @@ function getSetMetricValue(set: SetRow, metric: ChartMetric, units: Units): numb
   }
 }
 
-/** Одна точка графика на тренировку: объём суммируется по подходам, остальные метрики берут лучший подход. */
+/** Одна точка графика на тренировку: лучший рабочий подход по выбранной метрике. */
 function getWorkoutMetricValue(
   entry: ExerciseHistoryEntry,
   metric: ChartMetric,
@@ -58,8 +57,7 @@ function getWorkoutMetricValue(
   for (const set of workingSets) {
     const setValue = getSetMetricValue(set, metric, units);
     if (setValue == null) continue;
-    if (metric === 'volume') workoutValue = (workoutValue ?? 0) + setValue;
-    else workoutValue = Math.max(workoutValue ?? -Infinity, setValue);
+    workoutValue = Math.max(workoutValue ?? -Infinity, setValue);
   }
   return workoutValue;
 }

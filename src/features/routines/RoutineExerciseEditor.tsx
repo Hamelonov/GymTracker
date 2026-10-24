@@ -12,7 +12,7 @@ import {
   type WeightUnit,
 } from '@/domain/types';
 import { formatDuration, unitLabels } from '@/domain/units';
-import { SET_COLUMN_WIDTHS, SetRow } from '@/features/workout/SetRow';
+import { NO_EXTRA_FIELDS, SET_COLUMN_WIDTHS, SetRow } from '@/features/workout/SetRow';
 import { useRoutineDraft, type DraftExercise } from '@/store/routineDraft';
 import { Button, Icon, Pressable, Text, fonts, radius, spacing, useColors } from '@/ui';
 
@@ -132,7 +132,7 @@ export function RoutineExerciseEditor({
             index={index}
             fields={fields}
             units={units}
-            showRpe={false}
+            extraFields={NO_EXTRA_FIELDS}
             hideCheck
             formatSetTypeLabel={(type: SetType) => translate(`workout.setTypeShort.${type}`)}
             workoutExerciseId={draftExercise.id}

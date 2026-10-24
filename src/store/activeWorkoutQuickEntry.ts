@@ -1,11 +1,21 @@
 import { newId } from '@/domain/ids';
-import type { ActiveExercise, ActiveSet, ActiveWorkout, SetType, SetValues } from '@/domain/types';
+import {
+  EXTRA_FIELDS,
+  type ActiveExercise,
+  type ActiveSet,
+  type ActiveWorkout,
+  type ExtraField,
+  type SetType,
+  type SetValues,
+} from '@/domain/types';
 import { makeSetsFromLastPerformance } from './activeWorkoutSets';
 
 export interface QuickEntryCommit {
   exerciseId: string;
   /** Уже в кг и метрах; пустой список = «только название». */
   sets: ({ type: SetType } & SetValues)[];
+  /** Поля, которые надо включить на карточке, чтобы показать всё из строки (RIR, вес у подтягиваний). */
+  extraFields: ExtraField[];
 }
 
 export interface QuickEntryOutcome {
@@ -19,8 +29,14 @@ export interface QuickEntryOutcome {
 
 type LastPerformanceByExerciseId = Map<string, { sets: SetValues[] }>;
 
+/** Объединение полей карточки и полей из записи в общем порядке колонок, без дублей. */
+function mergeExtraFields(current: readonly ExtraField[], added: readonly ExtraField[]): ExtraField[] {
+  const enabled = new Set([...current, ...added]);
+  return EXTRA_FIELDS.filter((field) => enabled.has(field));
+}
+
 function makeEmptyCard(exerciseId: string, sets: ActiveSet[]): ActiveExercise {
-  return { id: newId(), exerciseId, supersetGroup: null, note: '', restSeconds: null, sets };
+  return { id: newId(), exerciseId, supersetGroup: null, note: '', restSeconds: null, extraFields: [], sets };
 }
 
 /**
@@ -59,6 +75,7 @@ export function applyQuickEntry(
   commits: QuickEntryCommit[],
   lastPerformanceByExerciseId: LastPerformanceByExerciseId,
   now: number,
+  rememberedExtraFieldsByExerciseId: Map<string, ExtraField[]> = new Map(),
 ): QuickEntryOutcome {
   let exercises = workout.exercises;
   const touchedCardIds: string[] = [];
@@ -72,15 +89,23 @@ export function applyQuickEntry(
       // «Только название» без карточки — как добавление из списка: пустые подходы из прошлого раза.
       const initialSets = commit.sets.length === 0 ? makeSetsFromLastPerformance(lastSets) : [];
       card = makeEmptyCard(commit.exerciseId, initialSets);
+      // Новая карточка начинает с полей, запомненных у упражнения, как при добавлении из списка.
+      card = { ...card, extraFields: rememberedExtraFieldsByExerciseId.get(commit.exerciseId) ?? [] };
       exercises = [...exercises, card];
     }
     const cardId = card.id;
     if (!touchedCardIds.includes(cardId)) touchedCardIds.push(cardId);
-    if (commit.sets.length === 0) continue;
+    const extraFields = mergeExtraFields(card.extraFields, commit.extraFields);
+    if (commit.sets.length === 0) {
+      exercises = exercises.map((exercise) =>
+        exercise.id === cardId ? { ...exercise, extraFields } : exercise,
+      );
+      continue;
+    }
 
     const updatedSets = fillSets(card, commit.sets, lastSets, now);
     exercises = exercises.map((exercise) =>
-      exercise.id === cardId ? { ...exercise, sets: updatedSets } : exercise,
+      exercise.id === cardId ? { ...exercise, extraFields, sets: updatedSets } : exercise,
     );
     addedSetCount += commit.sets.length;
     lastWorkoutExerciseIdWithNewSets = cardId;

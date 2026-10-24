@@ -10,7 +10,7 @@ import { deleteWorkout, getWorkout, workoutToActiveWorkout } from '@/db/repo/wor
 import { useQuery } from '@/db/version';
 import { formatDateTime } from '@/domain/dates';
 import { getSetFieldsForExerciseType } from '@/domain/types';
-import { formatSetValues } from '@/features/workout/format';
+import { formatSetLineWithExtras } from '@/features/workout/format';
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
@@ -102,6 +102,7 @@ export default function WorkoutDetailScreen() {
               durationSec: set.durationSec,
               distanceM: set.distanceM,
               rpe: set.rpe,
+              rir: set.rir,
             },
           })),
         })),
@@ -189,8 +190,7 @@ export default function WorkoutDetailScreen() {
                       </Text>
                     </View>
                     <Text variant="bodyMedium" tabular style={{ flexShrink: 0 }}>
-                      {formatSetValues(set, fields, units)}
-                      {set.rpe != null ? `  @${set.rpe}` : ''}
+                      {formatSetLineWithExtras(set, fields, units)}
                     </Text>
                     <View style={styles.recordBadges}>
                       {set.prTypes.map((recordType) => (

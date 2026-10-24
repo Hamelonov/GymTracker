@@ -13,7 +13,8 @@ export function recordTypesForExercise(type: ExerciseType): RecordType[] {
   switch (type) {
     case 'weight_reps':
     case 'weighted_bodyweight':
-      return ['weight', 'one_rm', 'volume', 'reps'];
+      // «Объём» (вес × повторы) больше не считается рекордом по желанию владельца; старые записи остаются в базе.
+      return ['weight', 'one_rm', 'reps'];
     case 'assisted_bodyweight':
     case 'bodyweight_reps':
     case 'reps_only':

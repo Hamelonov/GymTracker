@@ -9,19 +9,20 @@ import type { ActiveExercise, SetType, SetValues, DistanceUnit, WeightUnit } fro
 import { getSetFieldsForExerciseType } from '@/domain/types';
 import { Button, Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
 import { unitLabels } from '@/domain/units';
-import { SET_COLUMN_WIDTHS, SetRow } from './SetRow';
+import { NARROW_COLUMN_FLEX, SET_COLUMN_WIDTHS, SetRow } from './SetRow';
 
 export interface ExerciseCardProps {
   workoutExercise: ActiveExercise;
   exerciseDetails: ExerciseRow | undefined;
   units: { weight: WeightUnit; distance: DistanceUnit };
-  showRpe: boolean;
   readOnly?: boolean;
   /** Есть ли у упражнения описание для показа (управляет состоянием иконки книги). */
   hasDescription: boolean;
   supersetColor?: string | null;
   /** Все обработчики получают id активного упражнения; передавайте стабильные ссылки. */
   onMenu: (workoutExerciseId: string) => void;
+  /** Кнопка «+» в заголовке: дополнительные поля. Без обработчика кнопки нет (редактор программ). */
+  onExtraFieldsPress?: (workoutExerciseId: string) => void;
   onDescriptionPress: (workoutExerciseId: string) => void;
   onNotePress: (workoutExerciseId: string) => void;
   onAddSet: (workoutExerciseId: string) => void;
@@ -31,15 +32,22 @@ export interface ExerciseCardProps {
   onSetTypePress: (workoutExerciseId: string, setId: string) => void;
 }
 
+/** «−» у упражнений с помощью, «+» у дополнительного веса там, где своего поля веса нет. */
+function getWeightSign(type: ExerciseRow['type'] | undefined, hasWeightField: boolean): string {
+  if (type === 'assisted_bodyweight') return '−';
+  if (!hasWeightField) return '+';
+  return '';
+}
+
 export const ExerciseCard = memo(function ExerciseCard({
   workoutExercise,
   exerciseDetails,
   units,
-  showRpe,
   readOnly,
   hasDescription,
   supersetColor,
   onMenu,
+  onExtraFieldsPress,
   onDescriptionPress,
   onNotePress,
   onAddSet,
@@ -57,8 +65,10 @@ export const ExerciseCard = memo(function ExerciseCard({
     [translate],
   );
   const hasNote = workoutExercise.note.trim().length > 0;
+  const extraFields = workoutExercise.extraFields;
+  const showsWeightColumn = fields.weight || extraFields.includes('weight');
   // Упражнения с помощью вычитают введённый вес из веса тела, отсюда знак минус.
-  const weightSign = exerciseDetails?.type === 'assisted_bodyweight' ? '−' : '';
+  const weightSign = getWeightSign(exerciseDetails?.type, fields.weight);
   const weightColumnLabel = weightSign + (unitLabels[units.weight] ?? units.weight).toUpperCase();
   const distanceColumnLabel = (unitLabels[units.distance] ?? units.distance).toUpperCase();
 
@@ -83,6 +93,19 @@ export const ExerciseCard = memo(function ExerciseCard({
           ) : null}
         </View>
         <View style={styles.headerActions}>
+          {!readOnly && onExtraFieldsPress ? (
+            <Pressable
+              onPress={() => onExtraFieldsPress(workoutExercise.id)}
+              haptic="selection"
+              hitSlop={6}
+              style={[
+                styles.iconButton,
+                { backgroundColor: extraFields.length > 0 ? colors.accent : colors.surfaceAlt },
+              ]}
+            >
+              <Icon icon={Plus} size={18} color={extraFields.length > 0 ? 'onAccent' : 'text'} />
+            </Pressable>
+          ) : null}
           <Pressable
             onPress={() => onDescriptionPress(workoutExercise.id)}
             haptic="selection"
@@ -125,7 +148,7 @@ export const ExerciseCard = memo(function ExerciseCard({
         <Text variant="label" color="faint" style={{ flex: 1.1, textAlign: 'center' }}>
           {translate('workout.previous').toUpperCase()}
         </Text>
-        {fields.weight ? (
+        {showsWeightColumn ? (
           <Text variant="label" color="faint" style={styles.column}>
             {weightColumnLabel}
           </Text>
@@ -145,8 +168,13 @@ export const ExerciseCard = memo(function ExerciseCard({
             {translate('workout.time').toUpperCase()}
           </Text>
         ) : null}
-        {showRpe ? (
-          <Text variant="label" color="faint" style={styles.column}>
+        {extraFields.includes('rir') ? (
+          <Text variant="label" color="faint" style={styles.narrowColumn}>
+            {translate('workout.rir')}
+          </Text>
+        ) : null}
+        {extraFields.includes('rpe') ? (
+          <Text variant="label" color="faint" style={styles.narrowColumn}>
             {translate('workout.rpe')}
           </Text>
         ) : null}
@@ -160,7 +188,7 @@ export const ExerciseCard = memo(function ExerciseCard({
           index={index}
           fields={fields}
           units={units}
-          showRpe={showRpe}
+          extraFields={extraFields}
           readOnly={readOnly}
           formatSetTypeLabel={shortSetTypeLabel}
           workoutExerciseId={workoutExercise.id}
@@ -211,5 +239,6 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   column: { flex: 1, textAlign: 'center' },
+  narrowColumn: { flex: NARROW_COLUMN_FLEX, textAlign: 'center' },
   addSetWrapper: { paddingHorizontal: spacing.lg, marginTop: spacing.sm },
 });

@@ -131,11 +131,6 @@ export default function SettingsScreen() {
           value={settings.keepAwake}
           onChange={(keepAwake) => settings.update({ keepAwake })}
         />
-        <SettingSwitchRow
-          title={translate('settings.showRpe')}
-          value={settings.showRpe}
-          onChange={(showRpe) => settings.update({ showRpe })}
-        />
       </Card>
 
       <SectionTitle title={translate('settings.plates')} />

@@ -1,4 +1,5 @@
 import { createExercise } from '@/db/repo/exercises';
+import { extraFieldsForSets } from '@/domain/quickEntry/extraFieldsForSets';
 import { nameToStems } from '@/domain/quickEntry/normalizeName';
 import type { ResolvedLine } from '@/domain/quickEntry/resolveLine';
 import type { ParsedSet } from '@/domain/quickEntry/types';
@@ -13,6 +14,7 @@ function toCommitSets(sets: ParsedSet[]): QuickEntryCommit['sets'] {
     durationSec: set.durationSec,
     distanceM: set.distanceM,
     rpe: null,
+    rir: set.rir,
   }));
 }
 
@@ -25,7 +27,11 @@ export function commitQuickEntry(resolvedLines: ResolvedLine[]): QuickEntryCommi
   for (const resolved of resolvedLines) {
     if (resolved.kind === 'error') continue;
     if (resolved.kind === 'matched') {
-      commits.push({ exerciseId: resolved.exerciseId, sets: toCommitSets(resolved.sets) });
+      commits.push({
+        exerciseId: resolved.exerciseId,
+        sets: toCommitSets(resolved.sets),
+        extraFields: extraFieldsForSets(resolved.sets, resolved.exerciseType),
+      });
       continue;
     }
     const stemKey = nameToStems(resolved.name).join(' ');
@@ -42,7 +48,11 @@ export function commitQuickEntry(resolvedLines: ResolvedLine[]): QuickEntryCommi
       }).id;
       createdIdByStemKey.set(stemKey, exerciseId);
     }
-    commits.push({ exerciseId, sets: toCommitSets(resolved.sets) });
+    commits.push({
+      exerciseId,
+      sets: toCommitSets(resolved.sets),
+      extraFields: extraFieldsForSets(resolved.sets, resolved.inferred.type),
+    });
   }
   return commits;
 }

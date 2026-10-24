@@ -8,7 +8,7 @@ import { useQuery } from '@/db/version';
 import { recordTypesForExercise } from '@/domain/records';
 import { getSetFieldsForExerciseType } from '@/domain/types';
 import { ExerciseAboutTab } from '@/features/exercises/ExerciseAboutTab';
-import { ExerciseChartsTab, type ChartMetric } from '@/features/exercises/ExerciseChartsTab';
+import { ExerciseChartsTab, isChartMetric, type ChartMetric } from '@/features/exercises/ExerciseChartsTab';
 import { ExerciseHistoryTab } from '@/features/exercises/ExerciseHistoryTab';
 import { ExerciseMenuSheet } from '@/features/exercises/ExerciseMenuSheet';
 import { ExerciseRecordsTab } from '@/features/exercises/ExerciseRecordsTab';
@@ -28,7 +28,7 @@ export default function ExerciseDetailScreen() {
   const history = useQuery(() => (id ? getExerciseHistory(id) : []), [id]);
   const records = useQuery(() => (id ? getRecordDetails(id) : []), [id]);
   const availableMetrics = useMemo<ChartMetric[]>(
-    () => (exercise ? recordTypesForExercise(exercise.type) : []),
+    () => (exercise ? recordTypesForExercise(exercise.type).filter(isChartMetric) : []),
     [exercise],
   );
   // Хранится здесь (а не во вкладке графиков), чтобы выбранная метрика сохранялась при переключении вкладок.

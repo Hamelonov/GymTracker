@@ -253,6 +253,7 @@ export function duplicateRoutine(id: string, newName: string): string | undefine
         durationSec: set.durationSec,
         distanceM: set.distanceM,
         rpe: set.rpe,
+        rir: null,
       })),
     })),
   });
@@ -285,6 +286,7 @@ export function routineInputFromWorkout(
           durationSec: set.durationSec,
           distanceM: set.distanceM,
           rpe: set.rpe,
+          rir: null,
         })),
     })),
   };

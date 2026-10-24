@@ -66,8 +66,8 @@ export default function StatsScreen() {
         value={period}
         onChange={setPeriod}
       />
-      <StatsSummaryTiles totals={periodTotals} streak={streak} weightUnit={weightUnit} />
-      <WeeklyChart workouts={periodWorkouts} periodStart={periodStart} now={now} weightUnit={weightUnit} />
+      <StatsSummaryTiles totals={periodTotals} streak={streak} />
+      <WeeklyChart workouts={periodWorkouts} periodStart={periodStart} now={now} />
       <MuscleSplitCard setsByMuscle={setsByMuscle} />
       <TopExercisesCard exercises={mostUsedExercises} />
       <TopRecordsCard records={topRecords} weightUnit={weightUnit} />

@@ -160,6 +160,7 @@ export function workoutsCsv(unit: WeightUnit, language: string): string {
     'duration_sec',
     'distance_m',
     'rpe',
+    'rir',
     'note',
   ];
   const lines = [header.join(',')];
@@ -193,6 +194,7 @@ export function workoutsCsv(unit: WeightUnit, language: string): string {
         set.durationSec ?? '',
         set.distanceM ?? '',
         set.rpe ?? '',
+        set.rir ?? '',
         csvCell(workoutExercise.note),
       ].join(','),
     );

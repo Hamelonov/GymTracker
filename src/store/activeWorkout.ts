@@ -3,11 +3,49 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { deferredStorage } from './kvStorage';
 import { applyQuickEntry, type QuickEntryCommit, type QuickEntryOutcome } from './activeWorkoutQuickEntry';
 import { makeSet, makeSetsFromLastPerformance } from './activeWorkoutSets';
+import { normalizeActiveWorkout } from './normalizeActiveWorkout';
 import { newId } from '@/domain/ids';
-import type { ActiveExercise, ActiveSet, ActiveWorkout, SetType, SetValues } from '@/domain/types';
-import { EMPTY_SET_VALUES } from '@/domain/types';
+import type {
+  ActiveExercise,
+  ActiveSet,
+  ActiveWorkout,
+  ExtraField,
+  SetType,
+  SetValues,
+} from '@/domain/types';
+import { EMPTY_SET_VALUES, getSetFieldsForExerciseType } from '@/domain/types';
+import { initialExtraFields } from '@/domain/extraFields';
 import type { RoutineDetail } from '@/db/repo/routines';
-import { getLastPerformances } from '@/db/repo/exercises';
+import { getExercisesByIds, getLastPerformances } from '@/db/repo/exercises';
+
+/** Поля, запомненные у упражнений («Запоминать для этого упражнения»), по id упражнения. */
+function getRememberedExtraFields(exerciseIds: string[]): Map<string, ExtraField[]> {
+  const rows = getExercisesByIds(exerciseIds);
+  return new Map(
+    exerciseIds.map((exerciseId) => [exerciseId, rows.get(exerciseId)?.rememberedExtraFields ?? []]),
+  );
+}
+
+/**
+ * С какими дополнительными колонками создаётся карточка: запомненные у упражнения плюс «Вес»,
+ * если у упражнения без поля веса вес уже был в прошлый раз или запланирован — иначе он заполнился бы невидимо.
+ */
+function getInitialExtraFields(
+  exerciseIds: string[],
+  setsByExerciseId: Map<string, SetValues[]>,
+): Map<string, ExtraField[]> {
+  const rows = getExercisesByIds(exerciseIds);
+  return new Map(
+    exerciseIds.map((exerciseId) => {
+      const row = rows.get(exerciseId);
+      const fields = getSetFieldsForExerciseType(row?.type ?? 'weight_reps');
+      return [
+        exerciseId,
+        initialExtraFields(row?.rememberedExtraFields ?? [], setsByExerciseId.get(exerciseId) ?? [], fields),
+      ];
+    }),
+  );
+}
 
 export type EditSession = { mode: 'new' } | { mode: 'edit'; workoutId: string; finishedAt: number };
 
@@ -33,6 +71,8 @@ interface ActiveWorkoutState {
   moveExercise: (from: number, to: number) => void;
   setExerciseNote: (workoutExerciseId: string, note: string) => void;
   setExerciseRest: (workoutExerciseId: string, restSeconds: number | null) => void;
+  /** Меняет только список включённых колонок; введённые значения скрытых полей не стираются. */
+  setExtraFields: (workoutExerciseId: string, extraFields: ExtraField[]) => void;
   setSuperset: (workoutExerciseIds: string[], group: number | null) => void;
   addSet: (workoutExerciseId: string) => void;
   updateSet: (
@@ -99,9 +139,22 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
             minimized: false,
           }),
         startFromRoutine: (routine, name) => {
-          const lastPerformanceByExerciseId = getLastPerformances(
-            routine.exercises.map((routineExercise) => routineExercise.exerciseId),
+          const routineExerciseIds = routine.exercises.map((routineExercise) => routineExercise.exerciseId);
+          const lastPerformanceByExerciseId = getLastPerformances(routineExerciseIds);
+          const plannedSetsByExerciseId = new Map(
+            routine.exercises.map((routineExercise) => [
+              routineExercise.exerciseId,
+              [
+                // Из запланированных подходов важен только вес: он решает, показывать ли колонку «Вес».
+                ...routineExercise.sets.map((plannedSet) => ({
+                  ...EMPTY_SET_VALUES,
+                  weightKg: plannedSet.weightKg,
+                })),
+                ...(lastPerformanceByExerciseId.get(routineExercise.exerciseId)?.sets ?? []),
+              ],
+            ]),
           );
+          const extraFieldsByExerciseId = getInitialExtraFields(routineExerciseIds, plannedSetsByExerciseId);
           const exercises: ActiveExercise[] = routine.exercises.map((routineExercise) => {
             const previousPerformance = lastPerformanceByExerciseId.get(routineExercise.exerciseId);
             const plannedSets =
@@ -114,6 +167,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
               supersetGroup: routineExercise.supersetGroup,
               note: '',
               restSeconds: routineExercise.restSeconds,
+              extraFields: extraFieldsByExerciseId.get(routineExercise.exerciseId) ?? [],
               sets: plannedSets.map((plannedSet, setIndex) =>
                 makeSet(previousPerformance?.sets[setIndex] ?? null, plannedSet.type, {
                   weightKg: plannedSet.weightKg,
@@ -121,6 +175,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
                   durationSec: plannedSet.durationSec,
                   distanceM: plannedSet.distanceM,
                   rpe: plannedSet.rpe,
+                  rir: null,
                 }),
               ),
             };
@@ -146,6 +201,13 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
         setStartedAt: (startedAt) => updateWorkout((workout) => ({ ...workout, startedAt })),
         addExercises: (exerciseIds) => {
           const lastPerformanceByExerciseId = getLastPerformances(exerciseIds);
+          const previousSetsByExerciseId = new Map(
+            exerciseIds.map((exerciseId) => [
+              exerciseId,
+              lastPerformanceByExerciseId.get(exerciseId)?.sets ?? [],
+            ]),
+          );
+          const extraFieldsByExerciseId = getInitialExtraFields(exerciseIds, previousSetsByExerciseId);
           updateWorkout((workout) => ({
             ...workout,
             exercises: [
@@ -156,6 +218,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
                 supersetGroup: null,
                 note: '',
                 restSeconds: null,
+                extraFields: extraFieldsByExerciseId.get(exerciseId) ?? [],
                 sets: makeSetsFromLastPerformance(lastPerformanceByExerciseId.get(exerciseId)?.sets),
               })),
             ],
@@ -165,7 +228,16 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
           const workout = get().workout;
           if (!workout) return null;
           const lastPerformanceByExerciseId = getLastPerformances(commits.map((commit) => commit.exerciseId));
-          const outcome = applyQuickEntry(workout, commits, lastPerformanceByExerciseId, Date.now());
+          const rememberedExtraFieldsByExerciseId = getRememberedExtraFields(
+            commits.map((commit) => commit.exerciseId),
+          );
+          const outcome = applyQuickEntry(
+            workout,
+            commits,
+            lastPerformanceByExerciseId,
+            Date.now(),
+            rememberedExtraFieldsByExerciseId,
+          );
           set({ workout: outcome.workout });
           return {
             workoutExerciseIds: outcome.workoutExerciseIds,
@@ -175,13 +247,20 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
         },
         replaceExercise: (workoutExerciseId, exerciseId) => {
           const previousPerformance = getLastPerformances([exerciseId]).get(exerciseId);
+          const extraFields =
+            getInitialExtraFields([exerciseId], new Map([[exerciseId, previousPerformance?.sets ?? []]])).get(
+              exerciseId,
+            ) ?? [];
           updateExercise(workoutExerciseId, (exercise) => ({
             ...exercise,
             exerciseId,
             note: '',
+            extraFields,
             sets: makeSetsFromLastPerformance(previousPerformance?.sets),
           }));
         },
+        setExtraFields: (workoutExerciseId, extraFields) =>
+          updateExercise(workoutExerciseId, (exercise) => ({ ...exercise, extraFields })),
         removeExercise: (workoutExerciseId) => {
           const removedExercise =
             get().workout?.exercises.find((exercise) => exercise.id === workoutExerciseId) ?? null;
@@ -231,6 +310,7 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
                   durationSec: lastSet.durationSec,
                   distanceM: lastSet.distanceM,
                   rpe: null,
+                  rir: null,
                 }
               : undefined;
             // Прошлое выполнение покрывает только уже существующие подходы, поэтому у добавленного нет «прошлого».
@@ -305,6 +385,15 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
       name: 'active-workout',
       storage: createJSONStorage(() => deferredStorage),
       partialize: (state) => ({ workout: state.workout, session: state.session }),
+      // Тренировка, сохранённая прошлой версией приложения, могла не иметь новых полей.
+      merge: (persisted, current) => {
+        const persistedState = (persisted ?? {}) as Partial<ActiveWorkoutState>;
+        return {
+          ...current,
+          ...persistedState,
+          workout: normalizeActiveWorkout(persistedState.workout ?? null),
+        };
+      },
     },
   ),
 );

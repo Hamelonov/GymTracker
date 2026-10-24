@@ -2,22 +2,20 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import type { WorkoutRow } from '@/db/schema';
-import type { WeightUnit } from '@/domain/types';
 import { EmptyChart, LineChart } from '@/features/charts/LineChart';
 import { Chip, SectionTitle, spacing } from '@/ui';
 import { buildWeeklyChartPoints, type WeeklyMetric } from './weeklyChartPoints';
 
-const METRICS: WeeklyMetric[] = ['workouts', 'volume', 'duration', 'sets'];
+const METRICS: WeeklyMetric[] = ['workouts', 'duration', 'sets'];
 
 interface WeeklyChartProps {
   workouts: WorkoutRow[];
   periodStart: number;
   now: number;
-  weightUnit: WeightUnit;
 }
 
 /** Раздел «По неделям»: чипы метрик и столбчатый график этой метрики по неделям. */
-export function WeeklyChart({ workouts, periodStart, now, weightUnit }: WeeklyChartProps) {
+export function WeeklyChart({ workouts, periodStart, now }: WeeklyChartProps) {
   const { t: translate, i18n } = useTranslation();
   const [metric, setMetric] = useState<WeeklyMetric>('workouts');
   const chartPoints = useMemo(
@@ -27,10 +25,9 @@ export function WeeklyChart({ workouts, periodStart, now, weightUnit }: WeeklyCh
         periodStart,
         now,
         metric,
-        weightUnit,
         language: i18n.language,
       }),
-    [workouts, periodStart, now, metric, weightUnit, i18n.language],
+    [workouts, periodStart, now, metric, i18n.language],
   );
 
   const getMetricLabel = (metricOption: WeeklyMetric) =>

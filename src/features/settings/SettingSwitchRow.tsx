@@ -6,10 +6,11 @@ interface SettingSwitchRowProps {
   title: string;
   value: boolean;
   onChange: (value: boolean) => void;
+  disabled?: boolean;
 }
 
 /** Строка списка настроек с переключателем справа. */
-export function SettingSwitchRow({ title, value, onChange }: SettingSwitchRowProps) {
+export function SettingSwitchRow({ title, value, onChange, disabled }: SettingSwitchRowProps) {
   const colors = useColors();
   return (
     <ListItem
@@ -18,6 +19,7 @@ export function SettingSwitchRow({ title, value, onChange }: SettingSwitchRowPro
         <Switch
           value={value}
           onValueChange={onChange}
+          disabled={disabled}
           trackColor={{ true: colors.accent, false: colors.borderStrong }}
           thumbColor={colors.background}
         />

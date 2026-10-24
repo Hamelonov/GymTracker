@@ -112,7 +112,7 @@ export default function RoutineDetailScreen() {
                         : translate(`workout.setTypeShort.${routineSet.type}`)}
                     </Text>
                     <Text variant="caption" tabular>
-                      {formatSetValues(routineSet, fields, units)}
+                      {formatSetValues({ ...routineSet, rir: null }, fields, units)}
                     </Text>
                   </View>
                 ))}

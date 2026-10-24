@@ -10,7 +10,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useSettings } from '@/store/settings';
-import type { ActiveSet, SetFields, SetType, WeightUnit, DistanceUnit, SetValues } from '@/domain/types';
+import type {
+  ActiveSet,
+  ExtraField,
+  SetFields,
+  SetType,
+  WeightUnit,
+  DistanceUnit,
+  SetValues,
+} from '@/domain/types';
 import {
   durationToInput,
   kgToUnit,
@@ -31,7 +39,8 @@ export interface SetRowProps {
   index: number;
   fields: SetFields;
   units: { weight: WeightUnit; distance: DistanceUnit };
-  showRpe: boolean;
+  /** Включённые дополнительные колонки карточки; передавайте стабильную ссылку. */
+  extraFields: ExtraField[];
   readOnly?: boolean;
   hideCheck?: boolean;
   /** Id упражнения-владельца; передаётся обратно в каждый обработчик. */
@@ -51,6 +60,7 @@ function NumberField({
   format,
   editable,
   highlight,
+  narrow,
 }: {
   value: number | null;
   onCommit: (value: number | null) => void;
@@ -59,6 +69,8 @@ function NumberField({
   format: (value: number | null) => string;
   editable: boolean;
   highlight: boolean;
+  /** Узкая колонка для RIR и RPE, чтобы основные значения не теснились. */
+  narrow?: boolean;
 }) {
   const colors = useColors();
   const [text, setText] = useState(() => format(value));
@@ -90,6 +102,7 @@ function NumberField({
       cursorColor={colors.text}
       style={[
         styles.input,
+        narrow ? styles.inputNarrow : null,
         { color: colors.text, backgroundColor: highlight ? 'transparent' : colors.inputBackground },
         isFocused ? { borderColor: colors.text } : null,
       ]}
@@ -128,7 +141,7 @@ export const SetRow = memo(function SetRow({
   index,
   fields,
   units,
-  showRpe,
+  extraFields,
   readOnly,
   hideCheck,
   workoutExerciseId,
@@ -150,6 +163,7 @@ export const SetRow = memo(function SetRow({
     durationSec: set.durationSec ?? set.previous?.durationSec ?? null,
     distanceM: set.distanceM ?? set.previous?.distanceM ?? null,
     rpe: set.rpe,
+    rir: set.rir,
   };
   const canComplete = set.completed || isSetFilled(valuesOnCompletion, fields);
   const colors = useColors();
@@ -159,6 +173,7 @@ export const SetRow = memo(function SetRow({
     ? formatSetValues(set.previous, fields, units, { unitLabel: false })
     : '—';
   const isNormalSet = set.type === 'normal';
+  const showsWeight = fields.weight || extraFields.includes('weight');
 
   const formatWeightForInput = (weightKg: number) =>
     formatNumberWithoutTrailingZeros(roundForDisplay(kgToUnit(weightKg, units.weight)));
@@ -196,7 +211,7 @@ export const SetRow = memo(function SetRow({
           {previousSetText}
         </Text>
       </View>
-      {fields.weight ? (
+      {showsWeight ? (
         <NumberField
           value={set.weightKg}
           onCommit={(value) =>
@@ -246,15 +261,30 @@ export const SetRow = memo(function SetRow({
           highlight={set.completed}
         />
       ) : null}
-      {showRpe ? (
+      {extraFields.includes('rir') ? (
+        <NumberField
+          value={set.rir}
+          onCommit={(value) =>
+            updateValues({ rir: value == null ? null : Math.min(10, Math.max(0, Math.round(value))) })
+          }
+          placeholder={placeholderFromPrevious(set.previous?.rir, (rir) => String(rir))}
+          parse={parseNumberInput}
+          format={(value) => (value == null ? '' : String(value))}
+          editable={!readOnly}
+          highlight={set.completed}
+          narrow
+        />
+      ) : null}
+      {extraFields.includes('rpe') ? (
         <NumberField
           value={set.rpe}
           onCommit={(value) => updateValues({ rpe: value == null ? null : Math.min(10, Math.max(1, value)) })}
-          placeholder=""
+          placeholder={placeholderFromPrevious(set.previous?.rpe, formatNumberWithoutTrailingZeros)}
           parse={parseNumberInput}
           format={(value) => (value == null ? '' : formatNumberWithoutTrailingZeros(value))}
           editable={!readOnly}
           highlight={set.completed}
+          narrow
         />
       ) : null}
       {!readOnly && !hideCheck ? (
@@ -305,6 +335,12 @@ export const SET_COLUMN_WIDTHS = {
   checkButton: 40,
 };
 
+/** Доля ширины узких колонок RIR и RPE относительно основных. */
+export const NARROW_COLUMN_FLEX = 0.75;
+
+/** Стабильная пустая ссылка для карточек без дополнительных колонок (редактор программ). */
+export const NO_EXTRA_FIELDS: ExtraField[] = [];
+
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
@@ -333,6 +369,7 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     fontVariant: ['tabular-nums'],
   },
+  inputNarrow: { flex: NARROW_COLUMN_FLEX },
   checkButton: {
     width: SET_COLUMN_WIDTHS.checkButton,
     height: 36,

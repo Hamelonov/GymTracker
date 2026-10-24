@@ -16,6 +16,7 @@ const makeSet = (
   durationSec: null,
   distanceM: null,
   rpe: null,
+  rir: null,
   type,
   completed,
 });
@@ -56,11 +57,10 @@ describe('volume', () => {
 });
 
 describe('records', () => {
-  it('detects weight, 1RM, volume and reps PRs on the first set that beats them', () => {
+  it('detects weight, 1RM and reps PRs on the first set that beats them', () => {
     const hits = detectPersonalRecords([makeSet(100, 5), makeSet(100, 5), makeSet(105, 3)], 'weight_reps', {
       weight: 100,
       one_rm: 110,
-      volume: 600,
       reps: 8,
     });
     expect(hits.get(0)?.map((hit) => hit.type)).toEqual(['one_rm']);
@@ -75,7 +75,7 @@ describe('records', () => {
         .get(0)
         ?.map((hit) => hit.type)
         .sort(),
-    ).toEqual(['one_rm', 'reps', 'volume', 'weight']);
+    ).toEqual(['one_rm', 'reps', 'weight']);
   });
   it('only tracks reps for bodyweight exercises', () => {
     expect(recordTypesForExercise('bodyweight_reps')).toEqual(['reps']);
@@ -107,5 +107,12 @@ describe('units', () => {
     expect(parseDurationInput('45')).toBe(45);
     expect(formatDuration(3725)).toBe('1:02:05');
     expect(formatDuration(95, { compact: true })).toBe('1m 35s');
+  });
+});
+
+describe('объём больше не считается рекордом', () => {
+  test('у упражнений с весом остаются вес, 1ПМ и повторы', () => {
+    expect(recordTypesForExercise('weight_reps')).toEqual(['weight', 'one_rm', 'reps']);
+    expect(recordTypesForExercise('weighted_bodyweight')).toEqual(['weight', 'one_rm', 'reps']);
   });
 });

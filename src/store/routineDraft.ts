@@ -78,6 +78,7 @@ export const useRoutineDraft = create<RoutineDraftState>((set, get) => {
               durationSec: routineSet.durationSec,
               distanceM: routineSet.distanceM,
               rpe: routineSet.rpe,
+              rir: null,
             })),
           })) ?? [],
       }),

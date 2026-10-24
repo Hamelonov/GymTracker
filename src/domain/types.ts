@@ -129,6 +129,8 @@ export interface SetValues {
   durationSec: number | null;
   distanceM: number | null;
   rpe: number | null;
+  /** Повторы в запасе (reps in reserve), целое 0–10. */
+  rir: number | null;
 }
 
 export const EMPTY_SET_VALUES: SetValues = {
@@ -137,7 +139,14 @@ export const EMPTY_SET_VALUES: SetValues = {
   durationSec: null,
   distanceM: null,
   rpe: null,
+  rir: null,
 };
+
+/** Поля подхода, которые включаются на карточке по желанию: вес у упражнений без веса, RIR, RPE. */
+export type ExtraField = 'weight' | 'rir' | 'rpe';
+
+/** Порядок колонок в карточке и пунктов в меню «Дополнительные поля». */
+export const EXTRA_FIELDS: ExtraField[] = ['weight', 'rir', 'rpe'];
 
 export interface ActiveSet extends SetValues {
   /** Задаётся только у сохранённых тренировок: какие рекорды поставил этот подход. */
@@ -156,6 +165,8 @@ export interface ActiveExercise {
   supersetGroup: number | null;
   note: string;
   restSeconds: number | null;
+  /** Какие дополнительные колонки включены на этой карточке. */
+  extraFields: ExtraField[];
   sets: ActiveSet[];
 }
 

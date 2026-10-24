@@ -11,6 +11,7 @@ const set = (partial: Partial<ParsedSet>): ParsedSet => ({
   reps: null,
   durationSec: null,
   distanceM: null,
+  rir: null,
   ...partial,
 });
 const line = (name: string, sets: ParsedSet[]): ParsedLine => ({ lineIndex: 0, rawText: name, name, sets });
@@ -76,12 +77,14 @@ test('найденное, новое и ошибочное', () => {
     kind: 'matched',
     lineIndex: 0,
     exerciseId: 'squat',
+    exerciseType: 'weight_reps',
     sets: [set({ weightKg: 70, reps: 7 })],
   });
   expect(resolveLine(line('Планка', [set({ reps: 60 })]), candidates, types, 'km')).toEqual({
     kind: 'matched',
     lineIndex: 0,
     exerciseId: 'plank',
+    exerciseType: 'duration',
     sets: [set({ durationSec: 60 })],
   });
   expect(

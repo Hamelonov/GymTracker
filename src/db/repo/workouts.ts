@@ -93,6 +93,7 @@ export function saveWorkout(
           supersetGroup: workoutExercise.supersetGroup,
           note: workoutExercise.note,
           restSeconds: workoutExercise.restSeconds,
+          extraFields: workoutExercise.extraFields,
         })
         .run();
       const recordTable = recordTables.get(workoutExercise.exerciseId) ?? {};
@@ -116,6 +117,7 @@ export function saveWorkout(
             durationSec: set.durationSec,
             distanceM: set.distanceM,
             rpe: set.rpe,
+            rir: set.rir,
             completed: true,
             completedAt: set.completedAt,
             prTypes: setHits.map((hit) => hit.type),
@@ -398,36 +400,7 @@ export function deleteWorkout(id: string): void {
   notifyDatabaseChanged();
 }
 
-/** Превращает сохранённую тренировку обратно в редактируемую структуру активной тренировки. */
-export function workoutToActiveWorkout(workout: WorkoutDetail): ActiveWorkout {
-  return {
-    id: workout.id,
-    name: workout.name,
-    startedAt: workout.startedAt,
-    routineId: workout.routineId,
-    notes: workout.notes,
-    exercises: workout.exercises.map((workoutExercise) => ({
-      id: workoutExercise.id,
-      exerciseId: workoutExercise.exerciseId,
-      supersetGroup: workoutExercise.supersetGroup,
-      note: workoutExercise.note,
-      restSeconds: workoutExercise.restSeconds,
-      sets: workoutExercise.sets.map((set) => ({
-        id: set.id,
-        type: set.type,
-        weightKg: set.weightKg,
-        reps: set.reps,
-        durationSec: set.durationSec,
-        distanceM: set.distanceM,
-        rpe: set.rpe,
-        completed: true,
-        completedAt: set.completedAt,
-        previous: null,
-        prTypes: set.prTypes,
-      })),
-    })),
-  };
-}
+export { workoutToActiveWorkout } from '../workoutToActiveWorkout';
 
 /** Время начала каждой тренировки, новые первыми. Дешёвые входные данные для подсчёта серий. */
 export function listWorkoutStartTimes(): number[] {

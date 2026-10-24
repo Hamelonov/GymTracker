@@ -6,11 +6,12 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 're
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { ensureNotificationPermission } from '@/lib/notifications';
-import { getExercise, getExercisesByIds, getLastPerformances } from '@/db/repo/exercises';
+import { getExercise, getExercisesByIds, getLastPerformances, updateExercise } from '@/db/repo/exercises';
 import { getRoutine, routineInputFromWorkout, updateRoutine } from '@/db/repo/routines';
 import { saveWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
-import type { ActiveExercise, SetType } from '@/domain/types';
+import { toggleExtraField } from '@/domain/extraFields';
+import type { ActiveExercise, ExtraField, SetType } from '@/domain/types';
 import { countWorkingSets } from '@/domain/volume';
 import { formatDateTime } from '@/domain/dates';
 import { ActiveWorkoutHeader } from '@/features/workout/ActiveWorkoutHeader';
@@ -24,6 +25,7 @@ import { exerciseDisplayDescription } from '@/features/workout/exerciseDisplayNa
 import { RestTimerBar } from '@/features/workout/RestTimerBar';
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
 import { ExerciseDescriptionSheet } from '@/features/workout/sheets/ExerciseDescriptionSheet';
+import { ExtraFieldsSheet } from '@/features/workout/sheets/ExtraFieldsSheet';
 import { ExerciseMenuSheet } from '@/features/workout/sheets/ExerciseMenuSheet';
 import { ExerciseNoteSheet } from '@/features/workout/sheets/ExerciseNoteSheet';
 import { FinishWorkoutSheet } from '@/features/workout/sheets/FinishWorkoutSheet';
@@ -58,7 +60,8 @@ type SheetState =
   | { kind: 'note'; workoutExerciseId: string }
   | { kind: 'finish' }
   | { kind: 'name' }
-  | { kind: 'quickEntry' };
+  | { kind: 'quickEntry' }
+  | { kind: 'extraFields'; workoutExerciseId: string };
 
 export default function ActiveWorkoutScreen() {
   const colors = useColors();
@@ -216,6 +219,11 @@ export default function ActiveWorkoutScreen() {
     [],
   );
 
+  const openExtraFields = useCallback(
+    (workoutExerciseId: string) => setSheet({ kind: 'extraFields', workoutExerciseId }),
+    [],
+  );
+
   const closeSheet = () => setSheet({ kind: 'none' });
 
   const removeExerciseWithUndo = (workoutExerciseId: string) => {
@@ -320,6 +328,25 @@ export default function ActiveWorkoutScreen() {
     if (currentExercise) setSheet({ kind: 'rest', workoutExerciseId: currentExercise.id });
   };
 
+  const toggleExtraFieldForCurrent = (workoutExerciseId: string, field: ExtraField) => {
+    const exercise = getWorkoutStore().workout?.exercises.find(
+      (candidate) => candidate.id === workoutExerciseId,
+    );
+    if (!exercise) return;
+    const extraFields = toggleExtraField(exercise.extraFields, field);
+    getWorkoutStore().setExtraFields(workoutExerciseId, extraFields);
+    // Пока «Запоминать» включено, у упражнения всегда лежит актуальный список полей карточки.
+    const exerciseRow = exercisesById.get(exercise.exerciseId);
+    if (exerciseRow && exerciseRow.rememberedExtraFields.length > 0) {
+      updateExercise(exercise.exerciseId, { rememberedExtraFields: extraFields });
+    }
+  };
+
+  const setRememberExtraFields = (exerciseId: string, remember: boolean) => {
+    const rememberedExtraFields = remember ? (currentExercise?.extraFields ?? []) : [];
+    updateExercise(exerciseId, { rememberedExtraFields });
+  };
+
   const setCurrentExerciseRest = (seconds: number | null) => {
     if (currentExercise) getWorkoutStore().setExerciseRest(currentExercise.id, seconds);
     closeSheet();
@@ -403,10 +430,10 @@ export default function ActiveWorkoutScreen() {
                 workoutExercise={workoutExercise}
                 exerciseDetails={exerciseDetails}
                 units={units}
-                showRpe={settings.showRpe}
                 hasDescription={exerciseDisplayDescription(exerciseDetails, i18n.language).length > 0}
                 supersetColor={supersetColorForGroup(workoutExercise.supersetGroup)}
                 onMenu={openExerciseMenu}
+                onExtraFieldsPress={openExtraFields}
                 onDescriptionPress={openDescription}
                 onNotePress={openNote}
                 onAddSet={addSet}
@@ -499,6 +526,16 @@ export default function ActiveWorkoutScreen() {
         onNoteDraftChange={setNoteDraft}
         lastNote={currentExercise ? lastNoteByExerciseId.get(currentExercise.exerciseId) : undefined}
         onSave={saveNoteAndClose}
+      />
+
+      <ExtraFieldsSheet
+        visible={sheet.kind === 'extraFields'}
+        onClose={closeSheet}
+        workoutExercise={currentExercise}
+        exerciseDetails={currentExerciseDetails}
+        weightUnit={units.weight}
+        onToggleField={toggleExtraFieldForCurrent}
+        onRememberChange={setRememberExtraFields}
       />
 
       <QuickEntrySheet

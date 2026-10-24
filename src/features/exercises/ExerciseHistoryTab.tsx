@@ -5,7 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import type { ExerciseHistoryEntry } from '@/db/repo/exercises';
 import { formatRelativeDay } from '@/domain/dates';
 import type { DistanceUnit, SetFields, WeightUnit } from '@/domain/types';
-import { formatSetValues } from '@/features/workout/format';
+import { formatSetLineWithExtras } from '@/features/workout/format';
 import { push } from '@/lib/nav';
 import { Card, EmptyState, Icon, Pressable, Text, spacing } from '@/ui';
 
@@ -57,7 +57,7 @@ export function ExerciseHistoryTab({ history, fields, units }: ExerciseHistoryTa
                   {set.type === 'normal' ? index + 1 : translate(`workout.setTypeShort.${set.type}`)}
                 </Text>
                 <Text variant="caption" tabular style={{ flex: 1 }}>
-                  {formatSetValues(set, fields, units)}
+                  {formatSetLineWithExtras(set, fields, units)}
                 </Text>
                 {set.prTypes.length > 0 ? <Icon icon={Trophy} size={12} color="accent" /> : null}
               </View>

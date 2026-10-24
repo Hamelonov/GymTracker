@@ -10,7 +10,7 @@ import { matchExerciseName, type PreparedCandidate } from './matchExercise';
 import type { LineError, LineErrorReason, ParsedLine, ParsedSet } from './types';
 
 export type ResolvedLine =
-  | { kind: 'matched'; lineIndex: number; exerciseId: string; sets: ParsedSet[] }
+  | { kind: 'matched'; lineIndex: number; exerciseId: string; exerciseType: ExerciseType; sets: ParsedSet[] }
   | { kind: 'new'; lineIndex: number; name: string; inferred: InferredExercise; sets: ParsedSet[] }
   | { kind: 'error'; error: LineError };
 
@@ -77,5 +77,5 @@ export function resolveLine(
       error: { lineIndex: line.lineIndex, rawText: line.rawText, reason: adapted.error },
     };
   }
-  return { kind: 'matched', lineIndex: line.lineIndex, exerciseId, sets: adapted.sets };
+  return { kind: 'matched', lineIndex: line.lineIndex, exerciseId, exerciseType, sets: adapted.sets };
 }

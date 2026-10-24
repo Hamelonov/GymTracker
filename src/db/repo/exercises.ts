@@ -11,7 +11,7 @@ import {
 } from '../schema';
 import { notifyDatabaseChanged } from '../version';
 import { newId } from '@/domain/ids';
-import type { Equipment, ExerciseType, MuscleGroup, RecordType, SetValues } from '@/domain/types';
+import type { Equipment, ExerciseType, ExtraField, MuscleGroup, RecordType, SetValues } from '@/domain/types';
 import type { RecordTable } from '@/domain/records';
 
 export function exerciseName(
@@ -54,6 +54,8 @@ export interface ExerciseInput {
   type: ExerciseType;
   description: string;
   restSeconds: number | null;
+  /** Дополнительные поля, которые включаются сами при добавлении упражнения в тренировку. */
+  rememberedExtraFields?: ExtraField[];
 }
 
 export function createExercise(input: ExerciseInput): ExerciseRow {
@@ -72,6 +74,7 @@ export function createExercise(input: ExerciseInput): ExerciseRow {
     restSeconds: input.restSeconds,
     archived: false,
     createdAt: Date.now(),
+    rememberedExtraFields: input.rememberedExtraFields ?? [],
   };
   database.insert(exercises).values(row).run();
   notifyDatabaseChanged();
@@ -92,6 +95,7 @@ export function updateExercise(id: string, patch: Partial<ExerciseInput>): void 
   if (patch.type != null) values.type = patch.type;
   if (patch.description !== undefined) values.description = patch.description.trim() || null;
   if (patch.restSeconds !== undefined) values.restSeconds = patch.restSeconds;
+  if (patch.rememberedExtraFields != null) values.rememberedExtraFields = patch.rememberedExtraFields;
   database.update(exercises).set(values).where(eq(exercises.id, id)).run();
   notifyDatabaseChanged();
 }
@@ -156,16 +160,20 @@ export interface RecordDetail {
 }
 
 export function getRecordDetails(exerciseId: string): RecordDetail[] {
-  return database
-    .select({
-      type: personalRecords.type,
-      value: personalRecords.value,
-      achievedAt: personalRecords.achievedAt,
-      workoutId: personalRecords.workoutId,
-    })
-    .from(personalRecords)
-    .where(eq(personalRecords.exerciseId, exerciseId))
-    .all();
+  return (
+    database
+      .select({
+        type: personalRecords.type,
+        value: personalRecords.value,
+        achievedAt: personalRecords.achievedAt,
+        workoutId: personalRecords.workoutId,
+      })
+      .from(personalRecords)
+      .where(eq(personalRecords.exerciseId, exerciseId))
+      .all()
+      // Старые рекорды объёма в базе остаются, но показывать их больше негде.
+      .filter((record) => record.type !== 'volume')
+  );
 }
 
 /** Подходы, записанные в прошлый раз, когда делали это упражнение (последняя тренировка). */
@@ -213,6 +221,7 @@ export function getLastPerformances(exerciseIds: string[]): Map<string, { sets: 
         durationSec: set.durationSec,
         distanceM: set.distanceM,
         rpe: set.rpe,
+        rir: set.rir,
       })),
     });
   }

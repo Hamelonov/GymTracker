@@ -1,16 +1,13 @@
 import { addDays } from 'date-fns';
 import type { WorkoutRow } from '@/db/schema';
 import { formatShortDate, toWeekKey, getWeekStart } from '@/domain/dates';
-import type { WeightUnit } from '@/domain/types';
-import { kgToUnit } from '@/domain/units';
 import type { ChartPoint } from '@/features/charts/LineChart';
 
-export type WeeklyMetric = 'workouts' | 'volume' | 'duration' | 'sets';
+export type WeeklyMetric = 'workouts' | 'duration' | 'sets';
 
 interface WeekTotals {
   weekStartTime: number;
   workouts: number;
-  volumeKg: number;
   durationSec: number;
   sets: number;
 }
@@ -19,12 +16,10 @@ const MAX_WEEKS_SHOWN = 26;
 /** Примерно сколько подписей дат помещается под графиком. */
 const CHART_LABEL_COUNT = 6;
 
-function getMetricValue(week: WeekTotals, metric: WeeklyMetric, weightUnit: WeightUnit): number {
+function getMetricValue(week: WeekTotals, metric: WeeklyMetric): number {
   switch (metric) {
     case 'workouts':
       return week.workouts;
-    case 'volume':
-      return Math.round(kgToUnit(week.volumeKg, weightUnit));
     case 'duration':
       return Math.round(week.durationSec / 60);
     case 'sets':
@@ -39,7 +34,6 @@ interface WeeklyChartOptions {
   periodStart: number;
   now: number;
   metric: WeeklyMetric;
-  weightUnit: WeightUnit;
   language: string;
 }
 
@@ -49,7 +43,6 @@ export function buildWeeklyChartPoints({
   periodStart,
   now,
   metric,
-  weightUnit,
   language,
 }: WeeklyChartOptions): ChartPoint[] {
   const firstWorkout = workouts[0];
@@ -62,7 +55,6 @@ export function buildWeeklyChartPoints({
     totalsByWeek.set(toWeekKey(week), {
       weekStartTime: week.getTime(),
       workouts: 0,
-      volumeKg: 0,
       durationSec: 0,
       sets: 0,
     });
@@ -72,7 +64,6 @@ export function buildWeeklyChartPoints({
     const weekTotals = totalsByWeek.get(toWeekKey(workout.startedAt));
     if (!weekTotals) continue;
     weekTotals.workouts += 1;
-    weekTotals.volumeKg += workout.volumeKg;
     weekTotals.durationSec += workout.durationSec;
     weekTotals.sets += workout.setCount;
   }
@@ -81,7 +72,7 @@ export function buildWeeklyChartPoints({
   const labelEvery = Math.max(1, Math.ceil(shownWeeks.length / CHART_LABEL_COUNT));
   return shownWeeks.map((week, index) => ({
     x: index,
-    y: getMetricValue(week, metric, weightUnit),
+    y: getMetricValue(week, metric),
     label: index % labelEvery === 0 ? formatShortDate(week.weekStartTime, language) : '',
   }));
 }
