@@ -1,22 +1,9 @@
 import { createExercise } from '@/db/repo/exercises';
 import { extraFieldsForSets } from '@/domain/quickEntry/extraFieldsForSets';
 import { nameToStems } from '@/domain/quickEntry/normalizeName';
+import { toCommitSets } from '@/domain/quickEntry/toCommitSets';
 import type { ResolvedLine } from '@/domain/quickEntry/resolveLine';
-import type { ParsedSet } from '@/domain/quickEntry/types';
-import type { QuickEntryCommit } from '@/store/activeWorkoutQuickEntry';
-
-function toCommitSets(sets: ParsedSet[]): QuickEntryCommit['sets'] {
-  // Знак веса нужен был только для вывода типа нового упражнения; в карточке вес всегда положительный.
-  return sets.map((set) => ({
-    type: set.type,
-    weightKg: set.weightKg,
-    reps: set.reps,
-    durationSec: set.durationSec,
-    distanceM: set.distanceM,
-    rpe: null,
-    rir: set.rir,
-  }));
-}
+import type { QuickEntryCommit } from '@/store/activeWorkoutPen';
 
 /** Создаёт в базе упражнения для строк «new» и превращает все строки в записи для стора. */
 export function commitQuickEntry(resolvedLines: ResolvedLine[]): QuickEntryCommit[] {

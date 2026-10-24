@@ -3,7 +3,6 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Icon } from './Icon';
 import { useColors } from './ThemeProvider';
-import { radius } from './tokens';
 
 interface CheckboxProps {
   checked: boolean;
@@ -31,7 +30,7 @@ const styles = StyleSheet.create({
   box: {
     width: 24,
     height: 24,
-    borderRadius: radius.sm,
+    borderRadius: 4,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',

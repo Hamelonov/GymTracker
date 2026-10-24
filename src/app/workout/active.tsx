@@ -1,4 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
+import { Plus } from 'lucide-react-native';
 import { push } from '@/lib/nav';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,11 +16,10 @@ import type { ActiveExercise, ExtraField, SetType } from '@/domain/types';
 import { countWorkingSets } from '@/domain/volume';
 import { formatDateTime } from '@/domain/dates';
 import { ActiveWorkoutHeader } from '@/features/workout/ActiveWorkoutHeader';
-import { AddExerciseButtons } from '@/features/workout/quickEntry/AddExerciseButtons';
-import { QuickEntrySheet } from '@/features/workout/quickEntry/QuickEntrySheet';
-import { quickEntryToastMessage } from '@/features/workout/quickEntry/quickEntryToastMessage';
-import type { PreviewLine } from '@/features/workout/quickEntry/useQuickEntry';
-import type { QuickEntryCommit } from '@/store/activeWorkoutQuickEntry';
+import { EntryModeTabs } from '@/features/workout/EntryModeTabs';
+import { useEntryMode } from '@/features/workout/pen/useEntryMode';
+import { PenEditor } from '@/features/workout/pen/PenEditor';
+import { usePenText } from '@/features/workout/pen/usePenText';
 import { ExerciseCard } from '@/features/workout/ExerciseCard';
 import { RestTimerBar } from '@/features/workout/RestTimerBar';
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
@@ -36,7 +36,7 @@ import { useActiveWorkout } from '@/store/activeWorkout';
 import { useLastSave } from '@/store/lastSave';
 import { useRestTimer } from '@/store/restTimer';
 import { useSettings } from '@/store/settings';
-import { Button, confirm, spacing, toast, useColors } from '@/ui';
+import { Button, Icon, confirm, spacing, toast, useColors } from '@/ui';
 
 const SUPERSET_COLORS = ['#F5A524', '#3E63DD', '#30A46C', '#E5484D', '#8E4EC6', '#12A594'];
 
@@ -59,7 +59,7 @@ type SheetState =
   | { kind: 'note'; workoutExerciseId: string }
   | { kind: 'finish' }
   | { kind: 'name' }
-  | { kind: 'quickEntry' }
+  | { kind: 'penRest' }
   | { kind: 'extraFields'; workoutExerciseId: string };
 
 export default function ActiveWorkoutScreen() {
@@ -74,7 +74,8 @@ export default function ActiveWorkoutScreen() {
   const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
   const [nameDraft, setNameDraft] = useState('');
   const [noteDraft, setNoteDraft] = useState('');
-  const [quickEntryText, setQuickEntryText] = useState('');
+  const entryMode = useActiveWorkout((state) => state.entryMode);
+  const penText = useActiveWorkout((state) => state.penText);
   const startRest = useRestTimer((state) => state.start);
   useEffect(() => {
     if (settings.restNotifications) void ensureNotificationPermission();
@@ -92,6 +93,7 @@ export default function ActiveWorkoutScreen() {
     [workout?.exercises],
   );
   const exercisesById = useQuery(() => getExercisesByIds(exerciseIds), [exerciseIds.join(',')]);
+  const penState = usePenText(penText, exerciseIds);
   const lastNoteByExerciseId = useQuery(() => {
     const lastPerformanceByExerciseId = getLastPerformances(exerciseIds);
     const notes = new Map<string, string>();
@@ -105,8 +107,9 @@ export default function ActiveWorkoutScreen() {
     () => ({ weight: settings.weightUnit, distance: settings.distanceUnit }),
     [settings.weightUnit, settings.distanceUnit],
   );
+  const { applyPenNow, switchEntryMode } = useEntryMode({ workout, penText, penState, units, exercisesById });
   // Отдых, заданный для этого упражнения в тренировке, иначе для самого упражнения, иначе значение по умолчанию в приложении.
-  // Читает стор напрямую: карточка, только что созданная быстрой записью, ещё не попала в отрендеренный workout.
+  // Читает стор напрямую: карточка, только что добавленная, ещё не попала в отрендеренный workout.
   const restSecondsFor = useCallback(
     (workoutExerciseId: string) => {
       const workoutExercise = getWorkoutStore().workout?.exercises.find(
@@ -138,7 +141,7 @@ export default function ActiveWorkoutScreen() {
     };
   });
 
-  // Общее для галочки и быстрой записи: отдых стартует только в новой тренировке и при включённом автозапуске.
+  // Отдых стартует только в новой тренировке и при включённом автозапуске.
   const startRestAfterCompletedSet = useCallback(
     (workoutExerciseId: string) => {
       const latestValues = latestValuesRef.current;
@@ -157,21 +160,6 @@ export default function ActiveWorkoutScreen() {
     },
     [getWorkoutStore, startRestAfterCompletedSet],
   );
-
-  const openQuickEntry = () => {
-    setQuickEntryText('');
-    setSheet({ kind: 'quickEntry' });
-  };
-
-  const submitQuickEntry = (commits: QuickEntryCommit[], previewLines: PreviewLine[]) => {
-    const outcome = getWorkoutStore().addQuickEntry(commits);
-    setSheet({ kind: 'none' });
-    if (!outcome) return;
-    if (outcome.lastWorkoutExerciseIdWithNewSets) {
-      startRestAfterCompletedSet(outcome.lastWorkoutExerciseIdWithNewSets);
-    }
-    toast(quickEntryToastMessage(outcome, previewLines, translate));
-  };
 
   const deleteSetWithUndo = useCallback(
     (workoutExerciseId: string, setId: string) => {
@@ -299,7 +287,19 @@ export default function ActiveWorkoutScreen() {
   }
 
   const completedSets = workout.exercises.flatMap((exercise) => exercise.sets.filter((set) => set.completed));
-  const workingSetCount = countWorkingSets(completedSets);
+  // При редактировании сохранённой тренировки «Ручки» нет, даже если режим остался в хранилище.
+  const isPenMode = entryMode === 'pen' && session.mode === 'new';
+  // В «Ручке» текст ещё не применён, поэтому счётчики и доступность «Завершить» берутся из разобранных строк.
+  const workingSetCount = isPenMode ? penState.setCount : countWorkingSets(completedSets);
+  const exerciseCount = isPenMode ? penState.exerciseCount : workout.exercises.length;
+  // В «Ручке» завершать можно только то, что записано в тексте: карточки при применении будут заменены.
+  const canFinish = isPenMode ? penState.setCount > 0 : completedSets.length > 0;
+
+  const openFinishSheet = async () => {
+    // Из «Ручки» сначала применяем текст: шторка завершения считает статистику по карточкам.
+    if (isPenMode && !(await applyPenNow())) return;
+    setSheet({ kind: 'finish' });
+  };
   // При редактировании завершённой тренировки показывается сохранённая длительность вместо живого таймера.
   const fixedDurationSeconds =
     session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000);
@@ -401,10 +401,10 @@ export default function ActiveWorkoutScreen() {
         workoutName={workout.name}
         dateText={session.mode === 'edit' ? formatDateTime(workout.startedAt, i18n.language) : null}
         finishButtonTitle={session.mode === 'new' ? translate('workout.finish') : translate('common.save')}
-        canFinish={completedSets.length > 0}
+        canFinish={canFinish}
         onMinimizePress={() => router.back()}
         onNamePress={openRename}
-        onFinishPress={() => setSheet({ kind: 'finish' })}
+        onFinishPress={() => void openFinishSheet()}
       />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -416,36 +416,60 @@ export default function ActiveWorkoutScreen() {
           <WorkoutStats
             startedAt={workout.startedAt}
             durationSec={fixedDurationSeconds}
-            exerciseCount={workout.exercises.length}
+            exerciseCount={exerciseCount}
             setCount={workingSetCount}
             style={{ marginBottom: spacing.md }}
           />
 
-          {workout.exercises.map((workoutExercise) => {
-            const exerciseDetails = exercisesById.get(workoutExercise.exerciseId);
-            return (
-              <ExerciseCard
-                key={workoutExercise.id}
-                workoutExercise={workoutExercise}
-                exerciseDetails={exerciseDetails}
-                units={units}
-                supersetColor={supersetColorForGroup(workoutExercise.supersetGroup)}
-                onMenu={openExerciseMenu}
-                onNotePress={openNote}
-                onAddSet={addSet}
-                onSetChange={changeSet}
-                onSetToggle={toggleSet}
-                onSetDelete={deleteSetWithUndo}
-                onSetTypePress={openSetTypePicker}
-              />
-            );
-          })}
+          {session.mode === 'new' ? (
+            <View style={{ marginBottom: spacing.md }}>
+              <EntryModeTabs value={entryMode} onChange={(mode) => void switchEntryMode(mode)} />
+            </View>
+          ) : null}
 
-          <AddExerciseButtons
-            isPrimary={hasNoExercises}
-            onPickFromList={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
-            onQuickEntry={openQuickEntry}
-          />
+          {isPenMode ? (
+            <PenEditor
+              text={penText}
+              onTextChange={(text) => getWorkoutStore().setPenText(text)}
+              penState={penState}
+              onRestTimerPress={() => setSheet({ kind: 'penRest' })}
+            />
+          ) : null}
+
+          {!isPenMode &&
+            workout.exercises.map((workoutExercise) => {
+              const exerciseDetails = exercisesById.get(workoutExercise.exerciseId);
+              return (
+                <ExerciseCard
+                  key={workoutExercise.id}
+                  workoutExercise={workoutExercise}
+                  exerciseDetails={exerciseDetails}
+                  units={units}
+                  supersetColor={supersetColorForGroup(workoutExercise.supersetGroup)}
+                  onMenu={openExerciseMenu}
+                  onNotePress={openNote}
+                  onAddSet={addSet}
+                  onSetChange={changeSet}
+                  onSetToggle={toggleSet}
+                  onSetDelete={deleteSetWithUndo}
+                  onSetTypePress={openSetTypePicker}
+                />
+              );
+            })}
+
+          {!isPenMode ? (
+            <Button
+              title={translate('workout.addExercise')}
+              size="lg"
+              fullWidth
+              variant={hasNoExercises ? 'primary' : 'secondary'}
+              icon={
+                <Icon icon={Plus} size={20} color={hasNoExercises ? 'onAccent' : 'text'} strokeWidth={2.5} />
+              }
+              onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
+              style={{ marginTop: spacing.sm }}
+            />
+          ) : null}
           {session.mode === 'new' ? (
             <Button
               title={translate('workout.discard')}
@@ -540,13 +564,18 @@ export default function ActiveWorkoutScreen() {
         onRememberChange={setRememberExtraFields}
       />
 
-      <QuickEntrySheet
-        visible={sheet.kind === 'quickEntry'}
+      <RestTimerPickerSheet
+        visible={sheet.kind === 'penRest'}
         onClose={closeSheet}
-        text={quickEntryText}
-        onTextChange={setQuickEntryText}
-        exerciseIdsInWorkout={exerciseIds}
-        onSubmit={submitQuickEntry}
+        selectedSeconds={null}
+        defaultRestSeconds={settings.defaultRestSeconds}
+        onRestSelect={(seconds) => {
+          // В «Ручке» таймер запускается только вручную: выбранное время стартует сразу, «Выкл» останавливает.
+          const restSeconds = seconds ?? settings.defaultRestSeconds;
+          closeSheet();
+          if (restSeconds > 0) startRest(restSeconds);
+          else useRestTimer.getState().skip();
+        }}
       />
 
       <RenameWorkoutSheet
@@ -562,7 +591,7 @@ export default function ActiveWorkoutScreen() {
         onClose={closeSheet}
         startedAt={workout.startedAt}
         durationSec={fixedDurationSeconds}
-        exerciseCount={workout.exercises.length}
+        exerciseCount={exerciseCount}
         setCount={workingSetCount}
         onFinishPress={finishWorkout}
       />

@@ -117,11 +117,18 @@ function readRepsSuffixes(cursor: Cursor): { type: ParsedSet['type']; rir: numbe
 function readSingleValue(cursor: Cursor, options: ParseOptions): ParsedSet | null {
   const distanceFirst = readDistance(cursor, options);
   if (distanceFirst != null) {
-    return { ...EMPTY_PARSED_SET, distanceM: distanceFirst, durationSec: readDuration(cursor) };
+    const durationSec = readDuration(cursor);
+    return {
+      ...EMPTY_PARSED_SET,
+      distanceM: distanceFirst,
+      durationSec,
+      type: readRepsSuffixes(cursor).type,
+    };
   }
   const duration = readDuration(cursor);
   if (duration != null) {
-    return { ...EMPTY_PARSED_SET, durationSec: duration, distanceM: readDistance(cursor, options) };
+    const distanceM = readDistance(cursor, options);
+    return { ...EMPTY_PARSED_SET, durationSec: duration, distanceM, type: readRepsSuffixes(cursor).type };
   }
   const numberToken = peek(cursor);
   if (numberToken?.kind !== 'number' || !isValidRepCount(numberToken.value)) return null;
@@ -169,15 +176,34 @@ function readGroup(cursor: Cursor, options: ParseOptions, inheritedWeight: Group
 }
 
 /** Одна строка быстрой записи: название и подходы, или понятная ошибка. */
-export function parseLine(rawText: string, lineIndex: number, options: ParseOptions): LineParseResult {
-  const tokens = tokenize(rawText);
-  const firstValueIndex = tokens.findIndex(isValueStart);
-  const nameEnd = firstValueIndex === -1 ? rawText.length : (tokens[firstValueIndex]?.start ?? 0);
-  const name = rawText.slice(0, nameEnd).trim();
-  if (!name) return { ok: false, error: { lineIndex, rawText, reason: 'missingName' } };
-  if (firstValueIndex === -1) return { ok: true, line: { lineIndex, rawText, name, sets: [] } };
+/**
+ * Двоеточие после названия отделяет его от подходов явно: «Тяга 21: 70кг х 8». Двоеточие внутри
+ * времени («1:00») не считается — у него цифры с обеих сторон.
+ */
+function splitNameByColon(rawText: string): { name: string; body: string } | null {
+  for (let index = 0; index < rawText.length; index += 1) {
+    if (rawText[index] !== ':') continue;
+    const isInsideClock = /\d/.test(rawText[index - 1] ?? '') && /\d/.test(rawText[index + 1] ?? '');
+    if (!isInsideClock) return { name: rawText.slice(0, index).trim(), body: rawText.slice(index + 1) };
+  }
+  return null;
+}
 
-  const cursor: Cursor = { tokens, index: firstValueIndex };
+/** Название — всё до первого числа, если нет явного двоеточия. */
+function splitNameByFirstNumber(rawText: string): { name: string; body: string } {
+  const tokens = tokenize(rawText);
+  const firstValue = tokens.find(isValueStart);
+  const nameEnd = firstValue ? firstValue.start : rawText.length;
+  return { name: rawText.slice(0, nameEnd).trim(), body: rawText.slice(nameEnd) };
+}
+
+export function parseLine(rawText: string, lineIndex: number, options: ParseOptions): LineParseResult {
+  const { name, body } = splitNameByColon(rawText) ?? splitNameByFirstNumber(rawText);
+  if (!name) return { ok: false, error: { lineIndex, rawText, reason: 'missingName' } };
+  const tokens = tokenize(body);
+  if (tokens.length === 0) return { ok: true, line: { lineIndex, rawText, name, sets: [] } };
+
+  const cursor: Cursor = { tokens, index: 0 };
   const sets: ParsedSet[] = [];
   let inheritedWeight: GroupWeight | null = null;
   for (;;) {
@@ -190,7 +216,7 @@ export function parseLine(rawText: string, lineIndex: number, options: ParseOpti
 
   const leftover = peek(cursor);
   if (leftover) {
-    const fragment = rawText.slice(leftover.start).trim();
+    const fragment = body.slice(leftover.start).trim();
     return { ok: false, error: { lineIndex, rawText, reason: 'unexpectedText', fragment } };
   }
   return { ok: true, line: { lineIndex, rawText, name, sets } };

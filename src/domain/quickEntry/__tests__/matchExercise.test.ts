@@ -98,3 +98,12 @@ test('короткие и похожие запросы против насто�
   expect(pick('трицепс', realLibrary)).not.toBe('bb-curl');
   expect(pick('отжимания узким хватом', realLibrary)).not.toBe('close-grip-bench');
 });
+
+test('точное название побеждает упражнение из тренировки с похожим названием', () => {
+  const candidates = prepareCandidates([
+    candidate('pullup', 'Подтягивания', 'Pull Up', { order: 0 }),
+    candidate('chinup', 'Подтягивания обратным хватом', 'Chin Up', { order: 1, isInWorkout: true }),
+  ]);
+  expect(pick('подтягивания', candidates)).toBe('pullup');
+  expect(pick('подтягивания обратным хватом', candidates)).toBe('chinup');
+});

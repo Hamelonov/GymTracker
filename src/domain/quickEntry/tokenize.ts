@@ -33,7 +33,7 @@ const MULTI_LETTER_UNITS: { pattern: RegExp; token: UnitWithoutStart }[] = [
   { pattern: /кило\p{L}*|кг|kg/uy, token: { kind: 'weightUnit', unit: 'kg' } },
   { pattern: /фунт\p{L}*|lbs?/uy, token: { kind: 'weightUnit', unit: 'lb' } },
   { pattern: /км|km/uy, token: { kind: 'distanceUnit', unit: 'km' } },
-  { pattern: /мил\p{L}*|mi/uy, token: { kind: 'distanceUnit', unit: 'mi' } },
+  { pattern: /мил\p{L}*|ми|mi/uy, token: { kind: 'distanceUnit', unit: 'mi' } },
   { pattern: /мин\p{L}*|min\p{L}*/uy, token: { kind: 'timeUnit', unit: 'min' } },
   { pattern: /сек\p{L}*|sec\p{L}*/uy, token: { kind: 'timeUnit', unit: 'sec' } },
   { pattern: /час\p{L}*|hours?|hrs?/uy, token: { kind: 'timeUnit', unit: 'hour' } },
@@ -130,7 +130,13 @@ export function tokenize(line: string): Token[] {
     const setType = SET_TYPE_LETTERS[text[position] ?? ''];
     // Буква типа клеится к числу повторов или к скобкам RIR: «7о» и «7(1)о».
     const isGluedToRir = lastToken()?.kind === 'rir' && text[position - 1] === ')';
-    if (!setType || !(isRightAfterNumber(true) || isGluedToRir) || isLetterOrDigit(text[position + 1])) {
+    // У времени и дистанции тип подхода тоже клеится к значению: «0:45р», «5кмр».
+    const previousKind = lastToken()?.kind;
+    const isGluedToTimeOrDistance =
+      (previousKind === 'clock' || previousKind === 'timeUnit' || previousKind === 'distanceUnit') &&
+      !/\s/.test(text[position - 1] ?? '');
+    const isSuffixPosition = isRightAfterNumber(true) || isGluedToRir || isGluedToTimeOrDistance;
+    if (!setType || !isSuffixPosition || isLetterOrDigit(text[position + 1])) {
       return false;
     }
     tokens.push({ kind: 'setType', type: setType, start: position });

@@ -1,12 +1,15 @@
+import type { LucideIcon } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { type LayoutChangeEvent, Pressable as NativePressable, StyleSheet, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { Icon } from './Icon';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
 import { radius } from './tokens';
 
 export interface SegmentedProps<T extends string> {
-  options: { value: T; label: string }[];
+  /** Необязательная иконка слева от подписи сегмента. */
+  options: { value: T; label: string; icon?: LucideIcon }[];
   value: T;
   onChange: (value: T) => void;
 }
@@ -42,6 +45,13 @@ export function Segmented<T extends string>({ options, value, onChange }: Segmen
       ) : null}
       {options.map((option) => (
         <NativePressable key={option.value} onPress={() => onChange(option.value)} style={styles.segment}>
+          {option.icon ? (
+            <Icon
+              icon={option.icon}
+              size={15}
+              color={option.value === value ? colors.text : colors.textMuted}
+            />
+          ) : null}
           <Text variant="caption" color={option.value === value ? colors.text : colors.textMuted}>
             {option.label}
           </Text>
@@ -66,5 +76,5 @@ const styles = StyleSheet.create({
     left: TRACK_PADDING,
     borderRadius: radius.sm,
   },
-  segment: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  segment: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
 });

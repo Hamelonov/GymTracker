@@ -148,3 +148,32 @@ test('RIR больше 10 — ошибка разбора', () => {
     error: { lineIndex: 0, rawText: 'Присед 70х8(15)', reason: 'unexpectedText', fragment: '(15)' },
   });
 });
+
+test('двоеточие отделяет название с цифрами от подходов', () => {
+  const result = parseLine('Тяга 21: 70кг х 8', 0, options);
+  expect(result.ok && result.line.name).toBe('Тяга 21');
+  expect(result.ok && result.line.sets).toEqual([set({ weightKg: 70, reps: 8 })]);
+  const nameOnly = parseLine('Жим 3 в 1:', 0, options);
+  expect(nameOnly).toEqual({
+    ok: true,
+    line: { lineIndex: 0, rawText: 'Жим 3 в 1:', name: 'Жим 3 в 1', sets: [] },
+  });
+  // Двоеточие внутри времени — не разделитель.
+  expect(setsOf('Планка 1:00/0:45')).toEqual([set({ durationSec: 60 }), set({ durationSec: 45 })]);
+});
+
+test('вес без повторов и нулевой вес', () => {
+  expect(setsOf('Жим 70кг')).toEqual([set({ weightKg: 70 })]);
+  expect(setsOf('Подтягивания +10кг х 8, 0кг х 10')).toEqual([
+    set({ weightKg: 10, weightSign: 'extra', reps: 8 }),
+    set({ weightKg: 0, reps: 10 }),
+  ]);
+});
+
+test('тип подхода у времени и дистанции', () => {
+  expect(setsOf('Планка 1:00р/0:45')).toEqual([
+    set({ durationSec: 60, type: 'warmup' }),
+    set({ durationSec: 45 }),
+  ]);
+  expect(setsOf('Бег 5км 25:00о')).toEqual([set({ distanceM: 5000, durationSec: 1500, type: 'failure' })]);
+});

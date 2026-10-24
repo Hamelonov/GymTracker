@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { deferredStorage } from './kvStorage';
-import { applyQuickEntry, type QuickEntryCommit, type QuickEntryOutcome } from './activeWorkoutQuickEntry';
 import { makeSet, makeSetsFromLastPerformance } from './activeWorkoutSets';
 import { normalizeActiveWorkout } from './normalizeActiveWorkout';
 import { newId } from '@/domain/ids';
@@ -17,14 +16,6 @@ import { EMPTY_SET_VALUES, getSetFieldsForExerciseType } from '@/domain/types';
 import { initialExtraFields } from '@/domain/extraFields';
 import type { RoutineDetail } from '@/db/repo/routines';
 import { getExercisesByIds, getLastPerformances } from '@/db/repo/exercises';
-
-/** Поля, запомненные у упражнений («Запоминать для этого упражнения»), по id упражнения. */
-function getRememberedExtraFields(exerciseIds: string[]): Map<string, ExtraField[]> {
-  const rows = getExercisesByIds(exerciseIds);
-  return new Map(
-    exerciseIds.map((exerciseId) => [exerciseId, rows.get(exerciseId)?.rememberedExtraFields ?? []]),
-  );
-}
 
 /**
  * С какими дополнительными колонками создаётся карточка: запомненные у упражнения плюс «Вес»,
@@ -49,11 +40,22 @@ function getInitialExtraFields(
 
 export type EditSession = { mode: 'new' } | { mode: 'edit'; workoutId: string; finishedAt: number };
 
+/** «Стандарт» — карточки и кнопки, «Ручка» — вся тренировка одним текстом. */
+export type EntryMode = 'standard' | 'pen';
+
 interface ActiveWorkoutState {
   workout: ActiveWorkout | null;
   session: EditSession;
   /** Управляет свёрнутой панелью: true, когда экран активной тренировки не на переднем плане. */
   minimized: boolean;
+  entryMode: EntryMode;
+  /** Текст режима «Ручка»; источник истины, пока открыт этот режим. */
+  penText: string;
+  setPenText: (text: string) => void;
+  /** Переход в «Ручку»: экран сам сериализует карточки, потому что знает названия и единицы. */
+  switchToPen: (text: string) => void;
+  /** Переход в «Стандарт» с уже восстановленными из текста карточками. */
+  applyPenResult: (exercises: ActiveExercise[]) => void;
   startEmpty: (name: string) => void;
   startFromRoutine: (routine: RoutineDetail, name?: string) => void;
   startFromActive: (workout: ActiveWorkout, session: EditSession) => void;
@@ -63,8 +65,6 @@ interface ActiveWorkoutState {
   setNotes: (notes: string) => void;
   setStartedAt: (startedAt: number) => void;
   addExercises: (exerciseIds: string[]) => void;
-  /** Подходы из быстрой записи текстом; null, если тренировка не идёт. */
-  addQuickEntry: (commits: QuickEntryCommit[]) => Omit<QuickEntryOutcome, 'workout'> | null;
   replaceExercise: (workoutExerciseId: string, exerciseId: string) => void;
   removeExercise: (workoutExerciseId: string) => ActiveExercise | null;
   restoreExercise: (exercise: ActiveExercise, index: number) => void;
@@ -132,11 +132,15 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
         workout: null,
         session: { mode: 'new' },
         minimized: true,
+        entryMode: 'standard',
+        penText: '',
         startEmpty: (name) =>
           set({
             workout: { id: newId(), name, startedAt: Date.now(), routineId: null, notes: '', exercises: [] },
             session: { mode: 'new' },
             minimized: false,
+            entryMode: 'standard',
+            penText: '',
           }),
         startFromRoutine: (routine, name) => {
           const routineExerciseIds = routine.exercises.map((routineExercise) => routineExercise.exerciseId);
@@ -191,14 +195,30 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
             },
             session: { mode: 'new' },
             minimized: false,
+            entryMode: 'standard',
+            penText: '',
           });
         },
-        startFromActive: (workout, session) => set({ workout, session, minimized: false }),
+        startFromActive: (workout, session) =>
+          set({ workout, session, minimized: false, entryMode: 'standard', penText: '' }),
         setMinimized: (minimized) => set({ minimized }),
-        clear: () => set({ workout: null, session: { mode: 'new' }, minimized: false }),
+        clear: () =>
+          set({
+            workout: null,
+            session: { mode: 'new' },
+            minimized: false,
+            entryMode: 'standard',
+            penText: '',
+          }),
         rename: (name) => updateWorkout((workout) => ({ ...workout, name })),
         setNotes: (notes) => updateWorkout((workout) => ({ ...workout, notes })),
         setStartedAt: (startedAt) => updateWorkout((workout) => ({ ...workout, startedAt })),
+        setPenText: (penText) => set({ penText }),
+        switchToPen: (penText) => set({ penText, entryMode: 'pen' }),
+        applyPenResult: (exercises) => {
+          updateWorkout((workout) => ({ ...workout, exercises }));
+          set({ entryMode: 'standard', penText: '' });
+        },
         addExercises: (exerciseIds) => {
           const lastPerformanceByExerciseId = getLastPerformances(exerciseIds);
           const previousSetsByExerciseId = new Map(
@@ -223,27 +243,6 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
               })),
             ],
           }));
-        },
-        addQuickEntry: (commits) => {
-          const workout = get().workout;
-          if (!workout) return null;
-          const lastPerformanceByExerciseId = getLastPerformances(commits.map((commit) => commit.exerciseId));
-          const rememberedExtraFieldsByExerciseId = getRememberedExtraFields(
-            commits.map((commit) => commit.exerciseId),
-          );
-          const outcome = applyQuickEntry(
-            workout,
-            commits,
-            lastPerformanceByExerciseId,
-            Date.now(),
-            rememberedExtraFieldsByExerciseId,
-          );
-          set({ workout: outcome.workout });
-          return {
-            workoutExerciseIds: outcome.workoutExerciseIds,
-            lastWorkoutExerciseIdWithNewSets: outcome.lastWorkoutExerciseIdWithNewSets,
-            addedSetCount: outcome.addedSetCount,
-          };
         },
         replaceExercise: (workoutExerciseId, exerciseId) => {
           const previousPerformance = getLastPerformances([exerciseId]).get(exerciseId);
@@ -384,7 +383,12 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
     {
       name: 'active-workout',
       storage: createJSONStorage(() => deferredStorage),
-      partialize: (state) => ({ workout: state.workout, session: state.session }),
+      partialize: (state) => ({
+        workout: state.workout,
+        session: state.session,
+        entryMode: state.entryMode,
+        penText: state.penText,
+      }),
       // Тренировка, сохранённая прошлой версией приложения, могла не иметь новых полей.
       merge: (persisted, current) => {
         const persistedState = (persisted ?? {}) as Partial<ActiveWorkoutState>;
@@ -392,6 +396,8 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
           ...current,
           ...persistedState,
           workout: normalizeActiveWorkout(persistedState.workout ?? null),
+          entryMode: persistedState.entryMode ?? 'standard',
+          penText: persistedState.penText ?? '',
         };
       },
     },

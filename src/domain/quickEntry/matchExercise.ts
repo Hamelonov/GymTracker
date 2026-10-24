@@ -138,10 +138,25 @@ function pickBest(queryStems: string[], candidates: PreparedCandidate[]): Exerci
   return matches[0] ?? null;
 }
 
-/** Сначала среди упражнений текущей тренировки, потом по всей библиотеке. */
+/** Кандидаты, у которых одно из названий совпадает с запросом слово в слово (после нормализации). */
+function findExactMatches(queryStems: string[], candidates: PreparedCandidate[]): ExerciseMatch[] {
+  const queryKey = queryStems.join(' ');
+  return candidates
+    .map((candidate) => bestMatchFor(queryStems, candidate))
+    .filter((match): match is ExerciseMatch => match != null)
+    .filter((match) => match.candidate.stemSets.some((stems) => stems.join(' ') === queryKey));
+}
+
+/**
+ * Точное название побеждает нечёткое и правило «сначала из тренировки»: иначе строка «Подтягивания»
+ * при карточке «Подтягивания обратным хватом» переехала бы на неё. Дальше — сначала среди упражнений
+ * текущей тренировки, потом по всей библиотеке.
+ */
 export function matchExerciseName(query: string, candidates: PreparedCandidate[]): ExerciseMatch | null {
   const queryStems = nameToStems(query);
   if (queryStems.length === 0) return null;
+  const exactMatches = findExactMatches(queryStems, candidates).sort(compareMatches);
+  if (exactMatches[0]) return exactMatches[0];
   const inWorkout = candidates.filter((candidate) => candidate.isInWorkout);
   return pickBest(queryStems, inWorkout) ?? pickBest(queryStems, candidates);
 }
