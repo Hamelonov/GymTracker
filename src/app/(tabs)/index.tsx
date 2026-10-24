@@ -24,6 +24,7 @@ import { WeekSummaryCard } from '@/features/home/WeekSummaryCard';
 import { RoutineCard } from '@/features/routines/RoutineCard';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
+import { weekdayName } from '@/domain/dates';
 import { useNow } from '@/lib/useNow';
 import {
   Button,
@@ -46,14 +47,8 @@ type OpenSheet =
   | { kind: 'folderName'; folderId?: string }
   | { kind: 'folderMenu'; folderId: string };
 
-/** Название новой тренировки по дню недели: «Тренировка в субботу». */
-function getWorkoutNameForWeekday(translate: (key: string) => string, now: number): string {
-  const weekday = new Date(now).getDay();
-  return translate(`workout.nameByWeekday.${weekday}`);
-}
-
 export default function HomeTab() {
-  const { t: translate } = useTranslation();
+  const { t: translate, i18n } = useTranslation();
   const now = useNow();
   const [openSheet, setOpenSheet] = useState<OpenSheet>({ kind: 'none' });
   const [folderName, setFolderName] = useState('');
@@ -91,7 +86,7 @@ export default function HomeTab() {
 
   const startEmptyWorkout = async () => {
     if (!(await discardActiveWorkoutIfConfirmed())) return;
-    useActiveWorkout.getState().startEmpty(getWorkoutNameForWeekday(translate, Date.now()));
+    useActiveWorkout.getState().startEmpty(weekdayName(Date.now(), i18n.language));
     push('/workout/active');
   };
 

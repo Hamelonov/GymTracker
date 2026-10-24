@@ -10,7 +10,7 @@ import { Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
 
 /**
  * Карточка тренировки в истории: слева плашка с числом и месяцем, по центру
- * название и день недели со временем, справа длительность.
+ * название и время начала, справа длительность.
  * Упражнения и подходы показываются только на странице самой тренировки.
  */
 export function WorkoutCard({ workout, onPress }: { workout: WorkoutSummary; onPress: () => void }) {
@@ -20,7 +20,8 @@ export function WorkoutCard({ workout, onPress }: { workout: WorkoutSummary; onP
 
   const dayOfMonth = format(workout.startedAt, 'd');
   const monthShort = format(workout.startedAt, 'LLL', { locale }).replace('.', '').toUpperCase();
-  const weekdayAndTime = format(workout.startedAt, 'EEEE, HH:mm', { locale });
+  // День недели уже в названии, а дата — на плашке слева, поэтому здесь только время.
+  const startTime = format(workout.startedAt, 'HH:mm');
 
   return (
     <Pressable onPress={onPress} scaleTo={0.985}>
@@ -39,7 +40,7 @@ export function WorkoutCard({ workout, onPress }: { workout: WorkoutSummary; onP
             {workout.name}
           </Text>
           <Text variant="caption" color="muted" style={styles.weekday}>
-            {weekdayAndTime}
+            {startTime}
           </Text>
         </View>
 

@@ -34,6 +34,12 @@ export function formatDateTime(timestamp: number, language: string): string {
   return format(timestamp, 'd MMM yyyy, HH:mm', { locale: dateLocale(language) });
 }
 
+/** День недели с заглавной буквы: «Суббота», «Saturday». */
+export function weekdayName(timestamp: number, language: string): string {
+  const name = format(timestamp, 'EEEE', { locale: dateLocale(language) });
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 export function formatLongDate(timestamp: number, language: string): string {
   return format(timestamp, 'EEEE, d MMMM', { locale: dateLocale(language) });
 }

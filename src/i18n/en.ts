@@ -87,16 +87,6 @@ const en = {
   workout: {
     title: 'Workout',
     defaultName: 'Workout',
-    // Название тренировки по умолчанию, по дню недели (0 — воскресенье, как в Date.getDay).
-    nameByWeekday: {
-      0: 'Sunday workout',
-      1: 'Monday workout',
-      2: 'Tuesday workout',
-      3: 'Wednesday workout',
-      4: 'Thursday workout',
-      5: 'Friday workout',
-      6: 'Saturday workout',
-    },
     finish: 'Finish',
     discard: 'Discard workout',
     discardConfirm: 'Discard this workout? All entered sets will be lost.',
