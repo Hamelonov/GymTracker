@@ -1,4 +1,4 @@
-import { BookOpen, Ellipsis, Link, Plus, StickyNote } from 'lucide-react-native';
+import { Ellipsis, Link, Plus, StickyNote } from 'lucide-react-native';
 import React, { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -16,14 +16,9 @@ export interface ExerciseCardProps {
   exerciseDetails: ExerciseRow | undefined;
   units: { weight: WeightUnit; distance: DistanceUnit };
   readOnly?: boolean;
-  /** Есть ли у упражнения описание для показа (управляет состоянием иконки книги). */
-  hasDescription: boolean;
   supersetColor?: string | null;
   /** Все обработчики получают id активного упражнения; передавайте стабильные ссылки. */
   onMenu: (workoutExerciseId: string) => void;
-  /** Кнопка «+» в заголовке: дополнительные поля. Без обработчика кнопки нет (редактор программ). */
-  onExtraFieldsPress?: (workoutExerciseId: string) => void;
-  onDescriptionPress: (workoutExerciseId: string) => void;
   onNotePress: (workoutExerciseId: string) => void;
   onAddSet: (workoutExerciseId: string) => void;
   onSetChange: (workoutExerciseId: string, setId: string, patch: Partial<SetValues>) => void;
@@ -44,11 +39,8 @@ export const ExerciseCard = memo(function ExerciseCard({
   exerciseDetails,
   units,
   readOnly,
-  hasDescription,
   supersetColor,
   onMenu,
-  onExtraFieldsPress,
-  onDescriptionPress,
   onNotePress,
   onAddSet,
   onSetChange,
@@ -93,27 +85,6 @@ export const ExerciseCard = memo(function ExerciseCard({
           ) : null}
         </View>
         <View style={styles.headerActions}>
-          {!readOnly && onExtraFieldsPress ? (
-            <Pressable
-              onPress={() => onExtraFieldsPress(workoutExercise.id)}
-              haptic="selection"
-              hitSlop={6}
-              style={[
-                styles.iconButton,
-                { backgroundColor: extraFields.length > 0 ? colors.accent : colors.surfaceAlt },
-              ]}
-            >
-              <Icon icon={Plus} size={18} color={extraFields.length > 0 ? 'onAccent' : 'text'} />
-            </Pressable>
-          ) : null}
-          <Pressable
-            onPress={() => onDescriptionPress(workoutExercise.id)}
-            haptic="selection"
-            hitSlop={6}
-            style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}
-          >
-            <Icon icon={BookOpen} size={17} color={hasDescription ? 'text' : 'faint'} />
-          </Pressable>
           {!readOnly ? (
             <Pressable
               onPress={() => onNotePress(workoutExercise.id)}

@@ -21,7 +21,6 @@ import { quickEntryToastMessage } from '@/features/workout/quickEntry/quickEntry
 import type { PreviewLine } from '@/features/workout/quickEntry/useQuickEntry';
 import type { QuickEntryCommit } from '@/store/activeWorkoutQuickEntry';
 import { ExerciseCard } from '@/features/workout/ExerciseCard';
-import { exerciseDisplayDescription } from '@/features/workout/exerciseDisplayName';
 import { RestTimerBar } from '@/features/workout/RestTimerBar';
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
 import { ExerciseDescriptionSheet } from '@/features/workout/sheets/ExerciseDescriptionSheet';
@@ -430,11 +429,8 @@ export default function ActiveWorkoutScreen() {
                 workoutExercise={workoutExercise}
                 exerciseDetails={exerciseDetails}
                 units={units}
-                hasDescription={exerciseDisplayDescription(exerciseDetails, i18n.language).length > 0}
                 supersetColor={supersetColorForGroup(workoutExercise.supersetGroup)}
                 onMenu={openExerciseMenu}
-                onExtraFieldsPress={openExtraFields}
-                onDescriptionPress={openDescription}
                 onNotePress={openNote}
                 onAddSet={addSet}
                 onSetChange={changeSet}
@@ -478,6 +474,12 @@ export default function ActiveWorkoutScreen() {
         restSeconds={currentRestSeconds ?? 0}
         canMoveUp={currentExerciseIndex > 0}
         canMoveDown={currentExerciseIndex < workout.exercises.length - 1}
+        onDescriptionPress={() => {
+          if (currentExercise) openDescription(currentExercise.id);
+        }}
+        onExtraFieldsPress={() => {
+          if (currentExercise) openExtraFields(currentExercise.id);
+        }}
         onRestTimerPress={openRestPicker}
         onReplacePress={replaceCurrentExercise}
         onSupersetPress={toggleCurrentExerciseSuperset}

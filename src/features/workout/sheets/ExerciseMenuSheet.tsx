@@ -1,4 +1,14 @@
-import { ArrowDown, ArrowUp, Link, Replace, Timer, Trash2, Unlink } from 'lucide-react-native';
+import {
+  ArrowDown,
+  ArrowUp,
+  BookOpen,
+  Link,
+  Replace,
+  SlidersHorizontal,
+  Timer,
+  Trash2,
+  Unlink,
+} from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -17,6 +27,8 @@ interface ExerciseMenuSheetProps {
   restSeconds: number;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  onDescriptionPress: () => void;
+  onExtraFieldsPress: () => void;
   onRestTimerPress: () => void;
   onReplacePress: () => void;
   onSupersetPress: () => void;
@@ -25,7 +37,7 @@ interface ExerciseMenuSheetProps {
   onRemovePress: () => void;
 }
 
-/** Меню «…» карточки упражнения: таймер отдыха, замена, суперсет, порядок и удаление. */
+/** Меню «…» карточки упражнения: описание, дополнительные поля, таймер отдыха, замена, суперсет, порядок и удаление. */
 export function ExerciseMenuSheet({
   visible,
   onClose,
@@ -34,6 +46,8 @@ export function ExerciseMenuSheet({
   restSeconds,
   canMoveUp,
   canMoveDown,
+  onDescriptionPress,
+  onExtraFieldsPress,
   onRestTimerPress,
   onReplacePress,
   onSupersetPress,
@@ -50,6 +64,16 @@ export function ExerciseMenuSheet({
     <Sheet visible={visible} onClose={onClose} title={title} unpadded>
       {workoutExercise ? (
         <View style={styles.menuList}>
+          <ListItem
+            title={translate('workout.description')}
+            left={<Icon icon={BookOpen} />}
+            onPress={onDescriptionPress}
+          />
+          <ListItem
+            title={translate('workout.extraFieldsTitle')}
+            left={<Icon icon={SlidersHorizontal} />}
+            onPress={onExtraFieldsPress}
+          />
           <ListItem
             title={translate('workout.restTimer')}
             subtitle={restSeconds > 0 ? formatDuration(restSeconds) : translate('workout.restOff')}

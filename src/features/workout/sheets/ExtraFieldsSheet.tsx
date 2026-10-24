@@ -11,7 +11,7 @@ import {
 } from '@/domain/types';
 import { unitLabels } from '@/domain/units';
 import { SettingSwitchRow } from '@/features/settings/SettingSwitchRow';
-import { Sheet, Text, spacing, useColors } from '@/ui';
+import { Checkbox, ListItem, Sheet, Text, spacing, useColors } from '@/ui';
 
 interface ExtraFieldsSheetProps {
   visible: boolean;
@@ -29,7 +29,7 @@ const LABEL_KEY_BY_FIELD: Record<ExtraField, string> = {
   rpe: 'workout.extraFieldRpe',
 };
 
-/** Шторка «Дополнительные поля»: какие колонки показывать у этой карточки и запоминать ли их для упражнения. */
+/** Шторка «Дополнительные поля»: галочки колонок этой карточки и переключатель запоминания для упражнения. */
 export function ExtraFieldsSheet({
   visible,
   onClose,
@@ -48,16 +48,18 @@ export function ExtraFieldsSheet({
 
   return (
     <Sheet visible={visible} onClose={onClose} title={translate('workout.extraFieldsTitle')} unpadded>
-      {availableExtraFields(fields).map((field) => (
-        <SettingSwitchRow
-          key={field}
-          title={translate(LABEL_KEY_BY_FIELD[field], { unit: unitLabels[weightUnit] ?? weightUnit })}
-          value={enabledFields.includes(field)}
-          onChange={() => {
-            if (workoutExercise) onToggleField(workoutExercise.id, field);
-          }}
-        />
-      ))}
+      <View style={styles.list}>
+        {availableExtraFields(fields).map((field) => (
+          <ListItem
+            key={field}
+            title={translate(LABEL_KEY_BY_FIELD[field], { unit: unitLabels[weightUnit] ?? weightUnit })}
+            right={<Checkbox checked={enabledFields.includes(field)} />}
+            onPress={() => {
+              if (workoutExercise) onToggleField(workoutExercise.id, field);
+            }}
+          />
+        ))}
+      </View>
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
       <SettingSwitchRow
         title={translate('workout.rememberExtraFields')}
@@ -75,6 +77,7 @@ export function ExtraFieldsSheet({
 }
 
 const styles = StyleSheet.create({
+  list: { paddingHorizontal: spacing.sm },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: spacing.sm, marginHorizontal: spacing.lg },
   hint: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
 });
