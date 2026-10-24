@@ -46,12 +46,10 @@ type OpenSheet =
   | { kind: 'folderName'; folderId?: string }
   | { kind: 'folderMenu'; folderId: string };
 
-function getWorkoutNameForTimeOfDay(translate: (key: string) => string, now: number): string {
-  const hour = new Date(now).getHours();
-  if (hour < 12) return translate('workout.morning');
-  if (hour < 17) return translate('workout.afternoon');
-  if (hour < 22) return translate('workout.evening');
-  return translate('workout.night');
+/** Название новой тренировки по дню недели: «Тренировка в субботу». */
+function getWorkoutNameForWeekday(translate: (key: string) => string, now: number): string {
+  const weekday = new Date(now).getDay();
+  return translate(`workout.nameByWeekday.${weekday}`);
 }
 
 export default function HomeTab() {
@@ -93,7 +91,7 @@ export default function HomeTab() {
 
   const startEmptyWorkout = async () => {
     if (!(await discardActiveWorkoutIfConfirmed())) return;
-    useActiveWorkout.getState().startEmpty(getWorkoutNameForTimeOfDay(translate, Date.now()));
+    useActiveWorkout.getState().startEmpty(getWorkoutNameForWeekday(translate, Date.now()));
     push('/workout/active');
   };
 
