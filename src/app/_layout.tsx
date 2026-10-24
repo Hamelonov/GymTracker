@@ -17,7 +17,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useDatabaseReady } from '@/db/migrate';
 import { renameDefaultWorkoutNames } from '@/db/renameDefaultWorkoutNames';
 import { seedExercises } from '@/db/seed';
-import { initI18n, resolveLanguage, setLanguage } from '@/i18n';
+import { initI18n, setLanguage } from '@/i18n';
 import { configureNotifications } from '@/lib/notifications';
 import { useSettings } from '@/store/settings';
 import { DialogHost, Text, ThemeProvider, ToastHost, useTheme } from '@/ui';
@@ -43,7 +43,7 @@ export default function RootLayout() {
   useEffect(() => {
     if (isDatabaseReady) {
       seedExercises();
-      renameDefaultWorkoutNames(resolveLanguage(useSettings.getState().language));
+      renameDefaultWorkoutNames();
       void configureNotifications();
     }
   }, [isDatabaseReady]);

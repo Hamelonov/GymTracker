@@ -158,6 +158,7 @@ const ru = {
     summaryTitle: 'Тренировка завершена',
     summarySubtitle: 'Отличная работа. Вот что получилось.',
     newRecords: 'Новые рекорды',
+    numberedName: 'Тренировка №{{number}}',
     firstTime: 'впервые',
     todayDone: 'Сегодня сделано',
     setsAndReps: 'Подходы/Повторы',

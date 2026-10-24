@@ -8,6 +8,7 @@ import { push } from '@/lib/nav';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
 import { useElapsedSeconds, useRestCountdown } from './timers';
+import { WorkoutName } from './WorkoutName';
 
 /**
  * Плавающая «таблетка» над панелью вкладок, пока идёт тренировка и
@@ -62,9 +63,13 @@ function MinimizedWorkoutPill({
       >
         <View style={[styles.liveDot, { backgroundColor: colors.accent }]} />
         <View style={styles.textColumn}>
-          <Text variant="caption" color={colors.background} numberOfLines={1}>
-            {name || translate('workout.defaultName')}
-          </Text>
+          <WorkoutName
+            variant="caption"
+            color={colors.background}
+            signColor={colors.textFaint}
+            numberOfLines={1}
+            name={name || translate('workout.defaultName')}
+          />
           <Text variant="label" color={colors.textFaint}>
             {formatDuration(elapsedSeconds)} · {completedSetCount} {translate('common.sets')}
           </Text>

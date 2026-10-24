@@ -3,6 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { Button, Icon, Pressable, Text, spacing, useColors } from '@/ui';
+import { WorkoutName } from './WorkoutName';
 
 interface ActiveWorkoutHeaderProps {
   workoutName: string;
@@ -39,9 +40,12 @@ export function ActiveWorkoutHeader({
         <Icon icon={ChevronDown} size={22} />
       </Pressable>
       <Pressable style={styles.nameColumn} onPress={onNamePress}>
-        <Text variant="h3" numberOfLines={1} align="center">
-          {workoutName || translate('workout.defaultName')}
-        </Text>
+        <WorkoutName
+          variant="h3"
+          numberOfLines={1}
+          align="center"
+          name={workoutName || translate('workout.defaultName')}
+        />
         {dateText != null ? (
           <Text variant="caption" color="muted">
             {dateText}

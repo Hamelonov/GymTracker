@@ -24,7 +24,7 @@ import { WeekSummaryCard } from '@/features/home/WeekSummaryCard';
 import { RoutineCard } from '@/features/routines/RoutineCard';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
-import { weekdayName } from '@/domain/dates';
+import { nextWorkoutNumber, numberedWorkoutName } from '@/db/renameDefaultWorkoutNames';
 import { useNow } from '@/lib/useNow';
 import {
   Button,
@@ -48,7 +48,7 @@ type OpenSheet =
   | { kind: 'folderMenu'; folderId: string };
 
 export default function HomeTab() {
-  const { t: translate, i18n } = useTranslation();
+  const { t: translate } = useTranslation();
   const now = useNow();
   const [openSheet, setOpenSheet] = useState<OpenSheet>({ kind: 'none' });
   const [folderName, setFolderName] = useState('');
@@ -86,7 +86,7 @@ export default function HomeTab() {
 
   const startEmptyWorkout = async () => {
     if (!(await discardActiveWorkoutIfConfirmed())) return;
-    useActiveWorkout.getState().startEmpty(weekdayName(Date.now(), i18n.language));
+    useActiveWorkout.getState().startEmpty(numberedWorkoutName(nextWorkoutNumber()));
     push('/workout/active');
   };
 

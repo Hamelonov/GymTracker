@@ -152,6 +152,7 @@ const en = {
     summaryTitle: 'Workout complete',
     summarySubtitle: 'Nice work. Here is what you did.',
     newRecords: 'New records',
+    numberedName: 'Workout #{{number}}',
     firstTime: 'first time',
     todayDone: 'Done today',
     setsAndReps: 'Sets/Reps',

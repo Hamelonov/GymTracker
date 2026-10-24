@@ -4,13 +4,14 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import type { WorkoutSummary } from '@/db/repo/workouts';
-import { dateLocale } from '@/domain/dates';
+import { dateLocale, weekdayName } from '@/domain/dates';
 import { formatDuration } from '@/domain/units';
 import { Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
+import { WorkoutName } from '@/features/workout/WorkoutName';
 
 /**
  * Карточка тренировки в истории: слева плашка с числом и месяцем, по центру
- * название и время начала, справа длительность.
+ * название, день недели и время начала, справа длительность.
  * Упражнения и подходы показываются только на странице самой тренировки.
  */
 export function WorkoutCard({ workout, onPress }: { workout: WorkoutSummary; onPress: () => void }) {
@@ -20,8 +21,8 @@ export function WorkoutCard({ workout, onPress }: { workout: WorkoutSummary; onP
 
   const dayOfMonth = format(workout.startedAt, 'd');
   const monthShort = format(workout.startedAt, 'LLL', { locale }).replace('.', '').toUpperCase();
-  // День недели уже в названии, а дата — на плашке слева, поэтому здесь только время.
-  const startTime = format(workout.startedAt, 'HH:mm');
+  // Дата уже на плашке слева, поэтому здесь день недели и время: «Суббота, 01:04».
+  const weekdayAndTime = weekdayName(workout.startedAt, i18n.language) + format(workout.startedAt, ', HH:mm');
 
   return (
     <Pressable onPress={onPress} scaleTo={0.985}>
@@ -36,11 +37,9 @@ export function WorkoutCard({ workout, onPress }: { workout: WorkoutSummary; onP
         </View>
 
         <View style={styles.titleAndDate}>
-          <Text variant="bodyMedium" numberOfLines={1}>
-            {workout.name}
-          </Text>
+          <WorkoutName variant="bodyMedium" numberOfLines={1} name={workout.name} />
           <Text variant="caption" color="muted" style={styles.weekday}>
-            {startTime}
+            {weekdayAndTime}
           </Text>
         </View>
 

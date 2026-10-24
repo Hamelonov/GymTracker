@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
+import { WorkoutName } from '@/features/workout/WorkoutName';
 import { Card, Pressable, Text, spacing, useColors } from '@/ui';
 
 interface ResumeWorkoutBannerProps {
@@ -20,9 +21,15 @@ export function ResumeWorkoutBanner({ workoutName, onPress }: ResumeWorkoutBanne
           <Text variant="h3" color="onAccent">
             {translate('home.inProgress')}
           </Text>
-          <Text variant="caption" color="onAccent" style={{ opacity: 0.7 }}>
-            {workoutName}
-          </Text>
+          {workoutName ? (
+            <WorkoutName
+              variant="caption"
+              color="onAccent"
+              signColor="onAccent"
+              style={{ opacity: 0.7 }}
+              name={workoutName}
+            />
+          ) : null}
         </View>
         <Text variant="bodyMedium" color="onAccent">
           {translate('home.resume')} →
