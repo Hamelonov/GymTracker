@@ -9,26 +9,27 @@ import { pickRecordMetric, recordGain, type ValueFormatters, type RecordMetric }
 import { getSetFieldsForExerciseType, type SetValues } from '@/domain/types';
 import { Card, Text, spacing, useColors } from '@/ui';
 import { SUMMARY_MUTED_TEXT_COLOR, SummaryBlockHeader, summaryStyles } from './SummaryBlockHeader';
+import { SummaryTableHeader, summaryTableStyles } from './SummaryTable';
 
-const RECORD_LABEL_KEYS: Record<RecordMetric, string> = {
-  weight: 'pr.weight',
-  reps: 'workout.reps',
-  duration: 'pr.duration',
-  distance: 'pr.distance',
-};
+// Неразрывный пробел: «80 кг» не должно разрываться на две строки в узкой колонке.
+const NON_BREAKING_SPACE = ' ';
 
-/** Одно упражнение с рекордом: изменившееся значение, старый рекорд и прирост. */
+/** Что написать мелко под значением: прошлый рекорд и прибавку или «впервые». */
+type RecordChange = { kind: 'gain'; previousValue: string; gainText: string } | { kind: 'firstTime' };
+
+/** Одна ячейка таблицы: значение рекордного подхода и, если рекорд в ней, его изменение. */
+interface RecordCell {
+  value: string;
+  change: RecordChange | null;
+}
+
+/** Одно упражнение с рекордом: вес и повторы (или время, дистанция) рекордного подхода. */
 interface RecordRow {
   id: string;
   name: string;
-  label: string;
-  value: string;
-  /** Старый рекорд, показывается только если эта тренировка его побила. */
-  previousValue: string | null;
-  /** Разница со старым рекордом в виде «+2.5 kg». */
-  gainText: string | null;
-  isFirstTime: boolean;
-  workingSetCount: number;
+  /** null для упражнений без веса. */
+  weight: RecordCell | null;
+  result: RecordCell;
 }
 
 type SetMetricValues = Pick<SetValues, 'weightKg' | 'reps' | 'durationSec' | 'distanceM'>;
@@ -46,6 +47,32 @@ function setValueForMetric(set: SetMetricValues, metric: RecordMetric): number |
   }
 }
 
+/** При равном рекорде показываем подход, где второй показатель больше: больше повторов или больше вес. */
+function tieBreakerValue(set: SetMetricValues, metric: RecordMetric): number {
+  if (metric === 'weight') return set.reps ?? 0;
+  if (metric === 'reps') return set.weightKg ?? 0;
+  return 0;
+}
+
+/** Подход, которым поставлен рекорд: лучший по выбранному показателю среди рабочих подходов. */
+function findRecordSet(sets: SetMetricValues[], metric: RecordMetric): SetMetricValues | null {
+  let recordSet: SetMetricValues | null = null;
+  for (const set of sets) {
+    const value = setValueForMetric(set, metric);
+    if (value == null) continue;
+    if (recordSet == null) {
+      recordSet = set;
+      continue;
+    }
+    const recordValue = setValueForMetric(recordSet, metric) ?? 0;
+    const isBetter = value > recordValue;
+    const isEqualButFuller =
+      value === recordValue && tieBreakerValue(set, metric) > tieBreakerValue(recordSet, metric);
+    if (isBetter || isEqualButFuller) recordSet = set;
+  }
+  return recordSet;
+}
+
 function formatRecordValue(value: number | null, metric: RecordMetric, formatters: ValueFormatters): string {
   if (value == null) return '—';
   switch (metric) {
@@ -60,13 +87,23 @@ function formatRecordValue(value: number | null, metric: RecordMetric, formatter
   }
 }
 
+function withNonBreakingSpaces(text: string): string {
+  return text.replace(/ /g, NON_BREAKING_SPACE);
+}
+
 interface NewRecordsBlockProps {
   saveResult: SaveResult;
   workoutDetail: WorkoutDetail | undefined;
   formatters: ValueFormatters;
 }
 
-/** Карточка «Новые рекорды» на экране итогов; ничего не рисует, если рекордов нет. */
+/**
+ * Карточка «Новые рекорды» на экране итогов в виде той же таблицы, что «Сегодня сделано»:
+ *   Жим лёжа   85 кг × 6
+ *              80 кг +5 кг
+ * Прошлый рекорд и прибавка пишутся в той ячейке, где был рекорд: под весом или под повторами.
+ * Ничего не рисует, если рекордов нет.
+ */
 export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRecordsBlockProps) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
@@ -80,64 +117,95 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
         .flatMap((record) => record.hits);
       if (hits.length === 0) continue;
 
+      const fields = getSetFieldsForExerciseType(workoutExercise.exercise.type);
+      const metric = pickRecordMetric(fields, hits);
       const workingSets = workoutExercise.sets.filter((set) => set.type !== 'warmup');
-      const metric = pickRecordMetric(getSetFieldsForExerciseType(workoutExercise.exercise.type), hits);
-      let bestInWorkout: number | null = null;
-      for (const set of workingSets) {
-        const value = setValueForMetric(set, metric);
-        if (value != null && (bestInWorkout == null || value > bestInWorkout)) bestInWorkout = value;
-      }
+      const recordSet = findRecordSet(workingSets, metric);
+      if (!recordSet) continue;
 
       const gain = recordGain(hits, metric);
-      let previousValue: string | null = null;
-      let gainText: string | null = null;
+      let change: RecordChange | null = null;
       if (gain && gain.previous != null && gain.best > gain.previous) {
-        previousValue = formatRecordValue(gain.previous, metric, formatters);
-        gainText = `+${formatRecordValue(gain.best - gain.previous, metric, formatters)}`;
+        change = {
+          kind: 'gain',
+          previousValue: withNonBreakingSpaces(formatRecordValue(gain.previous, metric, formatters)),
+          gainText: withNonBreakingSpaces(
+            `+${formatRecordValue(gain.best - gain.previous, metric, formatters)}`,
+          ),
+        };
+      } else if (gain && gain.previous == null) {
+        change = { kind: 'firstTime' };
       }
 
+      const name = exerciseName(workoutExercise.exercise, i18n.language);
+      if (fields.weight) {
+        rows.push({
+          id: workoutExercise.id,
+          name,
+          weight: {
+            value: formatRecordValue(recordSet.weightKg, 'weight', formatters),
+            change: metric === 'weight' ? change : null,
+          },
+          result: {
+            value: formatRecordValue(recordSet.reps, 'reps', formatters),
+            change: metric === 'reps' ? change : null,
+          },
+        });
+        continue;
+      }
       rows.push({
         id: workoutExercise.id,
-        name: exerciseName(workoutExercise.exercise, i18n.language),
-        label: translate(RECORD_LABEL_KEYS[metric]),
-        value: formatRecordValue(gain?.best ?? bestInWorkout, metric, formatters),
-        previousValue,
-        gainText,
-        isFirstTime: gain != null && gain.previous == null,
-        workingSetCount: workingSets.length,
+        name,
+        weight: null,
+        result: {
+          value: formatRecordValue(setValueForMetric(recordSet, metric), metric, formatters),
+          change,
+        },
       });
     }
     return rows;
-  }, [saveResult, workoutDetail, formatters, translate, i18n.language]);
+  }, [saveResult, workoutDetail, formatters, i18n.language]);
 
   if (recordRows.length === 0) return null;
+
+  const anyExerciseHasWeight = recordRows.some((row) => row.weight != null);
+  // Колонка называется «Повт.», пока в ней есть хоть одно упражнение с весом; у одного кардио — «Результат».
+  const resultTitle = anyExerciseHasWeight ? translate('workout.reps') : translate('workout.result');
 
   return (
     <Animated.View entering={FadeInDown.delay(80).duration(160)} style={{ marginTop: spacing.xl }}>
       <SummaryBlockHeader icon={Trophy} title={translate('workout.newRecords')} />
       <Card raised style={{ backgroundColor: colors.white, borderColor: 'transparent' }}>
-        {recordRows.map((row, index) => (
-          <View key={row.id} style={[styles.recordRow, index > 0 ? summaryStyles.divider : null]}>
-            <Text variant="bodyMedium" color={colors.black}>
+        <SummaryTableHeader
+          exerciseTitle={translate('workout.exerciseColumn')}
+          weightTitle={anyExerciseHasWeight ? translate('workout.weight') : null}
+          valuesTitle={resultTitle}
+        />
+
+        {recordRows.map((row) => (
+          <View key={row.id} style={[summaryTableStyles.exerciseRow, summaryStyles.divider]}>
+            <Text variant="bodyMedium" color={colors.black} style={summaryTableStyles.nameColumn}>
               {row.name}
             </Text>
-            <View style={styles.cells}>
-              <View style={styles.cell}>
-                <Text variant="label" color={SUMMARY_MUTED_TEXT_COLOR}>
-                  {row.label.toUpperCase()}
-                </Text>
-                <Text variant="h3" color={colors.black} tabular numberOfLines={1}>
-                  {row.value}
-                </Text>
-                <RecordChange row={row} />
-              </View>
-              <View style={styles.cell}>
-                <Text variant="label" color={SUMMARY_MUTED_TEXT_COLOR}>
-                  {translate('workout.setsDone').toUpperCase()}
-                </Text>
-                <Text variant="h3" color={colors.black} tabular>
-                  {row.workingSetCount}
-                </Text>
+            <View style={summaryTableStyles.valuesColumn}>
+              <View style={[summaryTableStyles.valueLine, styles.recordLine]}>
+                {anyExerciseHasWeight ? (
+                  <>
+                    <View style={[summaryTableStyles.weightColumn, styles.weightCell]}>
+                      {row.weight ? <RecordCellContent cell={row.weight} alignRight /> : null}
+                    </View>
+                    <Text
+                      variant="bodyMedium"
+                      color={SUMMARY_MUTED_TEXT_COLOR}
+                      style={summaryTableStyles.timesSignColumn}
+                    >
+                      {row.weight ? '×' : ''}
+                    </Text>
+                  </>
+                ) : null}
+                <View style={summaryTableStyles.repsColumn}>
+                  <RecordCellContent cell={row.result} />
+                </View>
               </View>
             </View>
           </View>
@@ -147,34 +215,37 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
   );
 }
 
-/** Старый рекорд и прирост под новым значением или «в первый раз» для упражнения, которое раньше не делали. */
-function RecordChange({ row }: { row: RecordRow }) {
+/** Значение ячейки и под ним мелко прошлый рекорд с прибавкой или «впервые». */
+function RecordCellContent({ cell, alignRight = false }: { cell: RecordCell; alignRight?: boolean }) {
   const colors = useColors();
   const { t: translate } = useTranslation();
+  const textAlignStyle = alignRight ? styles.alignRight : null;
 
-  if (row.previousValue && row.gainText) {
-    return (
-      <Text variant="caption" color={SUMMARY_MUTED_TEXT_COLOR} tabular numberOfLines={1}>
-        {row.previousValue}
-        {'  '}
-        <Text variant="caption" color={colors.success} tabular>
-          {row.gainText}
+  return (
+    <>
+      <Text variant="bodyMedium" color={colors.black} tabular style={textAlignStyle}>
+        {cell.value}
+      </Text>
+      {cell.change?.kind === 'gain' ? (
+        <Text variant="caption" color={SUMMARY_MUTED_TEXT_COLOR} tabular style={textAlignStyle}>
+          {cell.change.previousValue}{' '}
+          <Text variant="caption" color={colors.success} tabular>
+            {cell.change.gainText}
+          </Text>
         </Text>
-      </Text>
-    );
-  }
-  if (row.isFirstTime) {
-    return (
-      <Text variant="caption" color={colors.success} numberOfLines={1}>
-        {translate('workout.firstTime')}
-      </Text>
-    );
-  }
-  return null;
+      ) : null}
+      {cell.change?.kind === 'firstTime' ? (
+        <Text variant="caption" color={colors.success} style={textAlignStyle}>
+          {translate('workout.firstTime')}
+        </Text>
+      ) : null}
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
-  recordRow: { gap: spacing.xs, paddingVertical: spacing.md },
-  cells: { flexDirection: 'row', marginTop: spacing.xs },
-  cell: { width: '50%', gap: 2 },
+  // В ячейках по две строки текста, поэтому выравниваем по верху, а не по базовой линии.
+  recordLine: { alignItems: 'flex-start' },
+  weightCell: { alignItems: 'flex-end' },
+  alignRight: { textAlign: 'right' },
 });

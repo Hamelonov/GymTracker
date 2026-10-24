@@ -78,12 +78,12 @@ describe('formatSetsLine', () => {
   it('groups sets with the same weight', () => {
     expect(
       formatSetsLine([makeSet(80, 8), makeSet(80, 7), makeSet(80, 6)], weightRepsFields, formatters),
-    ).toBe('80 kg × 8/7/6');
+    ).toBe('80 kg × 8 / 7 / 6');
   });
   it('splits groups when the weight changes', () => {
     expect(
       formatSetsLine([makeSet(82.5, 7), makeSet(82.5, 6), makeSet(80, 8)], weightRepsFields, formatters),
-    ).toBe('82.5 kg × 7/6, 80 kg × 8');
+    ).toBe('82.5 kg × 7 / 6, 80 kg × 8');
   });
   it('exposes weight and reps separately for the table', () => {
     expect(
@@ -100,7 +100,7 @@ describe('formatSetsLine', () => {
         weightRepsFields,
         formatters,
       ),
-    ).toBe('30 kg × 12/10');
+    ).toBe('30 kg × 12 / 10');
   });
   it('shows reps only for bodyweight exercises', () => {
     expect(
@@ -109,7 +109,7 @@ describe('formatSetsLine', () => {
         getSetFieldsForExerciseType('bodyweight_reps'),
         formatters,
       ),
-    ).toBe('8/7/7');
+    ).toBe('8 / 7 / 7');
   });
   it('shows reps only for weighted-bodyweight sets done without extra weight', () => {
     expect(
@@ -118,13 +118,13 @@ describe('formatSetsLine', () => {
         getSetFieldsForExerciseType('weighted_bodyweight'),
         formatters,
       ),
-    ).toBe('8/7');
+    ).toBe('8 / 7');
   });
   it('formats timed sets', () => {
     const timedSet = (seconds: number): LineSet => ({ ...makeSet(null, null), durationSec: seconds });
     expect(
       formatSetsLine([timedSet(60), timedSet(45)], getSetFieldsForExerciseType('duration'), formatters),
-    ).toBe('1:00/0:45');
+    ).toBe('1:00 / 0:45');
   });
 });
 

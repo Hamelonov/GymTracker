@@ -94,10 +94,10 @@ export function groupSets(sets: LineSet[], fields: SetFields, formatters: ValueF
   return groups;
 }
 
-/** Одна группа текстом: «80 × 8/7/6» или «8/7/7». */
+/** Одна группа текстом: «80 × 8 / 7 / 6» или «8 / 7 / 7». */
 export function formatGroup(group: SetGroup, formatWeight: (kg: number) => string): string {
   // Значения кардио вроде «1 km 5:00» содержат пробелы, поэтому слэш между ними плохо читался бы.
-  const separator = group.values.some((value) => value.includes(' ')) ? ' · ' : '/';
+  const separator = group.values.some((value) => value.includes(' ')) ? ' · ' : ' / ';
   const joinedValues = group.values.join(separator);
   return group.weightKg == null ? joinedValues : `${formatWeight(group.weightKg)} × ${joinedValues}`;
 }

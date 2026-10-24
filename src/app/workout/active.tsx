@@ -1,13 +1,12 @@
 import { router, useFocusEffect } from 'expo-router';
 import { push } from '@/lib/nav';
-import { Plus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { ensureNotificationPermission } from '@/lib/notifications';
-import { getExercisesByIds, getLastPerformances } from '@/db/repo/exercises';
+import { getExercise, getExercisesByIds, getLastPerformances } from '@/db/repo/exercises';
 import { getRoutine, routineInputFromWorkout, updateRoutine } from '@/db/repo/routines';
 import { saveWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
@@ -15,6 +14,11 @@ import type { ActiveExercise, SetType } from '@/domain/types';
 import { countWorkingSets } from '@/domain/volume';
 import { formatDateTime } from '@/domain/dates';
 import { ActiveWorkoutHeader } from '@/features/workout/ActiveWorkoutHeader';
+import { AddExerciseButtons } from '@/features/workout/quickEntry/AddExerciseButtons';
+import { QuickEntrySheet } from '@/features/workout/quickEntry/QuickEntrySheet';
+import { quickEntryToastMessage } from '@/features/workout/quickEntry/quickEntryToastMessage';
+import type { PreviewLine } from '@/features/workout/quickEntry/useQuickEntry';
+import type { QuickEntryCommit } from '@/store/activeWorkoutQuickEntry';
 import { ExerciseCard } from '@/features/workout/ExerciseCard';
 import { exerciseDisplayDescription } from '@/features/workout/exerciseDisplayName';
 import { RestTimerBar } from '@/features/workout/RestTimerBar';
@@ -31,7 +35,7 @@ import { useActiveWorkout } from '@/store/activeWorkout';
 import { useLastSave } from '@/store/lastSave';
 import { useRestTimer } from '@/store/restTimer';
 import { useSettings } from '@/store/settings';
-import { Button, Icon, confirm, spacing, toast, useColors } from '@/ui';
+import { Button, confirm, spacing, toast, useColors } from '@/ui';
 
 const SUPERSET_COLORS = ['#F5A524', '#3E63DD', '#30A46C', '#E5484D', '#8E4EC6', '#12A594'];
 
@@ -53,7 +57,8 @@ type SheetState =
   | { kind: 'description'; workoutExerciseId: string }
   | { kind: 'note'; workoutExerciseId: string }
   | { kind: 'finish' }
-  | { kind: 'name' };
+  | { kind: 'name' }
+  | { kind: 'quickEntry' };
 
 export default function ActiveWorkoutScreen() {
   const colors = useColors();
@@ -67,6 +72,7 @@ export default function ActiveWorkoutScreen() {
   const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
   const [nameDraft, setNameDraft] = useState('');
   const [noteDraft, setNoteDraft] = useState('');
+  const [quickEntryText, setQuickEntryText] = useState('');
   const startRest = useRestTimer((state) => state.start);
   useEffect(() => {
     if (settings.restNotifications) void ensureNotificationPermission();
@@ -98,15 +104,19 @@ export default function ActiveWorkoutScreen() {
     [settings.weightUnit, settings.distanceUnit],
   );
   // Отдых, заданный для этого упражнения в тренировке, иначе для самого упражнения, иначе значение по умолчанию в приложении.
+  // Читает стор напрямую: карточка, только что созданная быстрой записью, ещё не попала в отрендеренный workout.
   const restSecondsFor = useCallback(
     (workoutExerciseId: string) => {
-      const workoutExercise = workout?.exercises.find((exercise) => exercise.id === workoutExerciseId);
+      const workoutExercise = getWorkoutStore().workout?.exercises.find(
+        (exercise) => exercise.id === workoutExerciseId,
+      );
       if (!workoutExercise) return settings.defaultRestSeconds;
       if (workoutExercise.restSeconds != null) return workoutExercise.restSeconds;
-      const exerciseDetails = exercisesById.get(workoutExercise.exerciseId);
+      const exerciseDetails =
+        exercisesById.get(workoutExercise.exerciseId) ?? getExercise(workoutExercise.exerciseId);
       return exerciseDetails?.restSeconds ?? settings.defaultRestSeconds;
     },
-    [workout?.exercises, exercisesById, settings.defaultRestSeconds],
+    [getWorkoutStore, exercisesById, settings.defaultRestSeconds],
   );
 
   // Последние значения для стабильных обработчиков ниже. Обработчики не меняют идентичность,
@@ -126,18 +136,40 @@ export default function ActiveWorkoutScreen() {
     };
   });
 
+  // Общее для галочки и быстрой записи: отдых стартует только в новой тренировке и при включённом автозапуске.
+  const startRestAfterCompletedSet = useCallback(
+    (workoutExerciseId: string) => {
+      const latestValues = latestValuesRef.current;
+      if (latestValues.mode !== 'new' || !latestValues.autoStartRest) return;
+      const restSeconds = latestValues.restSecondsFor(workoutExerciseId);
+      // Запускаем таймер отдыха после этого кадра, чтобы сначала отрисовался тик.
+      if (restSeconds > 0) requestAnimationFrame(() => startRest(restSeconds));
+    },
+    [startRest],
+  );
+
   const toggleSet = useCallback(
     (workoutExerciseId: string, setId: string) => {
       const toggleResult = getWorkoutStore().toggleSet(workoutExerciseId, setId);
-      const latestValues = latestValuesRef.current;
-      if (toggleResult?.completed && latestValues.mode === 'new' && latestValues.autoStartRest) {
-        const restSeconds = latestValues.restSecondsFor(workoutExerciseId);
-        // Запускаем таймер отдыха после этого кадра, чтобы сначала отрисовался тик.
-        if (restSeconds > 0) requestAnimationFrame(() => startRest(restSeconds));
-      }
+      if (toggleResult?.completed) startRestAfterCompletedSet(workoutExerciseId);
     },
-    [getWorkoutStore, startRest],
+    [getWorkoutStore, startRestAfterCompletedSet],
   );
+
+  const openQuickEntry = () => {
+    setQuickEntryText('');
+    setSheet({ kind: 'quickEntry' });
+  };
+
+  const submitQuickEntry = (commits: QuickEntryCommit[], previewLines: PreviewLine[]) => {
+    const outcome = getWorkoutStore().addQuickEntry(commits);
+    setSheet({ kind: 'none' });
+    if (!outcome) return;
+    if (outcome.lastWorkoutExerciseIdWithNewSets) {
+      startRestAfterCompletedSet(outcome.lastWorkoutExerciseIdWithNewSets);
+    }
+    toast(quickEntryToastMessage(outcome, previewLines, translate));
+  };
 
   const deleteSetWithUndo = useCallback(
     (workoutExerciseId: string, setId: string) => {
@@ -386,16 +418,10 @@ export default function ActiveWorkoutScreen() {
             );
           })}
 
-          <Button
-            title={translate('workout.addExercise')}
-            size="lg"
-            fullWidth
-            variant={hasNoExercises ? 'primary' : 'secondary'}
-            icon={
-              <Icon icon={Plus} size={20} color={hasNoExercises ? 'onAccent' : 'text'} strokeWidth={2.5} />
-            }
-            onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
-            style={{ marginTop: spacing.sm }}
+          <AddExerciseButtons
+            isPrimary={hasNoExercises}
+            onPickFromList={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
+            onQuickEntry={openQuickEntry}
           />
           {session.mode === 'new' ? (
             <Button
@@ -473,6 +499,15 @@ export default function ActiveWorkoutScreen() {
         onNoteDraftChange={setNoteDraft}
         lastNote={currentExercise ? lastNoteByExerciseId.get(currentExercise.exerciseId) : undefined}
         onSave={saveNoteAndClose}
+      />
+
+      <QuickEntrySheet
+        visible={sheet.kind === 'quickEntry'}
+        onClose={closeSheet}
+        text={quickEntryText}
+        onTextChange={setQuickEntryText}
+        exerciseIdsInWorkout={exerciseIds}
+        onSubmit={submitQuickEntry}
       />
 
       <RenameWorkoutSheet

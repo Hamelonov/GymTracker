@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { deferredStorage } from './kvStorage';
+import { applyQuickEntry, type QuickEntryCommit, type QuickEntryOutcome } from './activeWorkoutQuickEntry';
+import { makeSet, makeSetsFromLastPerformance } from './activeWorkoutSets';
 import { newId } from '@/domain/ids';
 import type { ActiveExercise, ActiveSet, ActiveWorkout, SetType, SetValues } from '@/domain/types';
 import { EMPTY_SET_VALUES } from '@/domain/types';
@@ -23,6 +25,8 @@ interface ActiveWorkoutState {
   setNotes: (notes: string) => void;
   setStartedAt: (startedAt: number) => void;
   addExercises: (exerciseIds: string[]) => void;
+  /** Подходы из быстрой записи текстом; null, если тренировка не идёт. */
+  addQuickEntry: (commits: QuickEntryCommit[]) => Omit<QuickEntryOutcome, 'workout'> | null;
   replaceExercise: (workoutExerciseId: string, exerciseId: string) => void;
   removeExercise: (workoutExerciseId: string) => ActiveExercise | null;
   restoreExercise: (exercise: ActiveExercise, index: number) => void;
@@ -43,24 +47,6 @@ interface ActiveWorkoutState {
   removeSet: (workoutExerciseId: string, setId: string) => { set: ActiveSet; index: number } | null;
   restoreSet: (workoutExerciseId: string, set: ActiveSet, index: number) => void;
   completeAllSets: () => void;
-}
-
-function makeSet(previous: SetValues | null, type: SetType = 'normal', initialValues?: SetValues): ActiveSet {
-  return {
-    id: newId(),
-    type,
-    completed: false,
-    completedAt: null,
-    previous,
-    ...EMPTY_SET_VALUES,
-    ...(initialValues ?? {}),
-  };
-}
-
-/** Пустые подходы, заранее заполненные «прошлыми» значениями с прошлого выполнения упражнения. */
-function makeSetsFromLastPerformance(lastSets: SetValues[] | undefined): ActiveSet[] {
-  const setCount = Math.max(1, lastSets?.length ?? 0);
-  return Array.from({ length: setCount }, (_, setIndex) => makeSet(lastSets?.[setIndex] ?? null));
 }
 
 function nextSupersetGroup(exercises: ActiveExercise[]): number {
@@ -174,6 +160,18 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
               })),
             ],
           }));
+        },
+        addQuickEntry: (commits) => {
+          const workout = get().workout;
+          if (!workout) return null;
+          const lastPerformanceByExerciseId = getLastPerformances(commits.map((commit) => commit.exerciseId));
+          const outcome = applyQuickEntry(workout, commits, lastPerformanceByExerciseId, Date.now());
+          set({ workout: outcome.workout });
+          return {
+            workoutExerciseIds: outcome.workoutExerciseIds,
+            lastWorkoutExerciseIdWithNewSets: outcome.lastWorkoutExerciseIdWithNewSets,
+            addedSetCount: outcome.addedSetCount,
+          };
         },
         replaceExercise: (workoutExerciseId, exerciseId) => {
           const previousPerformance = getLastPerformances([exerciseId]).get(exerciseId);

@@ -9,7 +9,8 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
 type Size = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends Omit<AnimatedPressableProps, 'children' | 'style'> {
-  title: string;
+  /** Без подписи кнопка показывает только иконку. */
+  title?: string;
   variant?: Variant;
   size?: Size;
   icon?: React.ReactNode;
@@ -86,9 +87,11 @@ export function Button({
       ) : (
         <View style={styles.content}>
           {icon ? <View style={styles.icon}>{icon}</View> : null}
-          <Text variant={size === 'sm' ? 'caption' : 'h3'} color={labelColor}>
-            {title}
-          </Text>
+          {title ? (
+            <Text variant={size === 'sm' ? 'caption' : 'h3'} color={labelColor}>
+              {title}
+            </Text>
+          ) : null}
           {trailingIcon ? <View style={styles.icon}>{trailingIcon}</View> : null}
         </View>
       )}

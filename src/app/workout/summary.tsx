@@ -16,7 +16,7 @@ import { Button, Text, spacing, useColors } from '@/ui';
 
 export default function SummaryScreen() {
   const colors = useColors();
-  const { t: translate } = useTranslation();
+  const { t: translate, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const saveResult = useLastSave((state) => state.result);
   const settings = useSettings();
@@ -27,13 +27,18 @@ export default function SummaryScreen() {
   const weightUnit = settings.weightUnit;
   const distanceUnit = settings.distanceUnit;
 
+  const usesDecimalComma = i18n.language.startsWith('ru');
   const formatters = useMemo(
     () => ({
-      weight: (weightKg: number) => formatWeight(weightKg, weightUnit),
+      // «82,5 кг» в русском интерфейсе, «82.5 kg» в английском.
+      weight: (weightKg: number) => {
+        const weightText = formatWeight(weightKg, weightUnit);
+        return usesDecimalComma ? weightText.replace('.', ',') : weightText;
+      },
       duration: (seconds: number) => formatDuration(seconds),
       distance: (meters: number) => formatDistance(meters, distanceUnit),
     }),
-    [weightUnit, distanceUnit],
+    [weightUnit, distanceUnit, usesDecimalComma],
   );
 
   const closeSummary = () => {
@@ -81,7 +86,7 @@ export default function SummaryScreen() {
         </Animated.View>
 
         <NewRecordsBlock saveResult={saveResult} workoutDetail={workoutDetail} formatters={formatters} />
-        <TodayDoneBlock workoutDetail={workoutDetail} formatters={formatters} weightUnit={weightUnit} />
+        <TodayDoneBlock workoutDetail={workoutDetail} formatters={formatters} />
       </ScrollView>
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.lg }]}>
         <Button
