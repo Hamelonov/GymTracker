@@ -75,8 +75,6 @@ const en = {
     weekSummary: 'This week',
     workoutsThisWeek_one: '{{count}} workout',
     workoutsThisWeek_other: '{{count}} workouts',
-    streak_one: '{{count}} week streak',
-    streak_other: '{{count}} week streak',
     unfiled: 'Routines',
     folderName: 'Folder name',
     deleteFolder: 'Delete folder',

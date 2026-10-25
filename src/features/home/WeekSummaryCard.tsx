@@ -1,31 +1,14 @@
 import { addDays, format } from 'date-fns';
 import { Dumbbell } from 'lucide-react-native';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
-import { countWorkoutsByDay, listWorkoutStartTimes } from '@/db/repo/workouts';
+import { countWorkoutsByDay } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import { dateLocale, toDayKey, getWeekStart } from '@/domain/dates';
 import { Card, Icon, Text, spacing, useColors } from '@/ui';
 
-/** Считает подряд идущие недели (включая текущую, если в ней есть тренировка) хотя бы с одной тренировкой. */
-function countWeekStreak(workoutStartTimestamps: number[], now: number): number {
-  if (workoutStartTimestamps.length === 0) return 0;
-  const weeksWithWorkouts = new Set(
-    workoutStartTimestamps.map((timestamp) => getWeekStart(timestamp).getTime()),
-  );
-  let checkedWeekStart = getWeekStart(now).getTime();
-  let streak = 0;
-  // Текущая неделя может быть ещё пустой; тогда серия считается с прошлой недели.
-  if (!weeksWithWorkouts.has(checkedWeekStart)) checkedWeekStart = addDays(checkedWeekStart, -7).getTime();
-  while (weeksWithWorkouts.has(checkedWeekStart)) {
-    streak += 1;
-    checkedWeekStart = addDays(checkedWeekStart, -7).getTime();
-  }
-  return streak;
-}
-
-/** Карточка на главном экране с семью днями текущей недели и недельной серией. */
+/** Карточка на главном экране с семью днями текущей недели и числом тренировок за неделю. */
 export function WeekSummaryCard({ now }: { now: number }) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
@@ -33,11 +16,6 @@ export function WeekSummaryCard({ now }: { now: number }) {
   const workoutCountByDay = useQuery(
     () => countWorkoutsByDay(currentWeekStart.getTime(), addDays(currentWeekStart, 7).getTime()),
     [currentWeekStart.getTime()],
-  );
-  const workoutStartTimestamps = useQuery(() => listWorkoutStartTimes(), []);
-  const weekStreak = useMemo(
-    () => countWeekStreak(workoutStartTimestamps, now),
-    [workoutStartTimestamps, now],
   );
   const weekWorkoutCount = [...workoutCountByDay.values()].reduce((sum, count) => sum + count, 0);
 
@@ -49,7 +27,6 @@ export function WeekSummaryCard({ now }: { now: number }) {
         </Text>
         <Text variant="caption" color="muted">
           {translate('home.workoutsThisWeek', { count: weekWorkoutCount })}
-          {weekStreak > 0 ? ` · ${translate('home.streak', { count: weekStreak })}` : ''}
         </Text>
       </View>
       <View style={styles.daysRow}>
