@@ -1,3 +1,11 @@
+// Hermes не знает русских форм множественного числа (Intl.PluralRules отдаёт одну форму на всё),
+// из-за чего i18next писал «2 тренировок». Полифилл formatjs ставится принудительно: он лёгкий,
+// а проверка «нужен ли» на Hermes сама ошибается. Порядок импортов важен: сначала локали, потом правила.
+import '@formatjs/intl-getcanonicallocales/polyfill.js';
+import '@formatjs/intl-locale/polyfill.js';
+import '@formatjs/intl-pluralrules/polyfill-force.js';
+import '@formatjs/intl-pluralrules/locale-data/en.js';
+import '@formatjs/intl-pluralrules/locale-data/ru.js';
 import { getLocales } from 'expo-localization';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';

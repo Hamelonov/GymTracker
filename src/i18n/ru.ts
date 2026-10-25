@@ -53,8 +53,21 @@ const ru = {
   tabs: {
     workout: 'Тренировка',
     history: 'История',
+    log: 'Журнал',
     exercises: 'Упражнения',
     profile: 'Профиль',
+  },
+  log: {
+    title: 'Прогресс в тренировках',
+    columnDay: 'Дата',
+    selectExercise: 'Упражнение',
+    columnWeight: 'Вес / Усложнение',
+    columnSets: 'Подход № / Повтор',
+    columnTotal: 'Итого',
+    columnNote: 'Примечание',
+    bodyweight: 'свой вес',
+    empty: 'Журнал пока пуст',
+    emptyHint: 'Заверши первую тренировку — здесь появятся таблицы по каждому упражнению.',
   },
   home: {
     title: 'Тренировка',

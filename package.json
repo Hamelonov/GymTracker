@@ -25,6 +25,9 @@
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
+    "@formatjs/intl-getcanonicallocales": "^3.2.12",
+    "@formatjs/intl-locale": "^5.3.12",
+    "@formatjs/intl-pluralrules": "^6.3.16",
     "@shopify/flash-list": "2.3.2",
     "@shopify/react-native-skia": "2.14.0",
     "date-fns": "^4.4.0",

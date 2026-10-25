@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Dumbbell, History, Library, User } from 'lucide-react-native';
+import { Dumbbell, History, Library, Table2, User } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet } from 'react-native';
@@ -45,6 +45,13 @@ export default function TabLayout() {
           options={{
             title: translate('tabs.history'),
             tabBarIcon: ({ color }) => <History size={23} color={color} strokeWidth={2.2} />,
+          }}
+        />
+        <Tabs.Screen
+          name="log"
+          options={{
+            title: translate('tabs.log'),
+            tabBarIcon: ({ color }) => <Table2 size={23} color={color} strokeWidth={2.2} />,
           }}
         />
         <Tabs.Screen

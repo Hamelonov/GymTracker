@@ -53,8 +53,21 @@ const en = {
   tabs: {
     workout: 'Workout',
     history: 'History',
+    log: 'Log',
     exercises: 'Exercises',
     profile: 'Profile',
+  },
+  log: {
+    title: 'Training progress',
+    columnDay: 'Date',
+    selectExercise: 'Exercise',
+    columnWeight: 'Weight / Variation',
+    columnSets: 'Set # / Reps',
+    columnTotal: 'Total',
+    columnNote: 'Note',
+    bodyweight: 'bodyweight',
+    empty: 'The log is empty',
+    emptyHint: 'Finish your first workout and a table for every exercise will appear here.',
   },
   home: {
     title: 'Workout',
