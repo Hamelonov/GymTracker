@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { MuscleGroup } from '@/domain/types';
 import { useColors } from '@/ui';
 import { MuscleMap } from './MuscleMap';
-import { sideForMuscle } from './muscleRegions';
+import { sideForMuscle } from './bodyHighlighterSlugs';
 
 interface MuscleThumbnailProps {
   primary: MuscleGroup;
