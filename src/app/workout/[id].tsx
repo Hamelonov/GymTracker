@@ -10,6 +10,7 @@ import { deleteWorkout, getWorkout, workoutToActiveWorkout } from '@/db/repo/wor
 import { useQuery } from '@/db/version';
 import { formatDateTime } from '@/domain/dates';
 import { getSetFieldsForExerciseType } from '@/domain/types';
+import { MuscleThumbnail } from '@/features/muscles/MuscleThumbnail';
 import { formatSetLineWithExtras } from '@/features/workout/format';
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
 import { useActiveWorkout } from '@/store/activeWorkout';
@@ -167,7 +168,16 @@ export default function WorkoutDetailScreen() {
             <Pressable
               onPress={() => push({ pathname: '/exercise/[id]', params: { id: workoutExercise.exerciseId } })}
             >
-              <Text variant="h3">{exerciseName(workoutExercise.exercise, i18n.language)}</Text>
+              <View style={styles.exerciseTitleRow}>
+                <MuscleThumbnail
+                  primary={workoutExercise.exercise.muscleGroup}
+                  secondary={workoutExercise.exercise.secondaryMuscles}
+                  size={32}
+                />
+                <Text variant="h3" style={styles.exerciseTitle}>
+                  {exerciseName(workoutExercise.exercise, i18n.language)}
+                </Text>
+              </View>
             </Pressable>
             {workoutExercise.note ? (
               <Text variant="caption" color="muted" style={{ marginTop: 4 }}>
@@ -239,6 +249,8 @@ export default function WorkoutDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  exerciseTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  exerciseTitle: { flex: 1 },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   setNumberBadge: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   recordBadges: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 4 },

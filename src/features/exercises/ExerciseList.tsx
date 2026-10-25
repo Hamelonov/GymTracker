@@ -7,6 +7,7 @@ import { exerciseName, getExerciseUsage, listExercises } from '@/db/repo/exercis
 import type { ExerciseRow } from '@/db/schema';
 import { useQuery } from '@/db/version';
 import { MUSCLE_GROUPS, type MuscleGroup } from '@/domain/types';
+import { MuscleThumbnail } from '@/features/muscles/MuscleThumbnail';
 import {
   Chip,
   EmptyState,
@@ -35,7 +36,6 @@ interface ExerciseListItem {
   exercise: ExerciseRow;
   name: string;
   subtitle: string;
-  initial: string;
 }
 
 // Создание Intl.Collator медленное, поэтому для каждого языка он кэшируется.
@@ -74,14 +74,11 @@ const ExerciseRowView = memo(function ExerciseRowView({
         pressed ? { opacity: 0.7 } : null,
       ]}
     >
-      <View
-        style={[
-          styles.avatar,
-          { backgroundColor: item.exercise.isCustom ? colors.accentSoft : colors.surfaceAlt },
-        ]}
-      >
-        <Text variant="h3">{item.initial}</Text>
-      </View>
+      <MuscleThumbnail
+        primary={item.exercise.muscleGroup}
+        secondary={item.exercise.secondaryMuscles}
+        size={44}
+      />
       <View style={styles.rowText}>
         <Text variant="bodyMedium" numberOfLines={1}>
           {item.name}
@@ -133,7 +130,6 @@ export function ExerciseList({
       return {
         exercise,
         name,
-        initial: name.slice(0, 1).toUpperCase(),
         subtitle: `${translate(`muscles.${exercise.muscleGroup}`)} · ${translate(`equipment.${exercise.equipment}`)}${usageSuffix}`,
       };
     });
@@ -277,7 +273,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.lg,
   },
-  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   rowText: { flex: 1 },
   checkCircle: {
     width: 24,

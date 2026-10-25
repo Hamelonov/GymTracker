@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { exerciseDescription } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import { formatDuration } from '@/domain/units';
+import { MuscleMapCard } from '@/features/muscles/MuscleMapCard';
 import { push } from '@/lib/nav';
 import { Button, Card, Chip, Icon, SectionTitle, Text, spacing } from '@/ui';
 
@@ -19,11 +20,8 @@ export function ExerciseAboutTab({ exercise, timesPerformed }: ExerciseAboutTabP
   const description = exerciseDescription(exercise, i18n.language);
   return (
     <View>
+      <MuscleMapCard exercise={exercise} />
       <View style={styles.tagChips}>
-        <Chip label={translate(`muscles.${exercise.muscleGroup}`)} selected small />
-        {exercise.secondaryMuscles.map((muscle) => (
-          <Chip key={muscle} label={translate(`muscles.${muscle}`)} small />
-        ))}
         <Chip label={translate(`equipment.${exercise.equipment}`)} small />
         <Chip label={translate(`types.${exercise.type}`)} small />
         {exercise.isCustom ? <Chip label={translate('exercise.custom')} small /> : null}
@@ -62,5 +60,5 @@ export function ExerciseAboutTab({ exercise, timesPerformed }: ExerciseAboutTabP
 }
 
 const styles = StyleSheet.create({
-  tagChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  tagChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.md },
 });

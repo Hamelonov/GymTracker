@@ -223,6 +223,8 @@ const ru = {
     name: 'Название',
     namePlaceholder: 'напр. Жим гантелей на наклонной',
     muscleGroup: 'Основная мышца',
+    bodyFront: 'Спереди',
+    bodyBack: 'Сзади',
     secondaryMuscles: 'Вспомогательные мышцы',
     equipment: 'Оборудование',
     type: 'Что записываем',

@@ -217,6 +217,8 @@ const en = {
     name: 'Name',
     namePlaceholder: 'e.g. Incline dumbbell press',
     muscleGroup: 'Primary muscle',
+    bodyFront: 'Front',
+    bodyBack: 'Back',
     secondaryMuscles: 'Secondary muscles',
     equipment: 'Equipment',
     type: 'Measurement type',

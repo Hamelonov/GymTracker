@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { exerciseName } from '@/db/repo/exercises';
+import { MuscleThumbnail } from '@/features/muscles/MuscleThumbnail';
 import type { ExerciseRow } from '@/db/schema';
 import type { ActiveExercise, SetType, SetValues, DistanceUnit, WeightUnit } from '@/domain/types';
 import { getSetFieldsForExerciseType } from '@/domain/types';
@@ -71,6 +72,13 @@ export const ExerciseCard = memo(function ExerciseCard({
     >
       {supersetColor ? <View style={[styles.supersetBar, { backgroundColor: supersetColor }]} /> : null}
       <View style={styles.header}>
+        {exerciseDetails ? (
+          <MuscleThumbnail
+            primary={exerciseDetails.muscleGroup}
+            secondary={exerciseDetails.secondaryMuscles}
+            size={36}
+          />
+        ) : null}
         <View style={styles.titleWrapper}>
           <Text variant="h3" numberOfLines={2}>
             {name}
