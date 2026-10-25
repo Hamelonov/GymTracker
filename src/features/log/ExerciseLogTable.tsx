@@ -20,7 +20,7 @@ type Units = { weight: WeightUnit; distance: DistanceUnit };
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 /** Ширины колонок фиксированы: таблица шире экрана и прокручивается по горизонтали. */
-const COLUMN_WIDTHS = { day: 124, weight: 170, sets: 220, total: 70, note: 160 };
+const COLUMN_WIDTHS = { day: 124, weight: 170, sets: 150, total: 70, note: 160 };
 const SET_SEPARATOR = ' - ';
 
 function formatNumber(value: number): string {
@@ -52,12 +52,26 @@ function formatWeights(sets: SetRow[], fields: SetFields, units: Units, translat
   return hasNumbers ? `${joined} ${unitLabel}` : joined;
 }
 
-/** Значение одного подхода: повторы с RIR и RPE, время или дистанция со временем. */
-function formatSetValue(set: SetRow, fields: SetFields, units: Units): string {
+/** Буквы типа подхода — те же, что в записи текстом: разминка, отказ, дроп-сет. */
+const SET_TYPE_SUFFIX_RU: Record<SetRow['type'], string> = {
+  normal: '',
+  warmup: 'р',
+  failure: 'о',
+  drop: 'д',
+};
+const SET_TYPE_SUFFIX_EN: Record<SetRow['type'], string> = {
+  normal: '',
+  warmup: 'w',
+  failure: 'f',
+  drop: 'd',
+};
+
+/** Значение одного подхода в записи режима «Ручка»: «9(1)о», «1:00», «5 км 25:00». */
+function formatSetValue(set: SetRow, fields: SetFields, units: Units, language: string): string {
+  const suffixes = language.startsWith('ru') ? SET_TYPE_SUFFIX_RU : SET_TYPE_SUFFIX_EN;
   if (fields.reps) {
     const rir = set.rir != null ? `(${set.rir})` : '';
-    const rpe = set.rpe != null ? ` @${formatNumber(set.rpe)}` : '';
-    return `${set.reps ?? '—'}${rir}${rpe}`;
+    return `${set.reps ?? '—'}${suffixes[set.type]}${rir}`;
   }
   const parts: string[] = [];
   if (fields.distance && set.distanceM != null) {
@@ -66,18 +80,12 @@ function formatSetValue(set: SetRow, fields: SetFields, units: Units): string {
     );
   }
   if (fields.duration && set.durationSec != null) parts.push(formatDuration(set.durationSec));
-  return parts.join(' ') || '—';
+  return `${parts.join(' ') || '—'}${suffixes[set.type]}`;
 }
 
-/** Колонка «Подход № / Повтор»: «1/10 - 2/9 - 3/8», разминка и отказ помечены буквой. */
-function formatSets(sets: SetRow[], fields: SetFields, units: Units, translate: Translate): string {
-  return sets
-    .map((set, index) => {
-      const typeMark =
-        set.type === 'normal' ? '' : ` ${translate(`workout.setTypeShort.${set.type}`).toLowerCase()}`;
-      return `${index + 1}/${formatSetValue(set, fields, units)}${typeMark}`;
-    })
-    .join(SET_SEPARATOR);
+/** Колонка «Подходы» — как в записи во время тренировки: «6/6/6» — три подхода по шесть. */
+function formatSets(sets: SetRow[], fields: SetFields, units: Units, language: string): string {
+  return sets.map((set) => formatSetValue(set, fields, units, language)).join('/');
 }
 
 /** Колонка «Итого»: сумма повторов, общее время или дистанция. */
@@ -133,7 +141,7 @@ export function ExerciseLogTable({ entries, fields, units }: ExerciseLogTablePro
             </View>
             <View style={[styles.cell, borderStyle, { width: COLUMN_WIDTHS.sets }]}>
               <Text variant="caption" tabular>
-                {formatSets(entry.sets, fields, units, translate)}
+                {formatSets(entry.sets, fields, units, i18n.language)}
               </Text>
             </View>
             <View style={[styles.cell, borderStyle, { width: COLUMN_WIDTHS.total }]}>

@@ -62,7 +62,7 @@ const en = {
     columnDay: 'Date',
     selectExercise: 'Exercise',
     columnWeight: 'Weight / Variation',
-    columnSets: 'Set # / Reps',
+    columnSets: 'Sets',
     columnTotal: 'Total',
     columnNote: 'Note',
     bodyweight: 'bodyweight',
