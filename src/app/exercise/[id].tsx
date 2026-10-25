@@ -6,7 +6,6 @@ import { View } from 'react-native';
 import { getExerciseHistory, exerciseName, getExercise, getRecordDetails } from '@/db/repo/exercises';
 import { useQuery } from '@/db/version';
 import { recordTypesForExercise } from '@/domain/records';
-import { getSetFieldsForExerciseType } from '@/domain/types';
 import { ExerciseAboutTab } from '@/features/exercises/ExerciseAboutTab';
 import { ExerciseChartsTab, isChartMetric, type ChartMetric } from '@/features/exercises/ExerciseChartsTab';
 import { ExerciseHistoryTab } from '@/features/exercises/ExerciseHistoryTab';
@@ -80,11 +79,7 @@ export default function ExerciseDetailScreen() {
       ) : null}
 
       {activeTab === 'history' ? (
-        <ExerciseHistoryTab
-          history={history}
-          fields={getSetFieldsForExerciseType(exercise.type)}
-          units={units}
-        />
+        <ExerciseHistoryTab history={history} exerciseType={exercise.type} units={units} />
       ) : null}
 
       {activeTab === 'charts' ? (

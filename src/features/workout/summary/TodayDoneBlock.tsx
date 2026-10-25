@@ -5,15 +5,14 @@ import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { exerciseName } from '@/db/repo/exercises';
 import type { WorkoutDetail } from '@/db/repo/workouts';
-import { formatGroup, groupSets, type ValueFormatters } from '@/domain/summary';
-import { getSetFieldsForExerciseType } from '@/domain/types';
+import { buildPenGroups, penTimesSign } from '@/domain/pen/serializeWorkout';
+import { useSettings } from '@/store/settings';
 import { Card, Text, spacing, useColors } from '@/ui';
 import { SUMMARY_MUTED_TEXT_COLOR, SummaryBlockHeader, summaryStyles } from './SummaryBlockHeader';
 import { SummaryTableHeader, summaryTableStyles } from './SummaryTable';
 
 interface TodayDoneBlockProps {
   workoutDetail: WorkoutDetail | undefined;
-  formatters: ValueFormatters;
 }
 
 /** Одна строка внутри упражнения: подходы, сделанные с одним весом. */
@@ -37,26 +36,33 @@ interface ExerciseRow {
  * Каждый новый вес — отдельная строка в тех же колонках «Вес» и «Подходы/Повторы».
  * Если в тренировке нет упражнений, блок не показывается.
  */
-export function TodayDoneBlock({ workoutDetail, formatters }: TodayDoneBlockProps) {
+export function TodayDoneBlock({ workoutDetail }: TodayDoneBlockProps) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
+  const weightUnit = useSettings((state) => state.weightUnit);
+  const distanceUnit = useSettings((state) => state.distanceUnit);
+  // Подходы пишутся так же, как в режиме «Ручка»: «70кг х 9(1)/8/8».
+  const penOptions = useMemo(
+    () => ({ weightUnit, distanceUnit, language: i18n.language }),
+    [weightUnit, distanceUnit, i18n.language],
+  );
 
   const exerciseRows = useMemo<ExerciseRow[]>(() => {
     return (workoutDetail?.exercises ?? []).map((workoutExercise) => {
-      const fields = getSetFieldsForExerciseType(workoutExercise.exercise.type);
-      const groups = groupSets(workoutExercise.sets, fields, formatters);
-      const lines = groups.map((group) => ({
-        weight: group.weightKg != null ? formatters.weight(group.weightKg) : null,
-        // Вес показываем в своей колонке, поэтому здесь форматируем группу без него.
-        setsAndReps: formatGroup({ ...group, weightKg: null }, formatters.weight),
-      }));
+      // Разминочные подходы остаются в списке с суффиксом «р», как и в тексте «Ручки».
+      const lines = buildPenGroups(workoutExercise.sets, workoutExercise.exercise.type, penOptions).map(
+        (group) => ({
+          weight: group.weightText,
+          setsAndReps: group.valuesText || '—',
+        }),
+      );
       return {
         id: workoutExercise.id,
         name: exerciseName(workoutExercise.exercise, i18n.language),
         lines: lines.length > 0 ? lines : [{ weight: null, setsAndReps: '—' }],
       };
     });
-  }, [workoutDetail, formatters, i18n.language]);
+  }, [workoutDetail, penOptions, i18n.language]);
 
   const anyExerciseHasWeight = exerciseRows.some((row) => row.lines.some((line) => line.weight != null));
 
@@ -95,7 +101,7 @@ export function TodayDoneBlock({ workoutDetail, formatters }: TodayDoneBlockProp
                         color={SUMMARY_MUTED_TEXT_COLOR}
                         style={summaryTableStyles.timesSignColumn}
                       >
-                        {line.weight != null ? '×' : ''}
+                        {line.weight != null ? penTimesSign(i18n.language) : ''}
                       </Text>
                     </>
                   ) : null}

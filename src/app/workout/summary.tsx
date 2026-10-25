@@ -86,7 +86,7 @@ export default function SummaryScreen() {
         </Animated.View>
 
         <NewRecordsBlock saveResult={saveResult} workoutDetail={workoutDetail} formatters={formatters} />
-        <TodayDoneBlock workoutDetail={workoutDetail} formatters={formatters} />
+        <TodayDoneBlock workoutDetail={workoutDetail} />
       </ScrollView>
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.lg }]}>
         <Button

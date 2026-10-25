@@ -28,10 +28,16 @@ test('дополнительный вес у подтягиваний и пла�
   ).toBe('+20 kg · 1:00');
 });
 
-test('RIR и RPE добавляются только когда они есть', () => {
-  const fields = getSetFieldsForExerciseType('weight_reps');
-  expect(formatSetLineWithExtras(values({ weightKg: 100, reps: 8, rir: 1, rpe: 8.5 }), fields, units)).toBe(
-    '100 kg × 8 · RIR 1 · @8.5',
+test('строка истории пишется как в «Ручке», RPE — через @', () => {
+  const set = (partial: Partial<SetValues>) => ({ ...values(partial), type: 'normal' as const });
+  expect(
+    formatSetLineWithExtras(set({ weightKg: 100, reps: 8, rir: 1, rpe: 8.5 }), 'weight_reps', units, 'ru'),
+  ).toBe('100кг х 8(1) @8.5');
+  expect(formatSetLineWithExtras(set({ weightKg: 100, reps: 8 }), 'weight_reps', units, 'en')).toBe(
+    '100kg x 8',
   );
-  expect(formatSetLineWithExtras(values({ weightKg: 100, reps: 8 }), fields, units)).toBe('100 kg × 8');
+  expect(formatSetLineWithExtras(set({ weightKg: 10, reps: 8 }), 'bodyweight_reps', units, 'ru')).toBe(
+    '+10кг х 8',
+  );
+  expect(formatSetLineWithExtras(set({ durationSec: 60 }), 'duration', units, 'ru')).toBe('1:00');
 });

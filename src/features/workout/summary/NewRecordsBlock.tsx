@@ -6,7 +6,9 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { exerciseName } from '@/db/repo/exercises';
 import type { SaveResult, WorkoutDetail } from '@/db/repo/workouts';
 import { pickRecordMetric, recordGain, type ValueFormatters, type RecordMetric } from '@/domain/summary';
+import { formatPenSetValue, formatPenWeight, penTimesSign } from '@/domain/pen/serializeWorkout';
 import { getSetFieldsForExerciseType, type SetValues } from '@/domain/types';
+import { useSettings } from '@/store/settings';
 import { Card, Text, spacing, useColors } from '@/ui';
 import { SUMMARY_MUTED_TEXT_COLOR, SummaryBlockHeader, summaryStyles } from './SummaryBlockHeader';
 import { SummaryTableHeader, summaryTableStyles } from './SummaryTable';
@@ -55,8 +57,8 @@ function tieBreakerValue(set: SetMetricValues, metric: RecordMetric): number {
 }
 
 /** Подход, которым поставлен рекорд: лучший по выбранному показателю среди рабочих подходов. */
-function findRecordSet(sets: SetMetricValues[], metric: RecordMetric): SetMetricValues | null {
-  let recordSet: SetMetricValues | null = null;
+function findRecordSet<Set extends SetMetricValues>(sets: Set[], metric: RecordMetric): Set | null {
+  let recordSet: Set | null = null;
   for (const set of sets) {
     const value = setValueForMetric(set, metric);
     if (value == null) continue;
@@ -107,6 +109,12 @@ interface NewRecordsBlockProps {
 export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRecordsBlockProps) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
+  const weightUnit = useSettings((state) => state.weightUnit);
+  const distanceUnit = useSettings((state) => state.distanceUnit);
+  const penOptions = useMemo(
+    () => ({ weightUnit, distanceUnit, language: i18n.language }),
+    [weightUnit, distanceUnit, i18n.language],
+  );
 
   const recordRows = useMemo(() => {
     if (!workoutDetail) return [];
@@ -124,14 +132,16 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
       if (!recordSet) continue;
 
       const gain = recordGain(hits, metric);
+      const formatGainValue = (value: number) =>
+        metric === 'weight'
+          ? formatPenWeight(value, workoutExercise.exercise.type, penOptions)
+          : formatRecordValue(value, metric, formatters);
       let change: RecordChange | null = null;
       if (gain && gain.previous != null && gain.best > gain.previous) {
         change = {
           kind: 'gain',
-          previousValue: withNonBreakingSpaces(formatRecordValue(gain.previous, metric, formatters)),
-          gainText: withNonBreakingSpaces(
-            `+${formatRecordValue(gain.best - gain.previous, metric, formatters)}`,
-          ),
+          previousValue: withNonBreakingSpaces(formatGainValue(gain.previous)),
+          gainText: withNonBreakingSpaces(`+${formatGainValue(gain.best - gain.previous)}`),
         };
       } else if (gain && gain.previous == null) {
         change = { kind: 'firstTime' };
@@ -143,11 +153,14 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
           id: workoutExercise.id,
           name,
           weight: {
-            value: formatRecordValue(recordSet.weightKg, 'weight', formatters),
+            value:
+              recordSet.weightKg != null
+                ? formatPenWeight(recordSet.weightKg, workoutExercise.exercise.type, penOptions)
+                : '—',
             change: metric === 'weight' ? change : null,
           },
           result: {
-            value: formatRecordValue(recordSet.reps, 'reps', formatters),
+            value: formatPenSetValue(recordSet, workoutExercise.exercise.type, penOptions) || '—',
             change: metric === 'reps' ? change : null,
           },
         });
@@ -158,13 +171,15 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
         name,
         weight: null,
         result: {
-          value: formatRecordValue(setValueForMetric(recordSet, metric), metric, formatters),
+          value:
+            formatPenSetValue(recordSet, workoutExercise.exercise.type, penOptions) ||
+            formatRecordValue(setValueForMetric(recordSet, metric), metric, formatters),
           change,
         },
       });
     }
     return rows;
-  }, [saveResult, workoutDetail, formatters, i18n.language]);
+  }, [saveResult, workoutDetail, formatters, penOptions, i18n.language]);
 
   if (recordRows.length === 0) return null;
 
@@ -199,7 +214,7 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
                       color={SUMMARY_MUTED_TEXT_COLOR}
                       style={summaryTableStyles.timesSignColumn}
                     >
-                      {row.weight ? '×' : ''}
+                      {row.weight ? penTimesSign(i18n.language) : ''}
                     </Text>
                   </>
                 ) : null}

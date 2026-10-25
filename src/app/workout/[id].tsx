@@ -9,7 +9,6 @@ import { createRoutine, routineInputFromWorkout } from '@/db/repo/routines';
 import { deleteWorkout, getWorkout, workoutToActiveWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import { formatDateTime } from '@/domain/dates';
-import { getSetFieldsForExerciseType } from '@/domain/types';
 import { MuscleThumbnail } from '@/features/muscles/MuscleThumbnail';
 import { formatSetLineWithExtras } from '@/features/workout/format';
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
@@ -162,7 +161,6 @@ export default function WorkoutDetailScreen() {
       ) : null}
 
       {workout.exercises.map((workoutExercise) => {
-        const fields = getSetFieldsForExerciseType(workoutExercise.exercise.type);
         return (
           <Card key={workoutExercise.id} raised style={{ marginBottom: spacing.md }}>
             <Pressable
@@ -200,7 +198,7 @@ export default function WorkoutDetailScreen() {
                       </Text>
                     </View>
                     <Text variant="bodyMedium" tabular style={{ flexShrink: 0 }}>
-                      {formatSetLineWithExtras(set, fields, units)}
+                      {formatSetLineWithExtras(set, workoutExercise.exercise.type, units, i18n.language)}
                     </Text>
                     <View style={styles.recordBadges}>
                       {set.prTypes.map((recordType) => (

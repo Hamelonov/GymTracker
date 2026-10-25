@@ -1,4 +1,5 @@
-import type { SetValues, SetFields, WeightUnit, DistanceUnit } from '@/domain/types';
+import { formatPenSetValue, formatPenWeight, penTimesSign } from '@/domain/pen/serializeWorkout';
+import type { ExerciseType, SetType, SetValues, SetFields, WeightUnit, DistanceUnit } from '@/domain/types';
 import {
   formatDistance,
   formatDuration,
@@ -40,12 +41,21 @@ export function formatSetValues(
 }
 
 /**
- * Строка подхода для истории: основные значения плюс RIR и RPE, если они записаны.
- * Пустые дополнительные поля не показываются вовсе — ни нулями, ни прочерками.
+ * Строка подхода для истории в записи режима «Ручка»: «70кг х 8(1)», «+10кг х 8», «1:00»;
+ * RPE дописывается как «@8». Пустые дополнительные поля не показываются вовсе.
  */
-export function formatSetLineWithExtras(values: SetValues, fields: SetFields, units: Units): string {
-  const parts = [formatSetValues(values, fields, units)];
-  if (values.rir != null) parts.push(`RIR ${values.rir}`);
-  if (values.rpe != null) parts.push(`@${formatNumberWithoutTrailingZeros(values.rpe)}`);
-  return parts.join(' · ');
+export function formatSetLineWithExtras(
+  set: SetValues & { type: SetType },
+  exerciseType: ExerciseType,
+  units: Units,
+  language: string,
+): string {
+  const options = { weightUnit: units.weight, distanceUnit: units.distance, language };
+  const value = formatPenSetValue(set, exerciseType, options);
+  const weight = set.weightKg != null ? formatPenWeight(set.weightKg, exerciseType, options) : null;
+  let text = value || '—';
+  if (weight && value) text = `${weight} ${penTimesSign(language)} ${value}`;
+  else if (weight) text = weight;
+  if (set.rpe != null) text = `${text} @${formatNumberWithoutTrailingZeros(set.rpe)}`;
+  return text;
 }

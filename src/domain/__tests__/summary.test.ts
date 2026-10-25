@@ -1,20 +1,11 @@
-import {
-  formatSetsLine,
-  groupSets,
-  isSetFilled,
-  pickRecordMetric,
-  recordGain,
-  type LineSet,
-} from '../summary';
-import { getSetFieldsForExerciseType, type RecordHit, type SetType } from '../types';
+import { isSetFilled, pickRecordMetric, recordGain } from '../summary';
+import { getSetFieldsForExerciseType, type RecordHit, type SetType, type SetValues } from '../types';
 
-const formatters = {
-  weight: (kg: number) => `${kg} kg`,
-  duration: (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`,
-  distance: (meters: number) => `${meters / 1000} km`,
-};
-
-const makeSet = (weightKg: number | null, reps: number | null, type: SetType = 'normal'): LineSet => ({
+const makeSet = (
+  weightKg: number | null,
+  reps: number | null,
+  type: SetType = 'normal',
+): SetValues & { type: SetType } => ({
   weightKg,
   reps,
   durationSec: null,
@@ -74,61 +65,6 @@ describe('recordGain', () => {
   });
 });
 
-describe('formatSetsLine', () => {
-  const weightRepsFields = getSetFieldsForExerciseType('weight_reps');
-  it('groups sets with the same weight', () => {
-    expect(
-      formatSetsLine([makeSet(80, 8), makeSet(80, 7), makeSet(80, 6)], weightRepsFields, formatters),
-    ).toBe('80 kg × 8 / 7 / 6');
-  });
-  it('splits groups when the weight changes', () => {
-    expect(
-      formatSetsLine([makeSet(82.5, 7), makeSet(82.5, 6), makeSet(80, 8)], weightRepsFields, formatters),
-    ).toBe('82.5 kg × 7 / 6, 80 kg × 8');
-  });
-  it('exposes weight and reps separately for the table', () => {
-    expect(
-      groupSets([makeSet(82.5, 7), makeSet(82.5, 6), makeSet(80, 8)], weightRepsFields, formatters),
-    ).toEqual([
-      { weightKg: 82.5, values: ['7', '6'] },
-      { weightKg: 80, values: ['8'] },
-    ]);
-  });
-  it('leaves warm-ups out', () => {
-    expect(
-      formatSetsLine(
-        [makeSet(40, 10, 'warmup'), makeSet(30, 12), makeSet(30, 10)],
-        weightRepsFields,
-        formatters,
-      ),
-    ).toBe('30 kg × 12 / 10');
-  });
-  it('shows reps only for bodyweight exercises', () => {
-    expect(
-      formatSetsLine(
-        [makeSet(null, 8), makeSet(null, 7), makeSet(null, 7)],
-        getSetFieldsForExerciseType('bodyweight_reps'),
-        formatters,
-      ),
-    ).toBe('8 / 7 / 7');
-  });
-  it('shows reps only for weighted-bodyweight sets done without extra weight', () => {
-    expect(
-      formatSetsLine(
-        [makeSet(null, 8), makeSet(0, 7)],
-        getSetFieldsForExerciseType('weighted_bodyweight'),
-        formatters,
-      ),
-    ).toBe('8 / 7');
-  });
-  it('formats timed sets', () => {
-    const timedSet = (seconds: number): LineSet => ({ ...makeSet(null, null), durationSec: seconds });
-    expect(
-      formatSetsLine([timedSet(60), timedSet(45)], getSetFieldsForExerciseType('duration'), formatters),
-    ).toBe('1:00 / 0:45');
-  });
-});
-
 describe('isSetFilled', () => {
   it('rejects empty and zero sets', () => {
     expect(isSetFilled(makeSet(null, null), getSetFieldsForExerciseType('weight_reps'))).toBe(false);
@@ -141,42 +77,4 @@ describe('isSetFilled', () => {
   it('ignores fields the exercise does not use', () => {
     expect(isSetFilled(makeSet(20, null), getSetFieldsForExerciseType('bodyweight_reps'))).toBe(false);
   });
-});
-
-describe('дополнительные поля в строке подходов', () => {
-  const withRir = (weightKg: number | null, reps: number, rir: number | null): LineSet => ({
-    ...makeSet(weightKg, reps),
-    rir,
-  });
-
-  it('пишет RIR в скобках после повторов', () => {
-    expect(
-      formatSetsLine(
-        [withRir(70, 9, 1), withRir(70, 8, 1), withRir(70, 8, 0)],
-        getSetFieldsForExerciseType('weight_reps'),
-        formatters,
-      ),
-    ).toBe('70 kg × 9(1) / 8(1) / 8(0)');
-    expect(
-      formatSetsLine([withRir(70, 9, null)], getSetFieldsForExerciseType('weight_reps'), formatters),
-    ).toBe('70 kg × 9');
-  });
-
-  it('дополнительный вес у упражнения без поля веса идёт в группу по весу', () => {
-    const fields = getSetFieldsForExerciseType('bodyweight_reps');
-    expect(formatSetsLine([makeSet(10, 8), makeSet(10, 8)], fields, formatters)).toBe('10 kg × 8 / 8');
-    expect(formatSetsLine([makeSet(null, 8), makeSet(null, 8)], fields, formatters)).toBe('8 / 8');
-  });
-});
-
-it('дополнительный вес у упражнения на время группирует подходы по весу', () => {
-  const weightedPlank = (weightKg: number | null, durationSec: number): LineSet => ({
-    ...makeSet(weightKg, null),
-    durationSec,
-  });
-  const fields = getSetFieldsForExerciseType('duration');
-  expect(formatSetsLine([weightedPlank(20, 60), weightedPlank(20, 45)], fields, formatters)).toBe(
-    '20 kg × 1:00 / 0:45',
-  );
-  expect(formatSetsLine([weightedPlank(null, 60)], fields, formatters)).toBe('1:00');
 });

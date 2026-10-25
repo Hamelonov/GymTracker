@@ -1,24 +1,31 @@
 import {
   getSetFieldsForExerciseType,
   type ActiveExercise,
-  type ActiveSet,
   type ActiveWorkout,
   type DistanceUnit,
   type ExerciseType,
   type SetFields,
   type SetType,
+  type SetValues,
   type WeightUnit,
 } from '@/domain/types';
 import { formatNumberWithoutTrailingZeros, kgToUnit, metersToUnit, roundForDisplay } from '@/domain/units';
 
-export interface SerializeOptions {
+/** Единицы и язык — всё, что нужно, чтобы записать подход так, как его пишут в режиме «Ручка». */
+export interface PenFormatOptions {
   weightUnit: WeightUnit;
   distanceUnit: DistanceUnit;
-  /** 'ru' → суффиксы типов подхода р/о/д, иначе w/f/d. */
+  /** 'ru' → суффиксы типов подхода р/о/д и знак «х», иначе w/f/d и «x». */
   language: string;
+}
+
+export interface SerializeOptions extends PenFormatOptions {
   exerciseNameById: Map<string, string>;
   exerciseTypeById: Map<string, ExerciseType>;
 }
+
+/** Любой подход, у которого есть значения и тип: из активной тренировки, из базы или из разбора. */
+export type PenSet = SetValues & { type: SetType };
 
 const SET_TYPE_SUFFIX_RU: Record<SetType, string> = { normal: '', warmup: 'р', failure: 'о', drop: 'д' };
 const SET_TYPE_SUFFIX_EN: Record<SetType, string> = { normal: '', warmup: 'w', failure: 'f', drop: 'd' };
@@ -47,17 +54,27 @@ function formatClock(totalSeconds: number): string {
   return `${minutes}:${padToTwoDigits(seconds)}`;
 }
 
-function hasAnyValue(set: ActiveSet): boolean {
+function hasAnyValue(set: SetValues): boolean {
   return set.weightKg != null || set.reps != null || set.durationSec != null || set.distanceM != null;
 }
 
+/** Знак умножения между весом и подходами: кириллическая «х» в русском интерфейсе. */
+export function penTimesSign(language: string): string {
+  return language.startsWith('ru') ? 'х' : 'x';
+}
+
 /** Значение одного подхода без веса: «9(1)о», «1:00», «5км 25:00». */
-function formatSetValue(set: ActiveSet, fields: SetFields, options: SerializeOptions): string {
+export function formatPenSetValue(
+  set: PenSet,
+  exerciseType: ExerciseType,
+  options: PenFormatOptions,
+): string {
+  const fields = getSetFieldsForExerciseType(exerciseType);
+  const suffixes = options.language.startsWith('ru') ? SET_TYPE_SUFFIX_RU : SET_TYPE_SUFFIX_EN;
   if (fields.reps) {
-    const suffixes = options.language.startsWith('ru') ? SET_TYPE_SUFFIX_RU : SET_TYPE_SUFFIX_EN;
-    const rirText = set.rir != null ? `(${set.rir})` : '';
     // Выполненный подход без повторов (только вес) пишется одним весом: «70кг».
     if (set.reps == null) return '';
+    const rirText = set.rir != null ? `(${set.rir})` : '';
     return `${set.reps}${suffixes[set.type]}${rirText}`;
   }
   const parts: string[] = [];
@@ -69,17 +86,16 @@ function formatSetValue(set: ActiveSet, fields: SetFields, options: SerializeOpt
   }
   if (set.durationSec != null) parts.push(formatClock(set.durationSec));
   // Тип подхода у времени и дистанции — тем же суффиксом в конце: «0:45р».
-  const suffixes = options.language.startsWith('ru') ? SET_TYPE_SUFFIX_RU : SET_TYPE_SUFFIX_EN;
   return `${parts.join(' ')}${suffixes[set.type]}`;
 }
 
 /** «70кг», «+10кг» у упражнений со своим весом, «-20кг» у упражнений с помощью. */
-function formatWeightPrefix(
+export function formatPenWeight(
   weightKg: number,
   exerciseType: ExerciseType,
-  fields: SetFields,
-  options: SerializeOptions,
-) {
+  options: PenFormatOptions,
+): string {
+  const fields: SetFields = getSetFieldsForExerciseType(exerciseType);
   const weight = formatNumberWithoutTrailingZeros(roundForDisplay(kgToUnit(weightKg, options.weightUnit), 2));
   const unit = weightUnitToken(options.weightUnit, options.language);
   if (exerciseType === 'assisted_bodyweight') return `-${weight}${unit}`;
@@ -87,22 +103,23 @@ function formatWeightPrefix(
   return `${weight}${unit}`;
 }
 
-interface WeightGroup {
+export interface PenGroup {
   weightKg: number | null;
-  values: string[];
+  /** «70кг» или null у группы без веса. */
+  weightText: string | null;
+  /** «9(1)/8(1)/8(0)» — подходы группы через слэш. */
+  valuesText: string;
 }
 
-/** Одна карточка — одна строка: «Приседания со штангой 70кг х 9(1)/8(1), 80кг х 5о». */
-export function serializeExerciseLine(exercise: ActiveExercise, options: SerializeOptions): string {
-  const name = options.exerciseNameById.get(exercise.exerciseId) ?? '';
-  const exerciseType = options.exerciseTypeById.get(exercise.exerciseId) ?? 'weight_reps';
-  const fields = getSetFieldsForExerciseType(exerciseType);
-
-  // В текст идут только выполненные подходы, подряд идущие с одним весом образуют группу;
-  // невыполненный план (из программы или пустые строки) остаётся за текстом.
-  const groups: WeightGroup[] = [];
-  for (const set of exercise.sets.filter((candidate) => candidate.completed && hasAnyValue(candidate))) {
-    const value = formatSetValue(set, fields, options);
+/** Подряд идущие подходы с одним весом образуют группу: «70кг х 9/8, 80кг х 5». */
+export function buildPenGroups(
+  sets: PenSet[],
+  exerciseType: ExerciseType,
+  options: PenFormatOptions,
+): PenGroup[] {
+  const groups: { weightKg: number | null; values: string[] }[] = [];
+  for (const set of sets.filter(hasAnyValue)) {
+    const value = formatPenSetValue(set, exerciseType, options);
     const lastGroup = groups[groups.length - 1];
     // Подход без веса после подхода с весом пишется с явным нулём, иначе парсер унаследует прошлый вес.
     const hasSeenWeight = groups.some((group) => group.weightKg != null);
@@ -110,18 +127,40 @@ export function serializeExerciseLine(exercise: ActiveExercise, options: Seriali
     if (lastGroup && lastGroup.weightKg === weightKg) lastGroup.values.push(value);
     else groups.push({ weightKg, values: [value] });
   }
+  return groups.map((group) => ({
+    weightKg: group.weightKg,
+    weightText: group.weightKg == null ? null : formatPenWeight(group.weightKg, exerciseType, options),
+    valuesText: group.values.filter((value) => value.length > 0).join('/'),
+  }));
+}
+
+/** Группы одной строкой: «70кг х 9(1)/8(1), 80кг х 5о». */
+export function formatPenGroups(groups: PenGroup[], options: PenFormatOptions): string {
+  const timesSign = penTimesSign(options.language);
+  return groups
+    .map((group) => {
+      if (group.weightText == null) return group.valuesText;
+      return group.valuesText.length > 0
+        ? `${group.weightText} ${timesSign} ${group.valuesText}`
+        : group.weightText;
+    })
+    .join(', ');
+}
+
+/** Одна карточка — одна строка: «Приседания со штангой 70кг х 9(1)/8(1), 80кг х 5о». */
+export function serializeExerciseLine(exercise: ActiveExercise, options: SerializeOptions): string {
+  const name = options.exerciseNameById.get(exercise.exerciseId) ?? '';
+  const exerciseType = options.exerciseTypeById.get(exercise.exerciseId) ?? 'weight_reps';
+  // В текст идут только выполненные подходы; невыполненный план (из программы или пустые строки) остаётся за текстом.
+  const groups = buildPenGroups(
+    exercise.sets.filter((set) => set.completed),
+    exerciseType,
+    options,
+  );
   // Цифра в названии сбила бы парсер, поэтому такое название отделяется двоеточием.
   const nameText = /\d/.test(name) ? `${name}:` : name;
   if (groups.length === 0) return nameText;
-  const timesSign = options.language.startsWith('ru') ? 'х' : 'x';
-
-  const groupTexts = groups.map((group) => {
-    const values = group.values.filter((value) => value.length > 0).join('/');
-    if (group.weightKg == null) return values;
-    const prefix = formatWeightPrefix(group.weightKg, exerciseType, fields, options);
-    return values.length > 0 ? `${prefix} ${timesSign} ${values}` : prefix;
-  });
-  return `${nameText} ${groupTexts.join(', ')}`;
+  return `${nameText} ${formatPenGroups(groups, options)}`;
 }
 
 /** Вся тренировка для режима «Ручка»: строки через перевод строки. */
