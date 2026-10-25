@@ -2,12 +2,46 @@ import { Tabs } from 'expo-router';
 import { Dumbbell, History, Library, Table2, User } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActiveWorkoutBar } from '@/features/workout/ActiveWorkoutBar';
 import { fonts, useColors } from '@/ui';
 
 export const TAB_BAR_HEIGHT = 60;
+
+/** Кнопка вкладки без кружка-ripple: активность показывает жёлтый цвет иконки и подписи, а не нажатие. */
+function TabBarButton({
+  children,
+  style,
+  onPress,
+  onLongPress,
+  accessibilityLabel,
+  accessibilityState,
+  testID,
+}: {
+  children: React.ReactNode;
+  style?: React.ComponentProps<typeof Pressable>['style'];
+  onPress?: React.ComponentProps<typeof Pressable>['onPress'];
+  onLongPress?: React.ComponentProps<typeof Pressable>['onLongPress'];
+  accessibilityLabel?: string;
+  accessibilityState?: React.ComponentProps<typeof Pressable>['accessibilityState'];
+  testID?: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      onLongPress={onLongPress}
+      accessibilityRole="tab"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={accessibilityState}
+      testID={testID}
+      android_ripple={undefined}
+      style={style}
+    >
+      {children}
+    </Pressable>
+  );
+}
 
 export default function TabLayout() {
   const colors = useColors();
@@ -18,7 +52,8 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: colors.text,
+          tabBarActiveTintColor: colors.accent,
+          tabBarButton: (props) => <TabBarButton {...props} />,
           tabBarInactiveTintColor: colors.textFaint,
           tabBarStyle: {
             backgroundColor: colors.background,

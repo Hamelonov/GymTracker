@@ -63,7 +63,6 @@ const en = {
     selectExercise: 'Exercise',
     columnWeight: 'Weight / Variation',
     columnSets: 'Sets',
-    columnTotal: 'Total',
     columnNote: 'Note',
     bodyweight: 'bodyweight',
     empty: 'The log is empty',

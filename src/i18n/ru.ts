@@ -63,7 +63,6 @@ const ru = {
     selectExercise: 'Упражнение',
     columnWeight: 'Вес / Усложнение',
     columnSets: 'Подходы',
-    columnTotal: 'Итого',
     columnNote: 'Примечание',
     bodyweight: 'свой вес',
     empty: 'Журнал пока пуст',

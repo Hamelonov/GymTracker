@@ -20,7 +20,7 @@ type Units = { weight: WeightUnit; distance: DistanceUnit };
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 /** Ширины колонок фиксированы: таблица шире экрана и прокручивается по горизонтали. */
-const COLUMN_WIDTHS = { day: 124, weight: 170, sets: 150, total: 70, note: 160 };
+const COLUMN_WIDTHS = { day: 124, weight: 170, sets: 150, rir: 80, rpe: 90, note: 180 };
 const SET_SEPARATOR = ' - ';
 
 function formatNumber(value: number): string {
@@ -70,8 +70,7 @@ const SET_TYPE_SUFFIX_EN: Record<SetRow['type'], string> = {
 function formatSetValue(set: SetRow, fields: SetFields, units: Units, language: string): string {
   const suffixes = language.startsWith('ru') ? SET_TYPE_SUFFIX_RU : SET_TYPE_SUFFIX_EN;
   if (fields.reps) {
-    const rir = set.rir != null ? `(${set.rir})` : '';
-    return `${set.reps ?? '—'}${suffixes[set.type]}${rir}`;
+    return `${set.reps ?? '—'}${suffixes[set.type]}`;
   }
   const parts: string[] = [];
   if (fields.distance && set.distanceM != null) {
@@ -88,14 +87,14 @@ function formatSets(sets: SetRow[], fields: SetFields, units: Units, language: s
   return sets.map((set) => formatSetValue(set, fields, units, language)).join('/');
 }
 
-/** Колонка «Итого»: сумма повторов, общее время или дистанция. */
-function formatTotal(sets: SetRow[], fields: SetFields, units: Units): string {
-  if (fields.reps) return String(sets.reduce((total, set) => total + (set.reps ?? 0), 0));
-  if (fields.distance) {
-    const meters = sets.reduce((total, set) => total + (set.distanceM ?? 0), 0);
-    return `${formatNumber(metersToUnit(meters, units.distance))} ${unitLabels[units.distance] ?? units.distance}`;
-  }
-  return formatDuration(sets.reduce((total, set) => total + (set.durationSec ?? 0), 0));
+/** RIR и RPE по подходам через слэш, пустой подход — прочерк, чтобы позиции совпадали с колонкой подходов. */
+function formatPerSet(sets: SetRow[], valueOf: (set: SetRow) => number | null): string {
+  return sets
+    .map((set) => {
+      const value = valueOf(set);
+      return value != null ? formatNumber(value) : '—';
+    })
+    .join('/');
 }
 
 interface ExerciseLogTableProps {
@@ -109,11 +108,16 @@ export function ExerciseLogTable({ entries, fields, units }: ExerciseLogTablePro
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
   const borderStyle = { borderColor: colors.border };
+  // RIR и RPE показываются только если у упражнения они хоть раз записаны: пустых колонок не нужно.
+  const allSets = entries.flatMap((entry) => entry.sets);
+  const hasRir = allSets.some((set) => set.rir != null);
+  const hasRpe = allSets.some((set) => set.rpe != null);
   const columns: { key: keyof typeof COLUMN_WIDTHS; label: string }[] = [
     { key: 'day', label: translate('log.columnDay') },
     { key: 'weight', label: translate('log.columnWeight') },
     { key: 'sets', label: translate('log.columnSets') },
-    { key: 'total', label: translate('log.columnTotal') },
+    ...(hasRir ? [{ key: 'rir' as const, label: translate('workout.rir') }] : []),
+    ...(hasRpe ? [{ key: 'rpe' as const, label: translate('workout.rpe') }] : []),
     { key: 'note', label: translate('log.columnNote') },
   ];
 
@@ -144,11 +148,20 @@ export function ExerciseLogTable({ entries, fields, units }: ExerciseLogTablePro
                 {formatSets(entry.sets, fields, units, i18n.language)}
               </Text>
             </View>
-            <View style={[styles.cell, borderStyle, { width: COLUMN_WIDTHS.total }]}>
-              <Text variant="caption" tabular>
-                {formatTotal(entry.sets, fields, units)}
-              </Text>
-            </View>
+            {hasRir ? (
+              <View style={[styles.cell, borderStyle, { width: COLUMN_WIDTHS.rir }]}>
+                <Text variant="caption" tabular>
+                  {formatPerSet(entry.sets, (set) => set.rir)}
+                </Text>
+              </View>
+            ) : null}
+            {hasRpe ? (
+              <View style={[styles.cell, borderStyle, { width: COLUMN_WIDTHS.rpe }]}>
+                <Text variant="caption" tabular>
+                  {formatPerSet(entry.sets, (set) => set.rpe)}
+                </Text>
+              </View>
+            ) : null}
             <View style={[styles.cell, borderStyle, { width: COLUMN_WIDTHS.note }]}>
               <Text variant="caption" color={entry.note ? 'text' : 'faint'}>
                 {entry.note || '—'}
