@@ -457,6 +457,17 @@ const ru = {
     importConfirm: 'Заменить все данные резервной копией? Это нельзя отменить.',
     importDone: 'Копия импортирована',
     importFailed: 'Не удалось прочитать файл',
+    importHevy: 'Импорт из Hevy (CSV)',
+    importHevyHint:
+      'Экспортируй данные в Hevy (Настройки → Export data) и выбери полученный CSV. Тренировки добавятся к существующим, уже имеющиеся по времени начала пропускаются, перед импортом сохраняется резервная копия.',
+    importHevyConfirm: 'Найдено тренировок: {{count}}. Добавить их к текущим данным?',
+    importHevyAction: 'Импортировать',
+    importHevyDone:
+      'Добавлено: {{imported}}, пропущено повторов: {{duplicates}}, новых упражнений: {{created}}',
+    profile: 'Профиль',
+    profileName: 'Имя профиля',
+    profileNamePlaceholder: 'Например, Андрей',
+    profileNameHint: 'Попадает в имена файлов экспорта: data_gymtracker_имя_дата_номер',
     exportDone: 'Копия готова',
     deleteAll: 'Удалить все данные',
     deleteAllConfirm: 'Удалить все тренировки, программы и замеры? Это нельзя отменить.',

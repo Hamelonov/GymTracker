@@ -19,6 +19,8 @@ export interface SettingsState {
   haptics: boolean;
   keepAwake: boolean;
   barWeightKg: number;
+  /** Имя профиля; попадает в имена файлов экспорта. */
+  profileName: string;
   platesKg: number[];
   update: (patch: Partial<SettingsState>) => void;
 }
@@ -37,6 +39,7 @@ export const useSettings = create<SettingsState>()(
       haptics: true,
       keepAwake: true,
       barWeightKg: 20,
+      profileName: '',
       platesKg: DEFAULT_PLATES_KG,
       update: (patch) => set(patch),
     }),

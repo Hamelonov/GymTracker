@@ -38,6 +38,9 @@ interface ExerciseListItem {
   subtitle: string;
 }
 
+/** Стабильная пустая ссылка для мемоизированных строк списка. */
+const NO_SECONDARY_MUSCLES: MuscleGroup[] = [];
+
 // Создание Intl.Collator медленное, поэтому для каждого языка он кэшируется.
 const collatorsByLanguage = new Map<string, Intl.Collator>();
 function getCollator(language: string): Intl.Collator {
@@ -76,7 +79,8 @@ const ExerciseRowView = memo(function ExerciseRowView({
     >
       <MuscleThumbnail
         primary={item.exercise.muscleGroup}
-        secondary={item.exercise.secondaryMuscles}
+        // В длинном списке превью рисует только основную мышцу: SVG-тело в каждой строке дорогое.
+        secondary={NO_SECONDARY_MUSCLES}
         size={44}
       />
       <View style={styles.rowText}>
@@ -184,6 +188,8 @@ export function ExerciseList({
   return (
     <FlashList
       data={visibleItems}
+      // Запас отрисовки вперёд больше стандартного, чтобы быстрая прокрутка не показывала пустые строки.
+      drawDistance={600}
       keyExtractor={(item) => item.exercise.id}
       keyboardShouldPersistTaps="handled"
       extraData={selectedIds}

@@ -8,7 +8,7 @@ import { formatDuration, unitToKg } from '@/domain/units';
 import { PlateSettings } from '@/features/settings/PlateSettings';
 import { SettingSwitchRow } from '@/features/settings/SettingSwitchRow';
 import { useSettings } from '@/store/settings';
-import { Card, Chip, ListItem, Screen, SectionTitle, Segmented, Text, spacing } from '@/ui';
+import { Card, Chip, ListItem, Screen, SectionTitle, Segmented, Text, spacing, Input } from '@/ui';
 
 const REST_SECONDS_OPTIONS = [30, 45, 60, 90, 120, 150, 180, 240];
 
@@ -28,7 +28,19 @@ export default function SettingsScreen() {
 
   return (
     <Screen header={{ backButton: true, title: translate('settings.title') }}>
-      <SectionTitle title={translate('settings.appearance')} first />
+      <SectionTitle title={translate('settings.profile')} first />
+      <Card>
+        <Input
+          label={translate('settings.profileName')}
+          value={settings.profileName}
+          onChangeText={(profileName) => settings.update({ profileName })}
+          placeholder={translate('settings.profileNamePlaceholder')}
+          hint={translate('settings.profileNameHint')}
+          autoCapitalize="words"
+        />
+      </Card>
+
+      <SectionTitle title={translate('settings.appearance')} />
       <Card style={styles.segmentedCard}>
         <Text variant="caption" color="muted">
           {translate('settings.theme')}
