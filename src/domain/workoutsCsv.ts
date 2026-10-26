@@ -1,4 +1,4 @@
-import { parseCsvRecords } from './csv';
+import { parseCsvRecords, prepareCsvText } from './csv';
 import { isGymTrackerCsvHeader, parseGymTrackerCsv } from './gymTrackerCsv';
 import { parseHevyCsv, type HevyCsvParseResult } from './hevyCsv';
 
@@ -20,10 +20,12 @@ function isHevyCsvHeader(columnNames: string[]): boolean {
  */
 export function parseWorkoutsCsv(text: string): WorkoutsCsvParseResult | null {
   const withoutBom = text.startsWith('﻿') ? text.slice(1) : text;
-  const firstLine = withoutBom.split(/\r?\n/, 1)[0] ?? '';
-  const [headerRow] = parseCsvRecords(firstLine);
+  // Excel может добавить первую строку «sep=;» — её нужно убрать до поиска заголовка.
+  const prepared = prepareCsvText(withoutBom);
+  const firstLine = prepared.text.split(/\r\n|\r|\n/, 1)[0] ?? '';
+  const [headerRow] = parseCsvRecords(firstLine, prepared.delimiter);
   if (!headerRow) return null;
-  if (isHevyCsvHeader(headerRow)) return { format: 'hevy', ...parseHevyCsv(withoutBom) };
-  if (isGymTrackerCsvHeader(headerRow)) return { format: 'gymtracker', ...parseGymTrackerCsv(withoutBom) };
+  if (isHevyCsvHeader(headerRow)) return { format: 'hevy', ...parseHevyCsv(prepared.text) };
+  if (isGymTrackerCsvHeader(headerRow)) return { format: 'gymtracker', ...parseGymTrackerCsv(prepared.text) };
   return null;
 }

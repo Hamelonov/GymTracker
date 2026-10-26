@@ -1,5 +1,5 @@
 import type { SetType } from '@/domain/types';
-import { parseCsvRecords } from './csv';
+import { parseCsvNumber, parseCsvRecords } from './csv';
 import type { HevyCsvParseResult, ImportedExercise, ImportedWorkout } from './hevyCsv';
 
 /**
@@ -15,12 +15,6 @@ const SET_TYPES: SetType[] = ['normal', 'warmup', 'failure', 'drop'];
 export function isGymTrackerCsvHeader(columnNames: string[]): boolean {
   const names = new Set(columnNames.map((name) => name.trim().toLowerCase()));
   return names.has('date') && names.has('workout') && names.has('exercise') && names.has('set');
-}
-
-function parseNumberOrNull(text: string | undefined): number | null {
-  if (text === undefined || text.trim() === '') return null;
-  const value = Number(text.trim());
-  return Number.isFinite(value) ? value : null;
 }
 
 /** «1:02:03» или «45:10» → секунды; прочерк или пусто → null. */
@@ -84,15 +78,15 @@ export function parseGymTrackerCsv(text: string): HevyCsvParseResult {
     const note = (readColumn('note') ?? '').trim();
     if (exercise.note === '' && note !== '') exercise.note = note;
 
-    const weight = parseNumberOrNull(readColumn(isPounds ? 'weight_lb' : 'weight_kg'));
+    const weight = parseCsvNumber(readColumn(isPounds ? 'weight_lb' : 'weight_kg'));
     exercise.sets.push({
       type: parseSetType(readColumn('type')),
       weightKg: weight != null && isPounds ? weight * KG_PER_LB : weight,
-      reps: parseNumberOrNull(readColumn('reps')),
-      durationSec: parseNumberOrNull(readColumn('duration_sec')),
-      distanceM: parseNumberOrNull(readColumn('distance_m')),
-      rpe: parseNumberOrNull(readColumn('rpe')),
-      rir: parseNumberOrNull(readColumn('rir')),
+      reps: parseCsvNumber(readColumn('reps')),
+      durationSec: parseCsvNumber(readColumn('duration_sec')),
+      distanceM: parseCsvNumber(readColumn('distance_m')),
+      rpe: parseCsvNumber(readColumn('rpe')),
+      rir: parseCsvNumber(readColumn('rir')),
     });
   }
 

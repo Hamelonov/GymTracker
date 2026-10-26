@@ -55,6 +55,35 @@ test('CSV из Hevy узнаётся по своим колонкам', () => {
   expect(result?.workouts[0]?.exercises[0]?.sets[0]).toMatchObject({ weightKg: 70, reps: 9, rir: null });
 });
 
+test('русская локаль Hevy: русские месяцы, «;» и десятичная запятая', () => {
+  const result = parseWorkoutsCsv(
+    [
+      'sep=;',
+      'title;start_time;end_time;exercise_title;set_index;set_type;weight_kg;reps',
+      '"Ноги";"30 июн. 2025 г., 19:56";"30 июн. 2025 г., 20:58";"Присед";0;"normal";"72,5";"9"',
+    ].join('\n'),
+  );
+
+  expect(result?.format).toBe('hevy');
+  expect(result?.workouts).toHaveLength(1);
+  const workout = result?.workouts[0];
+  expect(workout?.startedAt).toBe(new Date(2025, 5, 30, 19, 56).getTime());
+  expect(workout?.exercises[0]?.sets[0]?.weightKg).toBe(72.5);
+  expect(workout?.exercises[0]?.sets[0]?.reps).toBe(9);
+});
+
+test('табуляция вместо запятой и числовая дата', () => {
+  const result = parseWorkoutsCsv(
+    ['title\tstart_time\texercise_title\tweight_kg\treps', 'Ноги\t30.06.2025 19:56\tПрисед\t80\t5'].join(
+      '\n',
+    ),
+  );
+
+  expect(result?.format).toBe('hevy');
+  expect(result?.workouts[0]?.startedAt).toBe(new Date(2025, 5, 30, 19, 56).getTime());
+  expect(result?.workouts[0]?.exercises[0]?.sets[0]?.weightKg).toBe(80);
+});
+
 test('незнакомый CSV не импортируется', () => {
   expect(parseWorkoutsCsv('name,price\nхлеб,50')).toBeNull();
   expect(parseWorkoutsCsv('')).toBeNull();

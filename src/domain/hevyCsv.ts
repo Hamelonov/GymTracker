@@ -1,5 +1,5 @@
 import type { SetType } from '@/domain/types';
-import { parseCsvRecords } from './csv';
+import { parseCsvNumber, parseCsvRecords } from './csv';
 import { parseHevyDate } from './hevyDate';
 
 export interface ImportedSet {
@@ -46,12 +46,6 @@ const SET_TYPE_BY_HEVY_NAME: Record<string, SetType> = {
   failure: 'failure',
 };
 
-function parseNumberOrNull(text: string | undefined): number | null {
-  if (text === undefined || text.trim() === '') return null;
-  const value = Number(text.trim());
-  return Number.isFinite(value) ? value : null;
-}
-
 function multiplyOrNull(value: number | null, factor: number): number | null {
   return value === null ? null : value * factor;
 }
@@ -93,11 +87,11 @@ function parseRow(row: string[], columnIndex: Map<string, number>): ParsedRow | 
   const startedAt = parseHevyDate(readColumn('start_time') ?? '');
   if (title === '' || exerciseTitle === '' || startedAt === null) return null;
 
-  const weightLbs = parseNumberOrNull(readColumn('weight_lbs'));
-  const weightKg = parseNumberOrNull(readColumn('weight_kg')) ?? multiplyOrNull(weightLbs, KG_PER_LBS);
-  const distanceMiles = parseNumberOrNull(readColumn('distance_miles'));
+  const weightLbs = parseCsvNumber(readColumn('weight_lbs'));
+  const weightKg = parseCsvNumber(readColumn('weight_kg')) ?? multiplyOrNull(weightLbs, KG_PER_LBS);
+  const distanceMiles = parseCsvNumber(readColumn('distance_miles'));
   const distanceM =
-    multiplyOrNull(parseNumberOrNull(readColumn('distance_km')), METERS_PER_KM) ??
+    multiplyOrNull(parseCsvNumber(readColumn('distance_km')), METERS_PER_KM) ??
     multiplyOrNull(distanceMiles, METERS_PER_MILE);
 
   return {
@@ -107,16 +101,16 @@ function parseRow(row: string[], columnIndex: Map<string, number>): ParsedRow | 
     finishedAt: parseHevyDate(readColumn('end_time') ?? ''),
     description: readColumn('description') ?? '',
     exerciseTitle,
-    supersetId: parseNumberOrNull(readColumn('superset_id')),
+    supersetId: parseCsvNumber(readColumn('superset_id')),
     exerciseNote: readColumn('exercise_notes') ?? '',
-    setIndex: parseNumberOrNull(readColumn('set_index')),
+    setIndex: parseCsvNumber(readColumn('set_index')),
     set: {
       type: parseSetType(readColumn('set_type')),
       weightKg,
-      reps: parseNumberOrNull(readColumn('reps')),
+      reps: parseCsvNumber(readColumn('reps')),
       distanceM,
-      durationSec: parseNumberOrNull(readColumn('duration_seconds')),
-      rpe: parseNumberOrNull(readColumn('rpe')),
+      durationSec: parseCsvNumber(readColumn('duration_seconds')),
+      rpe: parseCsvNumber(readColumn('rpe')),
       rir: null,
     },
   };

@@ -143,3 +143,25 @@ test('даты в ISO и в формате с пробелом', () => {
   expect(workout.startedAt).toBe(new Date(2026, 9, 25, 18, 30).getTime());
   expect(workout.finishedAt).toBe(new Date(2026, 9, 25, 19, 0).getTime());
 });
+
+test('ISO с часовым поясом читается как абсолютное время', () => {
+  const csv = ['title,start_time,exercise_title', 'Zoned,2026-10-25T15:00:00Z,Bench Press'].join('\n');
+
+  const workout = requireDefined(parseHevyCsv(csv).workouts[0]);
+
+  expect(workout.startedAt).toBe(Date.parse('2026-10-25T15:00:00Z'));
+});
+
+test('русские месяцы в дате', () => {
+  const csv = [
+    'title,start_time,exercise_title',
+    '"Ноги","5 января 2026, 08:05",Присед',
+    '"Ноги","30 июн. 2025 г., 19:56",Присед',
+  ].join('\n');
+
+  const result = parseHevyCsv(csv);
+
+  expect(result.skippedRowCount).toBe(0);
+  expect(result.workouts[0]?.startedAt).toBe(new Date(2026, 0, 5, 8, 5).getTime());
+  expect(result.workouts[1]?.startedAt).toBe(new Date(2025, 5, 30, 19, 56).getTime());
+});
