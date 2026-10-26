@@ -1,6 +1,11 @@
 import { parseLine } from '@/domain/quickEntry/parseLine';
 import type { ActiveExercise, ActiveSet, ActiveWorkout, ExerciseType, SetType } from '@/domain/types';
-import { serializeExerciseLine, serializeWorkout, type SerializeOptions } from '../serializeWorkout';
+import {
+  buildPenGroups,
+  serializeExerciseLine,
+  serializeWorkout,
+  type SerializeOptions,
+} from '../serializeWorkout';
 
 let nextId = 0;
 const set = (partial: Partial<ActiveSet> = {}): ActiveSet => ({
@@ -173,4 +178,20 @@ test('тип подхода у планки пишется суффиксом п
       options,
     ),
   ).toBe('Планка 1:00/0:45р');
+});
+
+test('группы для таблиц: строка на каждый вес, у каждой группы свои подходы', () => {
+  const sets = [
+    set({ weightKg: 70, reps: 9, rir: 1 }),
+    set({ weightKg: 70, reps: 8 }),
+    set({ weightKg: 70, reps: 8 }),
+    set({ weightKg: 72.5, reps: 8, rpe: 9 }),
+  ];
+  const groups = buildPenGroups(sets, 'weight_reps', options);
+  expect(groups.map((group) => [group.weightText, group.valuesText])).toEqual([
+    ['70кг', '9(1)/8/8'],
+    ['72.5кг', '8'],
+  ]);
+  expect(groups.map((group) => group.sets.length)).toEqual([3, 1]);
+  expect(groups[1]?.sets[0]?.rpe).toBe(9);
 });

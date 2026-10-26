@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { exerciseName, getExerciseHistory, getExerciseUsage, listExercises } from '@/db/repo/exercises';
 import { useQuery } from '@/db/version';
-import { getSetFieldsForExerciseType } from '@/domain/types';
 import { ExerciseLogTable } from '@/features/log/ExerciseLogTable';
 import { ExerciseSelect } from '@/features/log/ExerciseSelect';
 import { useSettings } from '@/store/settings';
@@ -58,11 +57,7 @@ export default function LogTab() {
       <View style={styles.select}>
         <ExerciseSelect items={selectItems} selectedId={selectedExerciseId} onSelect={setChosenExerciseId} />
       </View>
-      <ExerciseLogTable
-        entries={history}
-        fields={getSetFieldsForExerciseType(selectedExercise.type)}
-        units={units}
-      />
+      <ExerciseLogTable entries={history} exerciseType={selectedExercise.type} units={units} />
     </Screen>
   );
 }
