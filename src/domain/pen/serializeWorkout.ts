@@ -31,7 +31,7 @@ const SET_TYPE_SUFFIX_RU: Record<SetType, string> = { normal: '', warmup: 'р', 
 const SET_TYPE_SUFFIX_EN: Record<SetType, string> = { normal: '', warmup: 'w', failure: 'f', drop: 'd' };
 
 /** Единицы пишутся так, как их понимает парсер быстрой записи, а не как локализованные подписи. */
-function weightUnitToken(unit: WeightUnit, language: string): string {
+export function weightUnitToken(unit: WeightUnit, language: string): string {
   if (unit === 'lb') return 'lb';
   return language.startsWith('ru') ? 'кг' : 'kg';
 }
@@ -89,18 +89,23 @@ export function formatPenSetValue(
   return `${parts.join(' ')}${suffixes[set.type]}`;
 }
 
+/** Знак перед весом: «+» — дополнительный вес к своему, «-» — помощь гравитрона, у штанги знака нет. */
+export function penWeightSign(exerciseType: ExerciseType): '' | '+' | '-' {
+  const fields: SetFields = getSetFieldsForExerciseType(exerciseType);
+  if (exerciseType === 'assisted_bodyweight') return '-';
+  if (!fields.weight || exerciseType === 'weighted_bodyweight') return '+';
+  return '';
+}
+
 /** «70кг», «+10кг» у упражнений со своим весом, «-20кг» у упражнений с помощью. */
 export function formatPenWeight(
   weightKg: number,
   exerciseType: ExerciseType,
   options: PenFormatOptions,
 ): string {
-  const fields: SetFields = getSetFieldsForExerciseType(exerciseType);
   const weight = formatNumberWithoutTrailingZeros(roundForDisplay(kgToUnit(weightKg, options.weightUnit), 2));
   const unit = weightUnitToken(options.weightUnit, options.language);
-  if (exerciseType === 'assisted_bodyweight') return `-${weight}${unit}`;
-  if (!fields.weight || exerciseType === 'weighted_bodyweight') return `+${weight}${unit}`;
-  return `${weight}${unit}`;
+  return `${penWeightSign(exerciseType)}${weight}${unit}`;
 }
 
 export interface PenGroup<Set extends PenSet = PenSet> {

@@ -1,44 +1,25 @@
 import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { Download, Trash2, Upload } from 'lucide-react-native';
+import { Download, FileSpreadsheet, Trash2, Upload } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet } from 'react-native';
-import Storage from 'expo-sqlite/kv-store';
 import { createBackup, deleteAllUserData, isBackup, restoreBackup, workoutsCsv } from '@/db/repo/backup';
 import { importWorkouts } from '@/db/repo/importWorkouts';
 import { parseHevyCsv } from '@/domain/hevyCsv';
+import { exportProgressToExcel } from '@/features/log/exportProgress';
 import { buildExportFileName } from '@/features/settings/exportFileName';
+import { nextExportSequence, shareExportFile } from '@/features/settings/shareExportFile';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useSettings } from '@/store/settings';
 import { Button, Card, Screen, SectionTitle, Text, confirm, spacing, toast } from '@/ui';
 
-type BusyAction = 'json' | 'csv' | 'import' | 'hevy';
-
-const EXPORT_SEQUENCE_KEY = 'export_sequence';
-
-/** Порядковый номер экспорта: растёт с каждым файлом, чтобы имена не повторялись. */
-function nextExportSequence(): number {
-  const next = Number(Storage.getItemSync(EXPORT_SEQUENCE_KEY) ?? '0') + 1;
-  Storage.setItemSync(EXPORT_SEQUENCE_KEY, String(next));
-  return next;
-}
-
-/** Записывает текст в файл кэша и открывает для него системное окно «Поделиться». */
-async function shareTextFile(fileName: string, content: string, mimeType: string) {
-  const file = new File(Paths.cache, fileName);
-  if (file.exists) file.delete();
-  file.create();
-  await file.write(content);
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(file.uri, { mimeType, dialogTitle: fileName });
-  }
-}
+type BusyAction = 'json' | 'csv' | 'excel' | 'import' | 'hevy';
 
 export default function DataScreen() {
   const { t: translate, i18n } = useTranslation();
   const weightUnit = useSettings((state) => state.weightUnit);
+  const distanceUnit = useSettings((state) => state.distanceUnit);
   const profileName = useSettings((state) => state.profileName);
   const [busyAction, setBusyAction] = useState<BusyAction | null>(null);
   const exportFileName = (extension: 'csv' | 'json') =>
@@ -47,8 +28,26 @@ export default function DataScreen() {
   const exportJson = async () => {
     setBusyAction('json');
     try {
-      await shareTextFile(exportFileName('json'), JSON.stringify(createBackup()), 'application/json');
+      await shareExportFile(exportFileName('json'), JSON.stringify(createBackup()), 'application/json');
       toast(translate('settings.exportDone'));
+    } catch {
+      toast(translate('common.error'));
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
+  const exportExcel = async () => {
+    setBusyAction('excel');
+    try {
+      const hasProgress = await exportProgressToExcel({
+        profileName,
+        weightUnit,
+        distanceUnit,
+        language: i18n.language,
+        translate,
+      });
+      if (!hasProgress) toast(translate('log.empty'));
     } catch {
       toast(translate('common.error'));
     } finally {
@@ -59,7 +58,7 @@ export default function DataScreen() {
   const exportCsv = async () => {
     setBusyAction('csv');
     try {
-      await shareTextFile(exportFileName('csv'), workoutsCsv(weightUnit, i18n.language), 'text/csv');
+      await shareExportFile(exportFileName('csv'), workoutsCsv(weightUnit, i18n.language), 'text/csv');
       toast(translate('settings.exportDone'));
     } catch {
       toast(translate('common.error'));
@@ -168,6 +167,14 @@ export default function DataScreen() {
           icon={<Download size={18} />}
           loading={busyAction === 'csv'}
           onPress={exportCsv}
+        />
+        <Button
+          title={translate('settings.exportExcel')}
+          variant="secondary"
+          fullWidth
+          icon={<FileSpreadsheet size={18} />}
+          loading={busyAction === 'excel'}
+          onPress={exportExcel}
         />
         <Button
           title={translate('settings.importJson')}

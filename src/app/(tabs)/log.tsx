@@ -1,18 +1,21 @@
-import { Table2 } from 'lucide-react-native';
+import { FileSpreadsheet, Table2 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { exerciseName, getExerciseHistory, getExerciseUsage, listExercises } from '@/db/repo/exercises';
 import { useQuery } from '@/db/version';
 import { ExerciseLogTable } from '@/features/log/ExerciseLogTable';
+import { exportProgressToExcel } from '@/features/log/exportProgress';
 import { ExerciseSelect } from '@/features/log/ExerciseSelect';
 import { useSettings } from '@/store/settings';
-import { EmptyState, Screen, spacing } from '@/ui';
+import { EmptyState, IconButton, Screen, spacing, toast } from '@/ui';
 
 export default function LogTab() {
   const { t: translate, i18n } = useTranslation();
   const weightUnit = useSettings((state) => state.weightUnit);
   const distanceUnit = useSettings((state) => state.distanceUnit);
+  const profileName = useSettings((state) => state.profileName);
+  const [isExporting, setIsExporting] = useState(false);
   const exerciseRows = useQuery(() => listExercises({ includeArchived: true }), []);
   const usageByExerciseId = useQuery(() => getExerciseUsage(), []);
 
@@ -44,6 +47,25 @@ export default function LogTab() {
   );
   const units = useMemo(() => ({ weight: weightUnit, distance: distanceUnit }), [weightUnit, distanceUnit]);
 
+  const exportToExcel = async () => {
+    // Повторное нажатие, пока файл собирается, не запускает вторую выгрузку.
+    if (isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportProgressToExcel({
+        profileName,
+        weightUnit,
+        distanceUnit,
+        language: i18n.language,
+        translate,
+      });
+    } catch {
+      toast(translate('common.error'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (performedExercises.length === 0 || !selectedExercise) {
     return (
       <Screen header={{ title: translate('log.title'), large: true }}>
@@ -53,7 +75,23 @@ export default function LogTab() {
   }
 
   return (
-    <Screen header={{ title: translate('log.title'), large: true }} contentStyle={styles.content}>
+    <Screen
+      header={{
+        title: translate('log.title'),
+        large: true,
+        right: (
+          <IconButton
+            icon={FileSpreadsheet}
+            variant="filled"
+            onPress={exportToExcel}
+            disabled={isExporting}
+            accessibilityLabel={translate('log.exportExcel')}
+            haptic="selection"
+          />
+        ),
+      }}
+      contentStyle={styles.content}
+    >
       <View style={styles.select}>
         <ExerciseSelect items={selectItems} selectedId={selectedExerciseId} onSelect={setChosenExerciseId} />
       </View>

@@ -3,20 +3,13 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import type { ExerciseHistoryEntry } from '@/db/repo/exercises';
-import type { SetRow } from '@/db/schema';
 import { dateLocale } from '@/domain/dates';
-import { buildPenGroups, formatPenSetValue, penTimesSign } from '@/domain/pen/serializeWorkout';
-import {
-  getSetFieldsForExerciseType,
-  type DistanceUnit,
-  type ExerciseType,
-  type WeightUnit,
-} from '@/domain/types';
-import { formatNumberWithoutTrailingZeros, roundForDisplay } from '@/domain/units';
+import { penTimesSign } from '@/domain/pen/serializeWorkout';
+import type { DistanceUnit, ExerciseType, WeightUnit } from '@/domain/types';
+import { buildWeightLines, describeLogColumns, formatPerSet } from './logLines';
 import { Card, Text, spacing, useColors } from '@/ui';
 
 type Units = { weight: WeightUnit; distance: DistanceUnit };
-type PenOptions = { weightUnit: WeightUnit; distanceUnit: DistanceUnit; language: string };
 
 /** Ширины колонок фиксированы: таблица шире экрана и прокручивается по горизонтали. */
 const COLUMN_WIDTHS = { day: 100, weight: 64, timesSign: 14, sets: 110, rir: 80, rpe: 80, note: 180 };
@@ -24,38 +17,6 @@ const COLUMN_WIDTHS = { day: 100, weight: 64, timesSign: 14, sets: 110, rir: 80,
 /** Дата цифрами в формате языка: «28.03.2026». */
 function formatDay(timestamp: number, language: string): string {
   return format(timestamp, 'P', { locale: dateLocale(language) });
-}
-
-/** RIR или RPE всех подходов дня через слэш, как подходы: «0/1/1». Пустой подход — прочерк, чтобы позиции совпадали. */
-function formatPerSet(sets: SetRow[], valueOf: (set: SetRow) => number | null): string {
-  if (sets.every((set) => valueOf(set) == null)) return '—';
-  return sets
-    .map((set) => {
-      const value = valueOf(set);
-      return value != null ? formatNumberWithoutTrailingZeros(roundForDisplay(value, 2)) : '—';
-    })
-    .join('/');
-}
-
-interface WeightLine {
-  /** «70кг» или null, если подходы без веса. */
-  weight: string | null;
-  /** «9/8/8» — подходы этого веса. */
-  sets: string;
-}
-
-/** Строки одного дня — как в «Сегодня сделано»: каждый новый вес на своей строке, «70кг х 9/8», «65кг х 10». */
-function buildWeightLines(sets: SetRow[], exerciseType: ExerciseType, options: PenOptions): WeightLine[] {
-  const lines = buildPenGroups(sets, exerciseType, options).map((group) => ({
-    weight: group.weightText,
-    // RIR стоит в своей колонке, поэтому в подходах его скобок нет: иначе одно и то же написано дважды.
-    sets:
-      group.sets
-        .map((set) => formatPenSetValue({ ...set, rir: null }, exerciseType, options))
-        .filter((value) => value.length > 0)
-        .join('/') || '—',
-  }));
-  return lines.length > 0 ? lines : [{ weight: null, sets: '—' }];
 }
 
 interface ExerciseLogTableProps {
@@ -70,15 +31,8 @@ export function ExerciseLogTable({ entries, exerciseType, units }: ExerciseLogTa
   const { t: translate, i18n } = useTranslation();
   const penOptions = { weightUnit: units.weight, distanceUnit: units.distance, language: i18n.language };
   const timesSign = penTimesSign(i18n.language);
-  // У упражнений со своим весом в этой колонке дополнительный вес — это усложнение, а не рабочий вес.
-  const weightTitle = getSetFieldsForExerciseType(exerciseType).weight
-    ? translate('log.columnWeight')
-    : translate('log.columnVariation');
-  // Колонки без единого значения не показываются: ни веса у подтягиваний без отягощения, ни пустых RIR и RPE.
-  const allSets = entries.flatMap((entry) => entry.sets);
-  const hasWeight = allSets.some((set) => set.weightKg != null);
-  const hasRir = allSets.some((set) => set.rir != null);
-  const hasRpe = allSets.some((set) => set.rpe != null);
+  const { hasWeight, hasRir, hasRpe, weightTitleKey } = describeLogColumns(entries, exerciseType);
+  const weightTitle = translate(weightTitleKey);
   const dividerStyle = { borderTopColor: colors.border };
 
   return (

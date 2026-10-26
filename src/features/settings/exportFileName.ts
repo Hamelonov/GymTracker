@@ -25,7 +25,7 @@ interface ExportFileNameOptions {
   date: Date;
   /** Порядковый номер экспорта, чтобы файлы одного дня не перезаписывали друг друга. */
   sequence: number;
-  extension: 'csv' | 'json';
+  extension: 'csv' | 'json' | 'xlsx';
 }
 
 /** `data_gymtracker_andrey_20261024_432.csv` — шаблон имени, заданный владельцем. */
