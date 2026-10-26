@@ -64,57 +64,10 @@ export function isBackup(value: unknown): value is Backup {
 }
 
 /** Делит строки на пачки, чтобы один INSERT не превышал лимит переменных `SQLite`. */
-function splitIntoChunks<T>(items: T[], size = 200): T[][] {
+export function splitIntoChunks<T>(items: T[], size = 200): T[][] {
   const chunks: T[][] = [];
   for (let index = 0; index < items.length; index += size) chunks.push(items.slice(index, index + size));
   return chunks;
-}
-
-/** Заменяет все данные содержимым бэкапа. Выполняется в одной транзакции. */
-export function restoreBackup(backup: Backup): void {
-  database.transaction((transaction) => {
-    transaction.delete(personalRecords).run();
-    transaction.delete(sets).run();
-    transaction.delete(workoutExercises).run();
-    transaction.delete(workouts).run();
-    transaction.delete(routineSets).run();
-    transaction.delete(routineExercises).run();
-    transaction.delete(routines).run();
-    transaction.delete(routineFolders).run();
-    transaction.delete(measurements).run();
-    transaction.delete(exercises).run();
-    for (const chunk of splitIntoChunks(backup.exercises)) {
-      transaction.insert(exercises).values(chunk).run();
-    }
-    for (const chunk of splitIntoChunks(backup.routineFolders ?? [])) {
-      transaction.insert(routineFolders).values(chunk).run();
-    }
-    for (const chunk of splitIntoChunks(backup.routines ?? [])) {
-      transaction.insert(routines).values(chunk).run();
-    }
-    for (const chunk of splitIntoChunks(backup.routineExercises ?? [])) {
-      transaction.insert(routineExercises).values(chunk).run();
-    }
-    for (const chunk of splitIntoChunks(backup.routineSets ?? [])) {
-      transaction.insert(routineSets).values(chunk).run();
-    }
-    for (const chunk of splitIntoChunks(backup.workouts ?? [])) {
-      transaction.insert(workouts).values(chunk).run();
-    }
-    for (const chunk of splitIntoChunks(backup.workoutExercises ?? [])) {
-      transaction.insert(workoutExercises).values(chunk).run();
-    }
-    for (const chunk of splitIntoChunks(backup.sets ?? [])) {
-      transaction.insert(sets).values(chunk).run();
-    }
-    for (const chunk of splitIntoChunks(backup.measurements ?? [])) {
-      transaction.insert(measurements).values(chunk).run();
-    }
-    for (const chunk of splitIntoChunks(backup.personalRecords ?? [])) {
-      transaction.insert(personalRecords).values(chunk).run();
-    }
-  });
-  notifyDatabaseChanged();
 }
 
 export function deleteAllUserData(): void {

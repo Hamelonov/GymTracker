@@ -35,6 +35,8 @@ export interface XlsxSheet {
   name: string;
   /** Ширина колонок в символах, как в Excel. */
   columnWidths: number[];
+  /** Стиль всей колонки, включая пустые строки ниже таблицы: его получит то, что впишут вручную. */
+  columnStyles?: (XlsxCellStyle | undefined)[];
   rows: XlsxRow[];
   /** Сколько верхних строк закрепить при прокрутке. */
   frozenRowCount?: number;

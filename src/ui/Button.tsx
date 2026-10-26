@@ -20,6 +20,8 @@ export interface ButtonProps extends Omit<AnimatedPressableProps, 'children' | '
   style?: StyleProp<ViewStyle>;
   /** Переопределяет цвет подписи (например, чёрная кнопка на жёлтом экране). */
   textColor?: string;
+  /** 'start' — иконка и подпись у левого края: в столбце кнопок разной длины так ровнее. */
+  contentAlign?: 'center' | 'start';
 }
 
 const buttonHeightBySize: Record<Size, number> = { sm: 36, md: 48, lg: 56 };
@@ -57,6 +59,7 @@ export function Button({
   disabled,
   style,
   textColor,
+  contentAlign = 'center',
   ...rest
 }: ButtonProps) {
   const colors = useColors();
@@ -77,7 +80,9 @@ export function Button({
           borderWidth: variant === 'outline' ? 1.5 : 0,
           borderColor: colors.borderStrong,
           alignSelf: fullWidth ? 'stretch' : 'auto',
-          paddingHorizontal: size === 'sm' ? spacing.md : spacing.xl,
+          paddingHorizontal: size === 'sm' || contentAlign === 'start' ? spacing.md : spacing.xl,
+          // Кнопка раскладывает содержимое столбиком, поэтому к левому краю его прижимает alignItems.
+          alignItems: contentAlign === 'start' ? 'flex-start' : 'center',
         },
         style,
       ]}

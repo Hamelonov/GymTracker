@@ -9,6 +9,8 @@ export interface ImportedSet {
   distanceM: number | null;
   durationSec: number | null;
   rpe: number | null;
+  /** В Hevy RIR нет, он приходит только из нашего CSV. */
+  rir: number | null;
 }
 
 export interface ImportedExercise {
@@ -115,6 +117,7 @@ function parseRow(row: string[], columnIndex: Map<string, number>): ParsedRow | 
       distanceM,
       durationSec: parseNumberOrNull(readColumn('duration_seconds')),
       rpe: parseNumberOrNull(readColumn('rpe')),
+      rir: null,
     },
   };
 }

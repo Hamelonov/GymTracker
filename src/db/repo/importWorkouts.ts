@@ -23,7 +23,37 @@ export interface ImportSummary {
 }
 
 /** Две тренировки считаются одной, если начались в одну и ту же минуту. */
-const DUPLICATE_WINDOW_MS = 60_000;
+export const DUPLICATE_WINDOW_MS = 60_000;
+
+/**
+ * Как узнать тренировку, которая уже есть в базе:
+ * по минуте начала (CSV и JSON хранят точное время) или по дню (в Excel есть только дата).
+ */
+export type DuplicateRule = 'sameStartMinute' | 'sameDay';
+
+function localDayKey(timestamp: number): string {
+  const date = new Date(timestamp);
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+}
+
+function createDuplicateCheck(rule: DuplicateRule): {
+  isDuplicate: (startedAt: number) => boolean;
+  remember: (startedAt: number) => void;
+} {
+  const startTimes = listWorkoutStartTimes();
+  if (rule === 'sameDay') {
+    const dayKeys = new Set(startTimes.map(localDayKey));
+    return {
+      isDuplicate: (startedAt) => dayKeys.has(localDayKey(startedAt)),
+      remember: (startedAt) => dayKeys.add(localDayKey(startedAt)),
+    };
+  }
+  return {
+    isDuplicate: (startedAt) =>
+      startTimes.some((existing) => Math.abs(existing - startedAt) < DUPLICATE_WINDOW_MS),
+    remember: (startedAt) => startTimes.push(startedAt),
+  };
+}
 
 function toParsedSets(workout: ImportedWorkout['exercises'][number]): ParsedSet[] {
   return workout.sets.map((set) => ({
@@ -33,7 +63,7 @@ function toParsedSets(workout: ImportedWorkout['exercises'][number]): ParsedSet[
     reps: set.reps,
     durationSec: set.durationSec,
     distanceM: set.distanceM,
-    rir: null,
+    rir: set.rir,
   }));
 }
 
@@ -127,7 +157,7 @@ function toActiveWorkout(
       durationSec: set.durationSec,
       distanceM: set.distanceM,
       rpe: set.rpe,
-      rir: null,
+      rir: set.rir,
     }));
     return {
       id: newId(),
@@ -153,10 +183,11 @@ function toActiveWorkout(
  * Слияние тренировок из Hevy с базой: существующие записи не трогаются, тренировки с тем же временем
  * начала пропускаются, незнакомые упражнения создаются. Рекорды пересчитываются по всей истории.
  */
-export function importWorkouts(importedWorkouts: ImportedWorkout[]): ImportSummary {
-  const existingStartTimes = listWorkoutStartTimes();
-  const isDuplicate = (startedAt: number) =>
-    existingStartTimes.some((existing) => Math.abs(existing - startedAt) < DUPLICATE_WINDOW_MS);
+export function importWorkouts(
+  importedWorkouts: ImportedWorkout[],
+  duplicateRule: DuplicateRule = 'sameStartMinute',
+): ImportSummary {
+  const duplicates = createDuplicateCheck(duplicateRule);
 
   const resolver = createExerciseResolver();
   const touchedExerciseIds = new Set<string>();
@@ -167,13 +198,13 @@ export function importWorkouts(importedWorkouts: ImportedWorkout[]): ImportSumma
   const sorted = [...importedWorkouts].sort((left, right) => left.startedAt - right.startedAt);
   for (const imported of sorted) {
     if (imported.exercises.length === 0) continue;
-    if (isDuplicate(imported.startedAt)) {
+    if (duplicates.isDuplicate(imported.startedAt)) {
       duplicateCount += 1;
       continue;
     }
     const activeWorkout = toActiveWorkout(imported, resolver.resolve);
     saveWorkout(activeWorkout, imported.finishedAt);
-    existingStartTimes.push(imported.startedAt);
+    duplicates.remember(imported.startedAt);
     activeWorkout.exercises.forEach((exercise) => touchedExerciseIds.add(exercise.exerciseId));
     importedCount += 1;
   }

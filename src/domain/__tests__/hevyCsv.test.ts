@@ -52,6 +52,7 @@ test('группирует строки в тренировки и упражн�
     distanceM: null,
     durationSec: null,
     rpe: 9.5,
+    rir: null,
   });
 
   expect(legDay.title).toBe('Leg Day');

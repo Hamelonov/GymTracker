@@ -43,7 +43,11 @@ function sheetViewXml(frozenRowCount: number): string {
 /** XML одного листа; стили ячеек попутно регистрируются в общем реестре книги. */
 export function buildSheetXml(sheet: XlsxSheet, styles: StyleRegistry): string {
   const columns = sheet.columnWidths
-    .map((width, index) => `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`)
+    .map((width, index) => {
+      const styleIndex = styles.styleIndex(sheet.columnStyles?.[index]);
+      const styleAttribute = styleIndex > 0 ? ` style="${styleIndex}"` : '';
+      return `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"${styleAttribute}/>`;
+    })
     .join('');
   const rows = sheet.rows.map((row, rowIndex) => rowXml(row, rowIndex, styles)).join('');
   const merges = sheet.merges ?? [];

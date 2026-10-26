@@ -28,6 +28,13 @@ const DIVIDER_COLOR = 'D9D9D9';
 
 type ColumnKey = 'day' | 'weight' | 'timesSign' | 'sets' | 'rir' | 'rpe' | 'note';
 
+/**
+ * Текстовые колонки: без формата «@» Excel превращает набранное «8/8/7» в дату,
+ * и при импорте подходы уже не прочитать.
+ */
+const TEXT_COLUMNS = new Set<ColumnKey>(['sets', 'rir', 'rpe', 'note']);
+const TEXT_FORMAT: XlsxCellStyle = { numberFormat: '@' };
+
 const COLUMN_WIDTHS: Record<ColumnKey, number> = {
   day: 12,
   weight: 13,
@@ -101,6 +108,7 @@ function dayRows(
       verticalAlign: 'top',
       ...(isFirstLine ? { borderTopColor: DIVIDER_COLOR } : {}),
     };
+    const textStyle: XlsxCellStyle = { ...baseStyle, ...TEXT_FORMAT };
     const cellFor = (column: ColumnKey): XlsxCell => {
       switch (column) {
         case 'day':
@@ -124,16 +132,16 @@ function dayRows(
             style: { ...baseStyle, fontColor: MUTED_TEXT_COLOR, horizontalAlign: 'center' },
           };
         case 'sets':
-          return { value: line.sets, style: baseStyle };
+          return { value: line.sets, style: textStyle };
         case 'rir':
-          return { value: isFirstLine ? formatPerSet(entry.sets, (set) => set.rir) : null, style: baseStyle };
+          return { value: isFirstLine ? formatPerSet(entry.sets, (set) => set.rir) : null, style: textStyle };
         case 'rpe':
-          return { value: isFirstLine ? formatPerSet(entry.sets, (set) => set.rpe) : null, style: baseStyle };
+          return { value: isFirstLine ? formatPerSet(entry.sets, (set) => set.rpe) : null, style: textStyle };
         // Примечание не переносится: колонка последняя, текст уходит вправо, а высокая строка оттолкнула бы второй вес дня вниз.
         case 'note':
           return {
             value: isFirstLine && entry.note ? entry.note : null,
-            style: baseStyle,
+            style: textStyle,
           };
       }
     };
@@ -160,6 +168,7 @@ function exerciseSheet(exercise: ExerciseProgress, options: ProgressWorkbookOpti
   return {
     name: exercise.name,
     columnWidths: columns.map((column) => COLUMN_WIDTHS[column]),
+    columnStyles: columns.map((column) => (TEXT_COLUMNS.has(column) ? TEXT_FORMAT : undefined)),
     rows: [titleRow, headerRow, ...bodyRows],
     frozenRowCount: 2,
     merges: [`${cellReference(0, 0)}:${cellReference(columns.length - 1, 0)}`],
