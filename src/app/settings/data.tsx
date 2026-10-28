@@ -8,6 +8,7 @@ import {
   useDataTransfer,
   type DataFormat,
 } from '@/features/settings/useDataTransfer';
+import { ImportProgressModal } from '@/features/settings/ImportProgressModal';
 import { Button, Card, Screen, SectionTitle, Text, spacing } from '@/ui';
 
 // У каждого формата пара кнопок: «Экспорт в …» в своей секции и «Импорт из …» в своей.
@@ -15,7 +16,7 @@ const FORMATS: DataFormat[] = ['json', 'csv', 'xlsx'];
 
 export default function DataScreen() {
   const { t: translate } = useTranslation();
-  const { busyAction, exportData, importData, deleteAllData } = useDataTransfer();
+  const { busyAction, importProgress, exportData, importData, deleteAllData } = useDataTransfer();
 
   return (
     <Screen header={{ backButton: true, title: translate('profile.data') }}>
@@ -47,7 +48,7 @@ export default function DataScreen() {
             contentAlign="start"
             // Стрелка в лоток — файл приходит в приложение.
             icon={<Download size={18} />}
-            loading={busyAction === `import:${format}`}
+            disabled={busyAction != null}
             onPress={() => importData(format)}
           />
         ))}
@@ -56,7 +57,7 @@ export default function DataScreen() {
         </Text>
       </Card>
 
-      <SectionTitle title={translate('settings.deleteAll')} />
+      <SectionTitle title={translate('settings.clearSection')} />
       <Button
         title={translate('settings.deleteAll')}
         variant="danger"
@@ -65,6 +66,8 @@ export default function DataScreen() {
         icon={<Trash2 size={18} color="#E5484D" />}
         onPress={deleteAllData}
       />
+
+      <ImportProgressModal progressState={importProgress} />
     </Screen>
   );
 }

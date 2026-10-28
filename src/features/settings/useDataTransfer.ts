@@ -3,8 +3,8 @@ import { File, Paths } from 'expo-file-system';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createBackup, deleteAllUserData, isBackup, workoutsCsv } from '@/db/repo/backup';
-import { importWorkouts } from '@/db/repo/importWorkouts';
-import { mergeBackup } from '@/db/repo/mergeBackup';
+import { importWorkoutsAsync } from '@/db/repo/importWorkouts';
+import { mergeBackupAsync } from '@/db/repo/mergeBackup';
 import { parseWorkoutsCsv } from '@/domain/workoutsCsv';
 import { XLSX_MIME_TYPE } from '@/domain/xlsx/buildXlsx';
 import { readXlsx } from '@/domain/xlsx/readXlsx';
@@ -20,6 +20,12 @@ import { nextExportSequence, shareExportFile } from './shareExportFile';
 
 export type DataFormat = 'json' | 'csv' | 'xlsx';
 export type BusyAction = `${'export' | 'import'}:${DataFormat}`;
+
+export interface ImportProgressState {
+  isVisible: boolean;
+  progress: number;
+  stageText: string;
+}
 
 // Мессенджеры и облака часто отдают файл без правильного типа, поэтому в конце всегда «любой файл».
 const PICKER_TYPES: Record<DataFormat, string[]> = {
@@ -48,7 +54,9 @@ interface ImportResult {
 /** Что нашлось в файле и как это добавить: подтверждение показывается до того, как база изменится. */
 interface ImportPlan {
   workoutCount: number;
-  apply: () => ImportResult;
+  apply: (
+    onProgress?: (progressRatio: number, current?: number, total?: number) => void,
+  ) => Promise<ImportResult>;
 }
 
 /** Экспорт и импорт данных во всех трёх форматах. Импорт всегда добавляет к текущим данным и ничего не стирает. */
@@ -58,6 +66,7 @@ export function useDataTransfer() {
   const distanceUnit = useSettings((state) => state.distanceUnit);
   const profileName = useSettings((state) => state.profileName);
   const [busyAction, setBusyAction] = useState<BusyAction | null>(null);
+  const [importProgress, setImportProgress] = useState<ImportProgressState | null>(null);
 
   const runBusy = async (action: BusyAction, task: () => Promise<void>, failureKey: string) => {
     setBusyAction(action);
@@ -106,8 +115,8 @@ export function useDataTransfer() {
     if (!isBackup(backup)) throw new Error('not a backup');
     return {
       workoutCount: backup.workouts.length,
-      apply: () => {
-        const summary = mergeBackup(backup);
+      apply: async (onProgress) => {
+        const summary = await mergeBackupAsync(backup, onProgress);
         return {
           imported: summary.importedCount,
           duplicates: summary.duplicateCount,
@@ -122,7 +131,13 @@ export function useDataTransfer() {
     if (!parsed) throw new Error('unknown csv');
     return {
       workoutCount: parsed.workouts.length,
-      apply: () => toImportResult(importWorkouts(parsed.workouts)),
+      apply: async (onProgress) => {
+        const summary = await importWorkoutsAsync(parsed.workouts, 'sameStartMinute', (progressInfo) => {
+          const ratio = progressInfo.total > 0 ? progressInfo.current / progressInfo.total : 1;
+          onProgress?.(ratio, progressInfo.current, progressInfo.total);
+        });
+        return toImportResult(summary);
+      },
     };
   };
 
@@ -136,7 +151,13 @@ export function useDataTransfer() {
     // В Excel есть только даты, поэтому день, в который тренировка уже есть, пропускается целиком.
     return {
       workoutCount: parsed.workouts.length,
-      apply: () => toImportResult(importWorkouts(parsed.workouts, 'sameDay')),
+      apply: async (onProgress) => {
+        const summary = await importWorkoutsAsync(parsed.workouts, 'sameDay', (progressInfo) => {
+          const ratio = progressInfo.total > 0 ? progressInfo.current / progressInfo.total : 1;
+          onProgress?.(ratio, progressInfo.current, progressInfo.total);
+        });
+        return toImportResult(summary);
+      },
     };
   };
 
@@ -148,27 +169,77 @@ export function useDataTransfer() {
     });
     const pickedFile = pickerResult.canceled ? undefined : pickerResult.assets[0];
     if (!pickedFile) return;
-    await runBusy(
-      `import:${format}`,
-      async () => {
-        const file = new File(pickedFile.uri);
-        const planByFormat = { json: planJsonImport, csv: planCsvImport, xlsx: planXlsxImport };
-        const plan = await planByFormat[format](file);
-        if (plan.workoutCount === 0) throw new Error('nothing to import');
-        const isConfirmed = await confirm({
-          title: translate(IMPORT_TITLE_KEYS[format]),
-          message: translate('settings.importMergeConfirm', { count: plan.workoutCount }),
-          confirmLabel: translate('settings.importMergeAction'),
+
+    setBusyAction(`import:${format}`);
+    try {
+      const file = new File(pickedFile.uri);
+      const planByFormat = { json: planJsonImport, csv: planCsvImport, xlsx: planXlsxImport };
+      const plan = await planByFormat[format](file);
+      if (plan.workoutCount === 0) throw new Error('nothing to import');
+
+      const isConfirmed = await confirm({
+        title: translate(IMPORT_TITLE_KEYS[format]),
+        message: translate('settings.importMergeConfirm', { count: plan.workoutCount }),
+        confirmLabel: translate('settings.importMergeAction'),
+      });
+      if (!isConfirmed) {
+        setBusyAction(null);
+        return;
+      }
+
+      // После подтверждения показываем модальное окно прогресса в центре экрана.
+      setImportProgress({
+        isVisible: true,
+        progress: 0.1,
+        stageText: translate('settings.importCreatingBackup'),
+      });
+
+      // Страховка: копия всех данных до слияния лежит в папке приложения.
+      const backupFile = new File(Paths.document, `backup-before-import-${Date.now()}.json`);
+      backupFile.create();
+      await backupFile.write(JSON.stringify(createBackup()));
+
+      setImportProgress({
+        isVisible: true,
+        progress: 0.25,
+        stageText: translate('settings.importProcessing'),
+      });
+
+      const importResult = await plan.apply((stepRatio, current, total) => {
+        const mappedProgress = 0.25 + stepRatio * 0.65;
+        const stageText = total
+          ? translate('settings.importProcessingWorkouts', { current, total })
+          : translate('settings.importProcessing');
+        setImportProgress({
+          isVisible: true,
+          progress: mappedProgress,
+          stageText,
         });
-        if (!isConfirmed) return;
-        // Страховка: копия всех данных до слияния лежит в папке приложения.
-        const backupFile = new File(Paths.document, `backup-before-import-${Date.now()}.json`);
-        backupFile.create();
-        await backupFile.write(JSON.stringify(createBackup()));
-        toast(translate('settings.importMergeDone', { ...plan.apply() }));
-      },
-      'settings.importFailed',
-    );
+      });
+
+      setImportProgress({
+        isVisible: true,
+        progress: 0.95,
+        stageText: translate('settings.importFinalizing'),
+      });
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      setImportProgress({
+        isVisible: true,
+        progress: 1,
+        stageText: translate('settings.importDoneTitle'),
+      });
+      // Небольшая задержка, чтобы пользователь увидел финальный статус 100%.
+      await new Promise((resolve) => setTimeout(resolve, 350));
+
+      setImportProgress(null);
+      toast(translate('settings.importMergeDone', { ...importResult }));
+    } catch {
+      setImportProgress(null);
+      toast(translate('settings.importFailed'));
+    } finally {
+      setBusyAction(null);
+    }
   };
 
   const deleteAllData = async () => {
@@ -184,7 +255,7 @@ export function useDataTransfer() {
     toast(translate('common.deleted'));
   };
 
-  return { busyAction, exportData, importData, deleteAllData };
+  return { busyAction, importProgress, exportData, importData, deleteAllData };
 }
 
 export const EXPORT_TITLE_KEYS: Record<DataFormat, string> = {
@@ -199,7 +270,11 @@ export const IMPORT_TITLE_KEYS: Record<DataFormat, string> = {
   xlsx: 'settings.importXlsx',
 };
 
-function toImportResult(summary: ReturnType<typeof importWorkouts>): ImportResult {
+function toImportResult(summary: {
+  importedCount: number;
+  duplicateCount: number;
+  createdExerciseNames: string[];
+}): ImportResult {
   return {
     imported: summary.importedCount,
     duplicates: summary.duplicateCount,

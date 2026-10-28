@@ -113,3 +113,15 @@ export function mergeBackup(backup: Backup): BackupMergeSummary {
     createdExerciseCount: exercisesToAdd.length,
   };
 }
+
+export async function mergeBackupAsync(
+  backup: Backup,
+  onProgress?: (progressRatio: number, current?: number, total?: number) => void,
+): Promise<BackupMergeSummary> {
+  onProgress?.(0);
+  // Даём модальному окну отрисоваться перед синхронной транзакцией слияния.
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  const summary = mergeBackup(backup);
+  onProgress?.(1, backup.workouts.length, backup.workouts.length);
+  return summary;
+}

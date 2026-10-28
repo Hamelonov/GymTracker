@@ -211,3 +211,39 @@ export function importWorkouts(
   rebuildRecords([...touchedExerciseIds]);
   return { importedCount, duplicateCount, createdExerciseNames: resolver.createdNames };
 }
+
+export async function importWorkoutsAsync(
+  importedWorkouts: ImportedWorkout[],
+  duplicateRule: DuplicateRule = 'sameStartMinute',
+  onProgress?: (progress: { current: number; total: number }) => void,
+): Promise<ImportSummary> {
+  const duplicates = createDuplicateCheck(duplicateRule);
+  const resolver = createExerciseResolver();
+  const touchedExerciseIds = new Set<string>();
+  const sorted = [...importedWorkouts].sort((left, right) => left.startedAt - right.startedAt);
+  let importedCount = 0;
+  let duplicateCount = 0;
+
+  for (const [index, imported] of sorted.entries()) {
+    if (imported.exercises.length > 0) {
+      if (duplicates.isDuplicate(imported.startedAt)) {
+        duplicateCount += 1;
+      } else {
+        const activeWorkout = toActiveWorkout(imported, resolver.resolve);
+        saveWorkout(activeWorkout, imported.finishedAt);
+        duplicates.remember(imported.startedAt);
+        activeWorkout.exercises.forEach((exercise) => touchedExerciseIds.add(exercise.exerciseId));
+        importedCount += 1;
+      }
+    }
+
+    onProgress?.({ current: index + 1, total: sorted.length });
+    if (index + 1 < sorted.length) {
+      // Интерфейс должен отрисовать шаг прогресса до обработки следующей тренировки.
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
+  }
+
+  rebuildRecords([...touchedExerciseIds]);
+  return { importedCount, duplicateCount, createdExerciseNames: resolver.createdNames };
+}
