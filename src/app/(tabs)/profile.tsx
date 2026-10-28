@@ -6,6 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { getWorkoutTotals } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import { formatDuration } from '@/domain/units';
+import { useSettings } from '@/store/settings';
 import { Card, Icon, ListItem, Screen, SectionTitle, Text, spacing, useColors } from '@/ui';
 
 interface ProfileLink {
@@ -17,6 +18,7 @@ interface ProfileLink {
 export default function ProfileTab() {
   const { t: translate } = useTranslation();
   const colors = useColors();
+  const profileName = useSettings((state) => state.profileName);
   const allTimeTotals = useQuery(() => getWorkoutTotals(), []);
   const profileLinks: ProfileLink[] = [
     { icon: ChartLine, title: translate('profile.stats'), href: '/stats' },
@@ -28,7 +30,14 @@ export default function ProfileTab() {
     { icon: Info, title: translate('profile.about'), href: '/settings/about' },
   ];
   return (
-    <Screen header={{ title: translate('profile.title'), large: true }} contentStyle={{ paddingBottom: 120 }}>
+    <Screen
+      header={{
+        title: translate('profile.title'),
+        subtitle: profileName || undefined,
+        large: true,
+      }}
+      contentStyle={{ paddingBottom: 120 }}
+    >
       <Card style={styles.statsCard}>
         <StatTile label={translate('stats.workouts')} value={String(allTimeTotals.workouts)} />
         <StatTile

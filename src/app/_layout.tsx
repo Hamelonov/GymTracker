@@ -20,6 +20,7 @@ import { seedExercises } from '@/db/seed';
 import { initI18n, setLanguage } from '@/i18n';
 import { configureNotifications } from '@/lib/notifications';
 import { useSettings } from '@/store/settings';
+import { ProfileSetupPrompt } from '@/features/profile/ProfileSetupPrompt';
 import { DialogHost, Text, ThemeProvider, ToastHost, useTheme } from '@/ui';
 
 void SplashScreen.preventAutoHideAsync();
@@ -118,6 +119,7 @@ function Navigation() {
           options={{ presentation: 'modal', animation: 'fade_from_bottom' }}
         />
       </Stack>
+      <ProfileSetupPrompt />
       <ToastHost />
       <DialogHost />
     </View>

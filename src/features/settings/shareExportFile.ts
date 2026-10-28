@@ -1,4 +1,4 @@
-import { File, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import Storage from 'expo-sqlite/kv-store';
 
@@ -11,13 +11,23 @@ export function nextExportSequence(): number {
   return next;
 }
 
+/** Записывает файл в выбранную пользователем папку устройства. */
+export async function saveExportFile(
+  directory: Directory,
+  fileName: string,
+  content: string | Uint8Array,
+  mimeType: string,
+) {
+  const file = directory.createFile(fileName, mimeType);
+  await file.write(content);
+}
+
 /** Записывает файл в кэш и открывает для него системное окно «Поделиться»: текст или байты (.xlsx). */
 export async function shareExportFile(fileName: string, content: string | Uint8Array, mimeType: string) {
   const file = new File(Paths.cache, fileName);
   if (file.exists) file.delete();
   file.create();
   await file.write(content);
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(file.uri, { mimeType, dialogTitle: fileName });
-  }
+  if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is not available');
+  await Sharing.shareAsync(file.uri, { mimeType, dialogTitle: fileName });
 }

@@ -1,22 +1,31 @@
-import { Download, Trash2, Upload } from 'lucide-react-native';
-import React from 'react';
+import { Download, FolderDown, Share, Trash2, Upload } from 'lucide-react-native';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import {
   EXPORT_TITLE_KEYS,
   IMPORT_TITLE_KEYS,
+  type ExportDestination,
   useDataTransfer,
   type DataFormat,
 } from '@/features/settings/useDataTransfer';
-import { ImportProgressModal } from '@/features/settings/ImportProgressModal';
-import { Button, Card, Screen, SectionTitle, Text, spacing } from '@/ui';
+import { TransferProgressModal } from '@/features/settings/TransferProgressModal';
+import { Button, Card, Screen, SectionTitle, Sheet, Text, spacing } from '@/ui';
 
 // У каждого формата пара кнопок: «Экспорт в …» в своей секции и «Импорт из …» в своей.
 const FORMATS: DataFormat[] = ['json', 'csv', 'xlsx'];
 
 export default function DataScreen() {
   const { t: translate } = useTranslation();
-  const { busyAction, importProgress, exportData, importData, deleteAllData } = useDataTransfer();
+  const { busyAction, transferProgress, exportData, importData, deleteAllData } = useDataTransfer();
+  const [selectedExportFormat, setSelectedExportFormat] = useState<DataFormat | null>(null);
+
+  const startExport = (destination: ExportDestination) => {
+    if (!selectedExportFormat) return;
+    const format = selectedExportFormat;
+    setSelectedExportFormat(null);
+    void exportData(format, destination);
+  };
 
   return (
     <Screen header={{ backButton: true, title: translate('profile.data') }}>
@@ -31,8 +40,8 @@ export default function DataScreen() {
             contentAlign="start"
             // Стрелка из лотка — файл уходит из приложения.
             icon={<Upload size={18} />}
-            loading={busyAction === `export:${format}`}
-            onPress={() => exportData(format)}
+            disabled={busyAction != null}
+            onPress={() => setSelectedExportFormat(format)}
           />
         ))}
       </Card>
@@ -67,11 +76,47 @@ export default function DataScreen() {
         onPress={deleteAllData}
       />
 
-      <ImportProgressModal progressState={importProgress} />
+      <Sheet
+        visible={selectedExportFormat != null}
+        title={translate('settings.exportDestinationTitle')}
+        onClose={() => setSelectedExportFormat(null)}
+      >
+        <Text color="muted" style={styles.destinationDescription}>
+          {translate('settings.exportDestinationHint')}
+        </Text>
+        <View style={styles.destinationActions}>
+          <Button
+            title={translate('settings.exportShare')}
+            variant="secondary"
+            fullWidth
+            contentAlign="start"
+            icon={<Share size={18} />}
+            onPress={() => startExport('share')}
+          />
+          <Button
+            title={translate('settings.exportToDevice')}
+            variant="outline"
+            fullWidth
+            contentAlign="start"
+            icon={<FolderDown size={18} />}
+            onPress={() => startExport('device')}
+          />
+          <Button
+            title={translate('common.cancel')}
+            variant="ghost"
+            fullWidth
+            onPress={() => setSelectedExportFormat(null)}
+          />
+        </View>
+      </Sheet>
+
+      <TransferProgressModal progressState={transferProgress} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   buttonsCard: { gap: spacing.sm },
+  destinationDescription: { marginBottom: spacing.md },
+  destinationActions: { gap: spacing.sm },
 });

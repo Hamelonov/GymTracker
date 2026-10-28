@@ -1,14 +1,20 @@
 import * as DocumentPicker from 'expo-document-picker';
-import { File, Paths } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createBackup, deleteAllUserData, isBackup, workoutsCsv } from '@/db/repo/backup';
+import {
+  createBackup,
+  deleteAllUserData,
+  isBackup,
+  stringifyBackupAsync,
+  workoutsCsvAsync,
+} from '@/db/repo/backup';
 import { importWorkoutsAsync } from '@/db/repo/importWorkouts';
 import { mergeBackupAsync } from '@/db/repo/mergeBackup';
 import { parseWorkoutsCsv } from '@/domain/workoutsCsv';
 import { XLSX_MIME_TYPE } from '@/domain/xlsx/buildXlsx';
 import { readXlsx } from '@/domain/xlsx/readXlsx';
-import { exportProgressToExcel } from '@/features/log/exportProgress';
+import { createProgressExcelFile, type ExportProgressOptions } from '@/features/log/exportProgress';
 import { parseProgressWorkbook, type ProgressHeaderAliases } from '@/features/log/progressWorkbookImport';
 import en from '@/i18n/en';
 import ru from '@/i18n/ru';
@@ -16,14 +22,16 @@ import { useActiveWorkout } from '@/store/activeWorkout';
 import { useSettings } from '@/store/settings';
 import { confirm, toast } from '@/ui';
 import { buildExportFileName } from './exportFileName';
-import { nextExportSequence, shareExportFile } from './shareExportFile';
+import { nextExportSequence, saveExportFile, shareExportFile } from './shareExportFile';
 
 export type DataFormat = 'json' | 'csv' | 'xlsx';
 export type BusyAction = `${'export' | 'import'}:${DataFormat}`;
+export type ExportDestination = 'share' | 'device';
 
-export interface ImportProgressState {
+export interface TransferProgressState {
   isVisible: boolean;
   progress: number;
+  titleText: string;
   stageText: string;
 }
 
@@ -66,46 +74,149 @@ export function useDataTransfer() {
   const distanceUnit = useSettings((state) => state.distanceUnit);
   const profileName = useSettings((state) => state.profileName);
   const [busyAction, setBusyAction] = useState<BusyAction | null>(null);
-  const [importProgress, setImportProgress] = useState<ImportProgressState | null>(null);
+  const [transferProgress, setTransferProgress] = useState<TransferProgressState | null>(null);
 
   const runBusy = async (action: BusyAction, task: () => Promise<void>, failureKey: string) => {
     setBusyAction(action);
     try {
       await task();
     } catch {
+      setTransferProgress(null);
       toast(translate(failureKey));
     } finally {
       setBusyAction(null);
     }
   };
 
-  const shareText = async (format: 'json' | 'csv', content: string, mimeType: string) => {
-    const fileName = buildExportFileName({
+  const createExportFileName = (extension: DataFormat) =>
+    buildExportFileName({
       profileName,
       date: new Date(),
       sequence: nextExportSequence(),
-      extension: format,
+      extension,
     });
-    await shareExportFile(fileName, content, mimeType);
-    toast(translate('settings.exportDone'));
-  };
 
-  const exportData = (format: DataFormat) =>
+  const exportData = (format: DataFormat, destination: ExportDestination) =>
     runBusy(
       `export:${format}`,
       async () => {
-        if (format === 'json') await shareText('json', JSON.stringify(createBackup()), 'application/json');
-        if (format === 'csv') await shareText('csv', workoutsCsv(weightUnit, i18n.language), 'text/csv');
-        if (format === 'xlsx') {
-          const hasProgress = await exportProgressToExcel({
+        let directory: Directory | undefined;
+        if (destination === 'device') {
+          await new Promise<void>((resolve) => setTimeout(resolve, 180));
+          try {
+            directory = await Directory.pickDirectoryAsync();
+          } catch (error) {
+            if (error instanceof Error && /cancel/i.test(error.message)) return;
+            throw error;
+          }
+        }
+
+        const titleText = translate('settings.exportProgressTitle');
+        setTransferProgress({
+          isVisible: true,
+          progress: 0.05,
+          titleText,
+          stageText: translate('settings.exportPreparing'),
+        });
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+        const onExportProgress = (
+          progress: number,
+          current: number,
+          total: number,
+          stageKey = 'settings.exportCollectingItems',
+        ) => {
+          setTransferProgress({
+            isVisible: true,
+            progress: 0.15 + Math.max(0, Math.min(1, progress)) * 0.55,
+            titleText,
+            stageText: translate(stageKey, { current, total }),
+          });
+        };
+        const onRecordProgress = (current: number, total: number) => {
+          if (total === 0) {
+            setTransferProgress({
+              isVisible: true,
+              progress: 0.7,
+              titleText,
+              stageText: translate('settings.exportCollecting'),
+            });
+            return;
+          }
+          onExportProgress(current / total, current, total);
+        };
+
+        let fileName: string;
+        let content: string | Uint8Array;
+        let mimeType: string;
+
+        if (format === 'json') {
+          setTransferProgress({
+            isVisible: true,
+            progress: 0.2,
+            titleText,
+            stageText: translate('settings.exportCollecting'),
+          });
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          content = await stringifyBackupAsync(createBackup(), onRecordProgress);
+          fileName = createExportFileName('json');
+          mimeType = 'application/json';
+        } else if (format === 'csv') {
+          setTransferProgress({
+            isVisible: true,
+            progress: 0.2,
+            titleText,
+            stageText: translate('settings.exportCollecting'),
+          });
+          await new Promise<void>((resolve) => setTimeout(resolve, 0));
+          content = await workoutsCsvAsync(weightUnit, i18n.language, onRecordProgress);
+          fileName = createExportFileName('csv');
+          mimeType = 'text/csv';
+        } else {
+          const progressOptions: ExportProgressOptions = {
             profileName,
             weightUnit,
             distanceUnit,
             language: i18n.language,
             translate,
-          });
-          if (!hasProgress) toast(translate('log.empty'));
+          };
+          const exportFile = await createProgressExcelFile(progressOptions, (progress, current, total) =>
+            onExportProgress(progress, current, total, 'settings.exportCollectingExercises'),
+          );
+          if (!exportFile) {
+            setTransferProgress(null);
+            toast(translate('log.empty'));
+            return;
+          }
+          fileName = exportFile.fileName;
+          content = exportFile.content;
+          mimeType = XLSX_MIME_TYPE;
         }
+
+        setTransferProgress({
+          isVisible: true,
+          progress: 0.8,
+          titleText,
+          stageText: translate('settings.exportWriting'),
+        });
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+        if (directory) {
+          await saveExportFile(directory, fileName, content, mimeType);
+          toast(translate('settings.exportSaved'));
+        } else {
+          await shareExportFile(fileName, content, mimeType);
+          toast(translate('settings.exportDone'));
+        }
+
+        setTransferProgress({
+          isVisible: true,
+          progress: 1,
+          titleText,
+          stageText: translate('settings.exportDoneTitle'),
+        });
+        await new Promise<void>((resolve) => setTimeout(resolve, 350));
+        setTransferProgress(null);
       },
       'common.error',
     );
@@ -188,9 +299,10 @@ export function useDataTransfer() {
       }
 
       // После подтверждения показываем модальное окно прогресса в центре экрана.
-      setImportProgress({
+      setTransferProgress({
         isVisible: true,
         progress: 0.1,
+        titleText: translate('settings.importProgressTitle'),
         stageText: translate('settings.importCreatingBackup'),
       });
 
@@ -199,9 +311,10 @@ export function useDataTransfer() {
       backupFile.create();
       await backupFile.write(JSON.stringify(createBackup()));
 
-      setImportProgress({
+      setTransferProgress({
         isVisible: true,
         progress: 0.25,
+        titleText: translate('settings.importProgressTitle'),
         stageText: translate('settings.importProcessing'),
       });
 
@@ -210,32 +323,35 @@ export function useDataTransfer() {
         const stageText = total
           ? translate('settings.importProcessingWorkouts', { current, total })
           : translate('settings.importProcessing');
-        setImportProgress({
+        setTransferProgress({
           isVisible: true,
           progress: mappedProgress,
+          titleText: translate('settings.importProgressTitle'),
           stageText,
         });
       });
 
-      setImportProgress({
+      setTransferProgress({
         isVisible: true,
         progress: 0.95,
+        titleText: translate('settings.importProgressTitle'),
         stageText: translate('settings.importFinalizing'),
       });
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      setImportProgress({
+      setTransferProgress({
         isVisible: true,
         progress: 1,
+        titleText: translate('settings.importProgressTitle'),
         stageText: translate('settings.importDoneTitle'),
       });
       // Небольшая задержка, чтобы пользователь увидел финальный статус 100%.
       await new Promise((resolve) => setTimeout(resolve, 350));
 
-      setImportProgress(null);
+      setTransferProgress(null);
       toast(translate('settings.importMergeDone', { ...importResult }));
     } catch {
-      setImportProgress(null);
+      setTransferProgress(null);
       toast(translate('settings.importFailed'));
     } finally {
       setBusyAction(null);
@@ -255,7 +371,7 @@ export function useDataTransfer() {
     toast(translate('common.deleted'));
   };
 
-  return { busyAction, importProgress, exportData, importData, deleteAllData };
+  return { busyAction, transferProgress, exportData, importData, deleteAllData };
 }
 
 export const EXPORT_TITLE_KEYS: Record<DataFormat, string> = {

@@ -1,15 +1,13 @@
 import React from 'react';
 import { Modal, StyleSheet, View } from 'react-native';
-import { useTranslation } from 'react-i18next';
-import type { ImportProgressState } from '@/features/settings/useDataTransfer';
+import type { TransferProgressState } from '@/features/settings/useDataTransfer';
 import { Text, radius, spacing, useColors } from '@/ui';
 
-interface ImportProgressModalProps {
-  progressState: ImportProgressState | null;
+interface TransferProgressModalProps {
+  progressState: TransferProgressState | null;
 }
 
-export function ImportProgressModal({ progressState }: ImportProgressModalProps) {
-  const { t: translate } = useTranslation();
+export function TransferProgressModal({ progressState }: TransferProgressModalProps) {
   const colors = useColors();
 
   if (!progressState) return null;
@@ -26,15 +24,15 @@ export function ImportProgressModal({ progressState }: ImportProgressModalProps)
     >
       <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
         <View style={[styles.dialog, { backgroundColor: colors.surfaceRaised }]}>
-          <Text variant="h3">{translate('settings.importProgressTitle')}</Text>
+          <Text variant="h3">{progressState.titleText}</Text>
           <Text color="muted" style={styles.stageText}>
-            {progressState.stageText || translate('settings.importPreparing')}
+            {progressState.stageText}
           </Text>
           <View style={styles.progressRow}>
             <View
               style={[styles.progressTrack, { backgroundColor: colors.surfaceAlt }]}
               accessibilityRole="progressbar"
-              accessibilityLabel={translate('settings.importProgressTitle')}
+              accessibilityLabel={progressState.titleText}
               accessibilityValue={{ min: 0, max: 100, now: progressPercent }}
             >
               <View

@@ -21,8 +21,11 @@ export interface SettingsState {
   barWeightKg: number;
   /** Имя профиля; попадает в имена файлов экспорта. */
   profileName: string;
+  profileSetupCompleted: boolean;
   platesKg: number[];
+  hasHydrated: boolean;
   update: (patch: Partial<SettingsState>) => void;
+  markHydrated: () => void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -40,16 +43,28 @@ export const useSettings = create<SettingsState>()(
       keepAwake: true,
       barWeightKg: 20,
       profileName: '',
+      profileSetupCompleted: false,
       platesKg: DEFAULT_PLATES_KG,
+      hasHydrated: false,
       update: (patch) => set(patch),
+      markHydrated: () => set({ hasHydrated: true }),
     }),
     {
       name: 'settings',
       storage: createJSONStorage(() => deferredStorage),
       // Сохраняем только значения, без действия `set`.
       partialize: (state) => {
-        const { update: _setAction, ...persistedSettings } = state;
+        const {
+          update: _setAction,
+          markHydrated: _markHydrated,
+          hasHydrated: _hasHydrated,
+          ...persistedSettings
+        } = state;
         return persistedSettings;
+      },
+      onRehydrateStorage: () => (state) => {
+        if (state?.profileName.trim()) state.update({ profileSetupCompleted: true });
+        state?.markHydrated();
       },
     },
   ),

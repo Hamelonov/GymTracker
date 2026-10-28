@@ -16,6 +16,8 @@ import { formatDuration, kgToUnit } from '@/domain/units';
 import type { WeightUnit } from '@/domain/types';
 import { exerciseName } from './exercises';
 
+export { stringifyBackupAsync } from './backupSerialization';
+
 export const BACKUP_VERSION = 1;
 
 export interface Backup {
@@ -94,14 +96,55 @@ function csvCell(value: string | number | null | undefined): string {
 }
 
 /** Плоский CSV: одна строка на подход. */
-export function workoutsCsv(unit: WeightUnit, language: string): string {
-  const backup = createBackup();
+function createWorkoutsCsvContext(backup: Backup, unit: WeightUnit, language: string) {
   const exercisesById = new Map(backup.exercises.map((exercise) => [exercise.id, exercise]));
   const workoutsById = new Map(backup.workouts.map((workout) => [workout.id, workout]));
   const workoutExercisesById = new Map(
     backup.workoutExercises.map((workoutExercise) => [workoutExercise.id, workoutExercise]),
   );
-  const header = [
+
+  function workoutStartOfSet(set: (typeof backup.sets)[number]): number {
+    const workoutId = workoutExercisesById.get(set.workoutExerciseId)?.workoutId ?? '';
+    return workoutsById.get(workoutId)?.startedAt ?? 0;
+  }
+
+  const sortedSets = [...backup.sets].sort(
+    (firstSet, secondSet) =>
+      workoutStartOfSet(firstSet) - workoutStartOfSet(secondSet) || firstSet.position - secondSet.position,
+  );
+  return { backup, exercisesById, workoutsById, workoutExercisesById, sortedSets, unit, language };
+}
+
+function formatWorkoutCsvSet(
+  set: Backup['sets'][number],
+  context: ReturnType<typeof createWorkoutsCsvContext>,
+): string | null {
+  const workoutExercise = context.workoutExercisesById.get(set.workoutExerciseId);
+  if (!workoutExercise) return null;
+  const workout = context.workoutsById.get(workoutExercise.workoutId);
+  const exercise = context.exercisesById.get(workoutExercise.exerciseId);
+  if (!workout || !exercise) return null;
+  const weightInUnit =
+    set.weightKg != null ? Math.round(kgToUnit(set.weightKg, context.unit) * 100) / 100 : '';
+  return [
+    new Date(workout.startedAt).toISOString(),
+    csvCell(workout.name),
+    formatDuration(workout.durationSec),
+    csvCell(exerciseName(exercise, context.language)),
+    set.position + 1,
+    set.type,
+    weightInUnit,
+    set.reps ?? '',
+    set.durationSec ?? '',
+    set.distanceM ?? '',
+    set.rpe ?? '',
+    set.rir ?? '',
+    csvCell(workoutExercise.note),
+  ].join(',');
+}
+
+function createWorkoutsCsvHeader(unit: WeightUnit): string {
+  return [
     'date',
     'workout',
     'duration',
@@ -115,42 +158,35 @@ export function workoutsCsv(unit: WeightUnit, language: string): string {
     'rpe',
     'rir',
     'note',
-  ];
-  const lines = [header.join(',')];
+  ].join(',');
+}
 
-  function workoutStartOfSet(set: (typeof backup.sets)[number]): number {
-    const workoutId = workoutExercisesById.get(set.workoutExerciseId)?.workoutId ?? '';
-    return workoutsById.get(workoutId)?.startedAt ?? 0;
+export function workoutsCsv(unit: WeightUnit, language: string): string {
+  const context = createWorkoutsCsvContext(createBackup(), unit, language);
+  const lines = [createWorkoutsCsvHeader(unit)];
+  for (const set of context.sortedSets) {
+    const row = formatWorkoutCsvSet(set, context);
+    if (row) lines.push(row);
   }
+  return lines.join('\n');
+}
 
-  const sortedSets = [...backup.sets].sort(
-    (firstSet, secondSet) =>
-      workoutStartOfSet(firstSet) - workoutStartOfSet(secondSet) || firstSet.position - secondSet.position,
-  );
-  for (const set of sortedSets) {
-    const workoutExercise = workoutExercisesById.get(set.workoutExerciseId);
-    if (!workoutExercise) continue;
-    const workout = workoutsById.get(workoutExercise.workoutId);
-    const exercise = exercisesById.get(workoutExercise.exerciseId);
-    if (!workout || !exercise) continue;
-    const weightInUnit = set.weightKg != null ? Math.round(kgToUnit(set.weightKg, unit) * 100) / 100 : '';
-    lines.push(
-      [
-        new Date(workout.startedAt).toISOString(),
-        csvCell(workout.name),
-        formatDuration(workout.durationSec),
-        csvCell(exerciseName(exercise, language)),
-        set.position + 1,
-        set.type,
-        weightInUnit,
-        set.reps ?? '',
-        set.durationSec ?? '',
-        set.distanceM ?? '',
-        set.rpe ?? '',
-        set.rir ?? '',
-        csvCell(workoutExercise.note),
-      ].join(','),
-    );
+export async function workoutsCsvAsync(
+  unit: WeightUnit,
+  language: string,
+  onProgress?: (current: number, total: number) => void,
+): Promise<string> {
+  const context = createWorkoutsCsvContext(createBackup(), unit, language);
+  const lines = [createWorkoutsCsvHeader(unit)];
+
+  for (const [index, set] of context.sortedSets.entries()) {
+    const row = formatWorkoutCsvSet(set, context);
+    if (row) lines.push(row);
+    if ((index + 1) % 200 === 0 || index === context.sortedSets.length - 1) {
+      onProgress?.(index + 1, context.sortedSets.length);
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
   }
+  if (context.sortedSets.length === 0) onProgress?.(0, 0);
   return lines.join('\n');
 }
