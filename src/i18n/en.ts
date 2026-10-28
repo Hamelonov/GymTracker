@@ -474,7 +474,7 @@ const en = {
     importDoneTitle: 'Done!',
     profile: 'Profile',
     profileName: 'Profile name',
-    profileNamePlaceholder: 'For example, Andrey',
+    profileNamePlaceholder: 'Profile name',
     profileNameHint: 'Used in export file names: data_gymtracker_name_date_number',
     exportDone: 'Backup ready',
     clearSection: 'Data cleanup',
@@ -491,6 +491,7 @@ const en = {
   onboarding: {
     title: 'Track every rep.',
     subtitle: 'Fast, offline, yours. Pick your preferences to get started.',
+    profileNameEyebrow: 'YOUR PROFILE',
     profileNameTitle: 'What should we call you?',
     profileNamePrompt: 'Your name will appear on your profile and be used in exported file names.',
     continue: 'Get started',

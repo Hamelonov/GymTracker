@@ -20,7 +20,7 @@ import { seedExercises } from '@/db/seed';
 import { initI18n, setLanguage } from '@/i18n';
 import { configureNotifications } from '@/lib/notifications';
 import { useSettings } from '@/store/settings';
-import { ProfileSetupPrompt } from '@/features/profile/ProfileSetupPrompt';
+import { ProfileSetupScreen } from '@/features/profile/ProfileSetupScreen';
 import { DialogHost, Text, ThemeProvider, ToastHost, useTheme } from '@/ui';
 
 void SplashScreen.preventAutoHideAsync();
@@ -36,6 +36,7 @@ export default function RootLayout() {
   });
   const { success: isDatabaseReady, error: databaseError } = useDatabaseReady();
   const language = useSettings((state) => state.language);
+  const hasSettingsHydrated = useSettings((state) => state.hasHydrated);
 
   // Выполняется один раз, во время первого рендера, чтобы переводы были готовы до отрисовки любого экрана.
   useMemo(() => initI18n(language), []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -49,7 +50,7 @@ export default function RootLayout() {
     }
   }, [isDatabaseReady]);
 
-  const isAppReady = areFontsLoaded && (isDatabaseReady || !!databaseError);
+  const isAppReady = areFontsLoaded && hasSettingsHydrated && (isDatabaseReady || !!databaseError);
   useEffect(() => {
     if (isAppReady) void SplashScreen.hideAsync();
   }, [isAppReady]);
@@ -79,9 +80,19 @@ function MigrationError({ message }: { message: string }) {
 
 function Navigation() {
   const { colors, isDark } = useTheme();
+  const profileName = useSettings((state) => state.profileName);
+  const profileSetupCompleted = useSettings((state) => state.profileSetupCompleted);
   useEffect(() => {
     void SystemUI.setBackgroundColorAsync(colors.background);
   }, [colors.background]);
+  if (!profileSetupCompleted && !profileName.trim()) {
+    return (
+      <View style={[styles.fill, { backgroundColor: colors.background }]}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        <ProfileSetupScreen />
+      </View>
+    );
+  }
   return (
     <View style={[styles.fill, { backgroundColor: colors.background }]}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -119,7 +130,6 @@ function Navigation() {
           options={{ presentation: 'modal', animation: 'fade_from_bottom' }}
         />
       </Stack>
-      <ProfileSetupPrompt />
       <ToastHost />
       <DialogHost />
     </View>

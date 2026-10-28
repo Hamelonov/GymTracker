@@ -487,7 +487,7 @@ const ru = {
     importDoneTitle: 'Готово!',
     profile: 'Профиль',
     profileName: 'Имя профиля',
-    profileNamePlaceholder: 'Например, Андрей',
+    profileNamePlaceholder: 'Имя для профиля',
     profileNameHint: 'Попадает в имена файлов экспорта: data_gymtracker_имя_дата_номер',
     exportDone: 'Копия готова',
     clearSection: 'Очистка',
@@ -504,6 +504,7 @@ const ru = {
   onboarding: {
     title: 'Считай каждое повторение.',
     subtitle: 'Быстро, офлайн, только твоё. Выбери настройки, чтобы начать.',
+    profileNameEyebrow: 'ТВОЙ ПРОФИЛЬ',
     profileNameTitle: 'Как тебя зовут?',
     profileNamePrompt: 'Имя будет отображаться на экране профиля и использоваться в экспорте файлов.',
     continue: 'Начать',
