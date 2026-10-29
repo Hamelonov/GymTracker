@@ -3,6 +3,9 @@
     "name": "GymTracker",
     "slug": "gymtracker",
     "version": "0.1.1",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "scheme": "gymtracker",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
