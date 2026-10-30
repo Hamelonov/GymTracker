@@ -495,6 +495,8 @@ const ru = {
     deleteAllConfirm: 'Удалить все тренировки, программы и замеры? Это нельзя отменить.',
     about: 'О приложении',
     version: 'Версия',
+    update: 'Обновление',
+    updateEmbedded: 'из сборки',
     license: 'Лицензия',
     source: 'Исходный код',
     aboutText:

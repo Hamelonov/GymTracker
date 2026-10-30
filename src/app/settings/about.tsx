@@ -1,14 +1,29 @@
+import { format } from 'date-fns';
 import Constants from 'expo-constants';
 import * as Linking from 'expo-linking';
+import * as Updates from 'expo-updates';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
+import { dateLocale } from '@/domain/dates';
 import { Card, ListItem, Screen, Text, radius, spacing, useColors } from '@/ui';
 
 const REPO_URL = 'https://github.com/Hamelonov/GymTracker';
 
+/**
+ * Какой код сейчас запущен: встроенный в сборку или пришедший обновлением по воздуху.
+ * По дате видно, дошла ли последняя правка до телефона.
+ */
+function describeCurrentUpdate(language: string, translate: (key: string) => string): string {
+  const source =
+    Updates.isEmbeddedLaunch || !Updates.createdAt
+      ? translate('settings.updateEmbedded')
+      : format(Updates.createdAt, 'P HH:mm', { locale: dateLocale(language) });
+  return Updates.channel ? `${source} · ${Updates.channel}` : source;
+}
+
 export default function AboutScreen() {
-  const { t: translate } = useTranslation();
+  const { t: translate, i18n } = useTranslation();
   const colors = useColors();
   const appVersion = Constants.expoConfig?.version ?? '—';
   return (
@@ -28,6 +43,11 @@ export default function AboutScreen() {
         <ListItem
           title={translate('settings.version')}
           right={<Text color="muted">{appVersion}</Text>}
+          style={styles.listItem}
+        />
+        <ListItem
+          title={translate('settings.update')}
+          right={<Text color="muted">{describeCurrentUpdate(i18n.language, translate)}</Text>}
           style={styles.listItem}
         />
         <ListItem

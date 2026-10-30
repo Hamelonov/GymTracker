@@ -482,6 +482,8 @@ const en = {
     deleteAllConfirm: 'Delete every workout, routine and measurement? This cannot be undone.',
     about: 'About',
     version: 'Version',
+    update: 'Update',
+    updateEmbedded: 'built-in',
     license: 'License',
     source: 'Source code',
     aboutText:
