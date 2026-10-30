@@ -1,5 +1,14 @@
 import { push } from '@/lib/nav';
-import { Calculator, ChartLine, Database, Info, Ruler, Scale, Settings } from 'lucide-react-native';
+import {
+  Calculator,
+  ChartLine,
+  Database,
+  Info,
+  PersonStanding,
+  Ruler,
+  Scale,
+  Settings,
+} from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -25,6 +34,7 @@ export default function ProfileTab() {
     { icon: Ruler, title: translate('profile.measurements'), href: '/measurements' },
     { icon: Scale, title: translate('profile.plateCalculator'), href: '/tools/plates' },
     { icon: Calculator, title: translate('profile.oneRmCalculator'), href: '/tools/one-rm' },
+    { icon: PersonStanding, title: translate('profile.repsCalculator'), href: '/tools/reps' },
     { icon: Database, title: translate('profile.data'), href: '/settings/data' },
     { icon: Settings, title: translate('profile.settings'), href: '/settings' },
     { icon: Info, title: translate('profile.about'), href: '/settings/about' },
