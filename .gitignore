@@ -45,3 +45,4 @@ yarn-error.*
 
 # Сборка локальных нативных модулей
 modules/*/android/build/
+modules/*/android/.gradle/
