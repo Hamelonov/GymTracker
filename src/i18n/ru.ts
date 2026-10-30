@@ -509,6 +509,13 @@ const ru = {
     version: 'Версия',
     update: 'Обновление',
     updateEmbedded: 'из сборки',
+    updateCheck: 'Проверить обновления',
+    updateChecking: 'Проверяю обновления…',
+    updateDownloading: 'Скачиваю обновление…',
+    updateInstall: 'Установить обновление',
+    updateLatest: 'Установлена последняя версия',
+    updateFailed: 'Не удалось обновить. Проверь интернет',
+    updateUnavailable: 'В режиме разработки обновления идут из Metro',
     license: 'Лицензия',
     source: 'Исходный код',
     aboutText:

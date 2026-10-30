@@ -496,6 +496,13 @@ const en = {
     version: 'Version',
     update: 'Update',
     updateEmbedded: 'built-in',
+    updateCheck: 'Check for updates',
+    updateChecking: 'Checking for updates…',
+    updateDownloading: 'Downloading update…',
+    updateInstall: 'Install update',
+    updateLatest: 'You have the latest version',
+    updateFailed: 'Could not update. Check your connection',
+    updateUnavailable: 'In development mode updates come from Metro',
     license: 'License',
     source: 'Source code',
     aboutText:

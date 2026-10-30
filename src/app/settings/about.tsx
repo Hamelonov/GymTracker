@@ -5,8 +5,10 @@ import * as Updates from 'expo-updates';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
+import { RefreshCw } from 'lucide-react-native';
 import { dateLocale } from '@/domain/dates';
-import { Card, ListItem, Screen, Text, radius, spacing, useColors } from '@/ui';
+import { useAppUpdate } from '@/features/settings/useAppUpdate';
+import { Button, Card, Icon, ListItem, Screen, Text, radius, spacing, useColors } from '@/ui';
 
 const REPO_URL = 'https://github.com/Hamelonov/GymTracker';
 
@@ -26,6 +28,7 @@ export default function AboutScreen() {
   const { t: translate, i18n } = useTranslation();
   const colors = useColors();
   const appVersion = Constants.expoConfig?.version ?? '—';
+  const { updateApp, buttonTitle, isBusy } = useAppUpdate();
   return (
     <Screen header={{ backButton: true, title: translate('settings.about') }}>
       <View style={styles.hero}>
@@ -63,6 +66,15 @@ export default function AboutScreen() {
           style={styles.listItem}
         />
       </Card>
+      <Button
+        title={buttonTitle}
+        variant="secondary"
+        icon={<Icon icon={RefreshCw} size={18} />}
+        disabled={isBusy}
+        fullWidth
+        onPress={() => void updateApp()}
+        style={styles.updateButton}
+      />
     </Screen>
   );
 }
@@ -79,4 +91,5 @@ const styles = StyleSheet.create({
   },
   description: { marginTop: spacing.sm, maxWidth: 320 },
   listItem: { paddingHorizontal: spacing.lg },
+  updateButton: { marginTop: spacing.lg },
 });
