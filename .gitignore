@@ -42,3 +42,6 @@ yarn-error.*
 
 # Рабочие файлы планов Claude
 .superpowers/
+
+# Сборка локальных нативных модулей
+modules/*/android/build/

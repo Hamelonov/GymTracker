@@ -11,7 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as SystemUI from 'expo-system-ui';
 import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { AppState, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useDatabaseReady } from '@/db/migrate';
@@ -19,6 +19,7 @@ import { renameDefaultWorkoutNames } from '@/db/renameDefaultWorkoutNames';
 import { seedExercises } from '@/db/seed';
 import { initI18n, setLanguage } from '@/i18n';
 import { configureNotifications } from '@/lib/notifications';
+import { syncRestTimerOnAppActive } from '@/store/restTimer';
 import { useSettings } from '@/store/settings';
 import { ProfileSetupScreen } from '@/features/profile/ProfileSetupScreen';
 import { DialogHost, Text, ThemeProvider, ToastHost, useTheme } from '@/ui';
@@ -49,6 +50,13 @@ export default function RootLayout() {
       void configureNotifications();
     }
   }, [isDatabaseReady]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (appState) => {
+      if (appState === 'active') syncRestTimerOnAppActive();
+    });
+    return () => subscription.remove();
+  }, []);
 
   const isAppReady = areFontsLoaded && hasSettingsHydrated && (isDatabaseReady || !!databaseError);
   useEffect(() => {

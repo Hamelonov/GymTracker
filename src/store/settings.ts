@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { deferredStorage } from './kvStorage';
 import { DEFAULT_PLATES_KG } from '@/domain/plates';
 import type { DistanceUnit, MeasurementUnit, WeightUnit } from '@/domain/types';
+import type { RestVibrationStrength } from '@/lib/restAlert';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 export type LanguagePreference = 'system' | 'ru' | 'en';
@@ -17,6 +18,8 @@ export interface SettingsState {
   autoStartRest: boolean;
   restNotifications: boolean;
   haptics: boolean;
+  /** Сила вибрации в конце отдыха; не зависит от настроек вибрации телефона. */
+  restVibration: RestVibrationStrength;
   keepAwake: boolean;
   barWeightKg: number;
   /** Имя профиля; попадает в имена файлов экспорта. */
@@ -40,6 +43,7 @@ export const useSettings = create<SettingsState>()(
       autoStartRest: true,
       restNotifications: true,
       haptics: true,
+      restVibration: 'medium',
       keepAwake: true,
       barWeightKg: 20,
       profileName: '',

@@ -7,6 +7,7 @@ import type { WeightUnit } from '@/domain/types';
 import { formatDuration, unitToKg } from '@/domain/units';
 import { PlateSettings } from '@/features/settings/PlateSettings';
 import { SettingSwitchRow } from '@/features/settings/SettingSwitchRow';
+import { RestVibrationSetting } from '@/features/settings/RestVibrationSetting';
 import { useSettings } from '@/store/settings';
 import { Card, Chip, ListItem, Screen, SectionTitle, Segmented, Text, spacing, Input } from '@/ui';
 
@@ -133,6 +134,7 @@ export default function SettingsScreen() {
           value={settings.restNotifications}
           onChange={(restNotifications) => settings.update({ restNotifications })}
         />
+        <RestVibrationSetting />
         <SettingSwitchRow
           title={translate('settings.haptics')}
           value={settings.haptics}
