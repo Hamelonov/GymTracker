@@ -1,15 +1,13 @@
 import { addDays, parseISO } from 'date-fns';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Ellipsis } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { getWorkout, listWorkouts, type WorkoutDetail } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
-import { formatFullDate, formatTime } from '@/domain/dates';
-import { WorkoutActionsSheet } from '@/features/history/WorkoutActionsSheet';
-import { WorkoutDetailsBody } from '@/features/history/WorkoutDetailsBody';
-import { IconButton, Screen, Text, spacing, useColors } from '@/ui';
+import { formatFullDate } from '@/domain/dates';
+import { WorkoutSection } from '@/features/history/WorkoutSection';
+import { Screen, spacing, useColors } from '@/ui';
 
 /** Тренировки дня по порядку: утренняя первой. */
 function loadDayWorkouts(dayStart: Date): WorkoutDetail[] {
@@ -25,11 +23,8 @@ export default function HistoryDayScreen() {
   const { day } = useLocalSearchParams<{ day: string }>();
   const { i18n } = useTranslation();
   const colors = useColors();
-  const [menuWorkoutId, setMenuWorkoutId] = useState<string | null>(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const dayStart = parseISO(day);
   const dayWorkouts = useQuery(() => loadDayWorkouts(dayStart), [day]);
-  const menuWorkout = dayWorkouts.find((workout) => workout.id === menuWorkoutId);
 
   // Удалили последнюю тренировку дня — показывать больше нечего.
   const handleWorkoutDeleted = () => {
@@ -46,34 +41,9 @@ export default function HistoryDayScreen() {
             index > 0 ? [styles.workoutDivider, { borderTopColor: colors.border }] : null,
           ]}
         >
-          <View style={styles.workoutTitleRow}>
-            <View style={styles.workoutTitleColumn}>
-              <Text variant="h3">{workout.name}</Text>
-              <Text variant="caption" color="muted" tabular>
-                {formatTime(workout.startedAt)}
-              </Text>
-            </View>
-            <IconButton
-              icon={Ellipsis}
-              variant="filled"
-              onPress={() => {
-                setMenuWorkoutId(workout.id);
-                setIsMenuOpen(true);
-              }}
-              haptic="selection"
-            />
-          </View>
-          <WorkoutDetailsBody workout={workout} />
+          <WorkoutSection workout={workout} onDeleted={handleWorkoutDeleted} />
         </View>
       ))}
-      {menuWorkout ? (
-        <WorkoutActionsSheet
-          workout={menuWorkout}
-          visible={isMenuOpen}
-          onClose={() => setIsMenuOpen(false)}
-          onDeleted={handleWorkoutDeleted}
-        />
-      ) : null}
     </Screen>
   );
 }
@@ -81,11 +51,4 @@ export default function HistoryDayScreen() {
 const styles = StyleSheet.create({
   workoutSection: { paddingBottom: spacing.md },
   workoutDivider: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.lg },
-  workoutTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  workoutTitleColumn: { flex: 1, gap: 2 },
 });

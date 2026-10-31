@@ -331,8 +331,6 @@ const en = {
     workoutsInMonth_one: '{{count}} workout',
     workoutsInMonth_other: '{{count}} workouts',
     deleteConfirm: 'Delete this workout? This cannot be undone.',
-    repeat: 'Repeat workout',
-    saveAsRoutine: 'Save as routine',
     exercisesDone: 'Exercises',
     bestSet: 'Best set',
   },

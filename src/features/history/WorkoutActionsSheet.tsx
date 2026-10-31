@@ -1,13 +1,12 @@
 import { push } from '@/lib/nav';
-import { Pencil, Repeat, Save, Trash2 } from 'lucide-react-native';
+import { Pencil, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
-import { createRoutine, routineInputFromWorkout } from '@/db/repo/routines';
 import { deleteWorkout, workoutToActiveWorkout, type WorkoutDetail } from '@/db/repo/workouts';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
-import { Icon, ListItem, Sheet, confirm, spacing, toast, useColors } from '@/ui';
+import { Icon, ListItem, Sheet, confirm, spacing, useColors } from '@/ui';
 
 interface WorkoutActionsSheetProps {
   workout: WorkoutDetail;
@@ -17,7 +16,7 @@ interface WorkoutActionsSheetProps {
   onDeleted: () => void;
 }
 
-/** Меню завершённой тренировки: изменить, повторить, сохранить как программу, удалить. */
+/** Меню завершённой тренировки: только исправить ошибочную запись или удалить её. */
 export function WorkoutActionsSheet({ workout, visible, onClose, onDeleted }: WorkoutActionsSheetProps) {
   const colors = useColors();
   const { t: translate } = useTranslation();
@@ -51,50 +50,6 @@ export function WorkoutActionsSheet({ workout, visible, onClose, onDeleted }: Wo
     push('/workout/active');
   };
 
-  // Начать новую тренировку с теми же упражнениями; значения этой тренировки станут «предыдущими».
-  const repeatWorkout = async () => {
-    onClose();
-    if (!(await ensureNoActiveWorkout())) return;
-    const workoutCopy = workoutToActiveWorkout(workout);
-    useActiveWorkout.getState().startFromActive(
-      {
-        ...workoutCopy,
-        id: `${Date.now().toString(36)}r`,
-        startedAt: Date.now(),
-        notes: '',
-        exercises: workoutCopy.exercises.map((exercise) => ({
-          ...exercise,
-          id: `${exercise.id}r`,
-          note: '',
-          sets: exercise.sets.map((set) => ({
-            ...set,
-            id: `${set.id}r`,
-            completed: false,
-            completedAt: null,
-            prTypes: undefined,
-            previous: {
-              weightKg: set.weightKg,
-              reps: set.reps,
-              durationSec: set.durationSec,
-              distanceM: set.distanceM,
-              rpe: set.rpe,
-              rir: set.rir,
-            },
-          })),
-        })),
-      },
-      { mode: 'new' },
-    );
-    push('/workout/active');
-  };
-
-  const saveAsRoutine = () => {
-    onClose();
-    const routineId = createRoutine(routineInputFromWorkout(workoutToActiveWorkout(workout)));
-    toast(translate('routine.saved'));
-    push({ pathname: '/routine/[id]', params: { id: routineId } });
-  };
-
   const deleteThisWorkout = async () => {
     onClose();
     const confirmed = await confirm({
@@ -111,12 +66,6 @@ export function WorkoutActionsSheet({ workout, visible, onClose, onDeleted }: Wo
     <Sheet visible={visible} onClose={onClose} unpadded>
       <View style={{ paddingHorizontal: spacing.sm }}>
         <ListItem title={translate('common.edit')} left={<Icon icon={Pencil} />} onPress={editWorkout} />
-        <ListItem title={translate('history.repeat')} left={<Icon icon={Repeat} />} onPress={repeatWorkout} />
-        <ListItem
-          title={translate('history.saveAsRoutine')}
-          left={<Icon icon={Save} />}
-          onPress={saveAsRoutine}
-        />
         <ListItem
           title={translate('common.delete')}
           titleColor={colors.danger}

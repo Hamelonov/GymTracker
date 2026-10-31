@@ -343,8 +343,6 @@ const ru = {
     workoutsInMonth_many: '{{count}} тренировок',
     workoutsInMonth_other: '{{count}} тренировок',
     deleteConfirm: 'Удалить тренировку? Это нельзя отменить.',
-    repeat: 'Повторить тренировку',
-    saveAsRoutine: 'Сохранить как программу',
     exercisesDone: 'Упражнения',
     bestSet: 'Лучший подход',
   },
