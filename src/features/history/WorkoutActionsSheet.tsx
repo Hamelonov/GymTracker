@@ -47,7 +47,7 @@ export function WorkoutActionsSheet({ workout, visible, onClose, onDeleted }: Wo
       workoutId: workout.id,
       finishedAt: workout.finishedAt,
     });
-    push('/workout/active');
+    push({ pathname: '/workout/active', params: { mode: 'edit' } });
   };
 
   const deleteThisWorkout = async () => {

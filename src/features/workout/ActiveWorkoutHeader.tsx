@@ -1,4 +1,4 @@
-import { ChevronDown } from 'lucide-react-native';
+import { ArrowLeft, ChevronDown } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -9,6 +9,8 @@ interface ActiveWorkoutHeaderProps {
   workoutName: string;
   /** Дата тренировки, показывается под названием только при редактировании завершённой тренировки. */
   dateText: string | null;
+  /** Правка завершённой тренировки открыта как обычная страница: кнопка слева — «назад», а не «свернуть». */
+  isEditing: boolean;
   finishButtonTitle: string;
   canFinish: boolean;
   onMinimizePress: () => void;
@@ -16,10 +18,11 @@ interface ActiveWorkoutHeaderProps {
   onFinishPress: () => void;
 }
 
-/** Верхняя панель активной тренировки: свернуть, название тренировки (нажимается), кнопка завершения. */
+/** Верхняя панель активной тренировки: свернуть или назад, название тренировки (нажимается), кнопка завершения. */
 export function ActiveWorkoutHeader({
   workoutName,
   dateText,
+  isEditing,
   finishButtonTitle,
   canFinish,
   onMinimizePress,
@@ -37,7 +40,7 @@ export function ActiveWorkoutHeader({
         style={[styles.minimizeButton, { backgroundColor: colors.surfaceAlt }]}
         haptic="selection"
       >
-        <Icon icon={ChevronDown} size={22} />
+        {isEditing ? <Icon icon={ArrowLeft} size={20} /> : <Icon icon={ChevronDown} size={22} />}
       </Pressable>
       <Pressable style={styles.nameColumn} onPress={onNamePress}>
         <WorkoutName

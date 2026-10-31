@@ -115,7 +115,12 @@ function Navigation() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="workout/active"
-          options={{ presentation: 'fullScreenModal', animation: 'fade_from_bottom', gestureEnabled: false }}
+          options={({ route }) => {
+            // Правка завершённой тренировки — обычная страница истории: въезжает справа и уходит назад.
+            const isEditing = (route.params as { mode?: string } | undefined)?.mode === 'edit';
+            if (isEditing) return { gestureEnabled: false };
+            return { presentation: 'fullScreenModal', animation: 'fade_from_bottom', gestureEnabled: false };
+          }}
         />
         <Stack.Screen
           name="workout/summary"

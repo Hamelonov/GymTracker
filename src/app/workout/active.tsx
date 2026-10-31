@@ -400,6 +400,7 @@ export default function ActiveWorkoutScreen() {
       <ActiveWorkoutHeader
         workoutName={workout.name}
         dateText={session.mode === 'edit' ? formatDateTime(workout.startedAt, i18n.language) : null}
+        isEditing={session.mode === 'edit'}
         finishButtonTitle={session.mode === 'new' ? translate('workout.finish') : translate('common.save')}
         canFinish={canFinish}
         onMinimizePress={() => router.back()}
