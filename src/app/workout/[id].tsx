@@ -1,16 +1,23 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import { Ellipsis } from 'lucide-react-native';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { StyleSheet } from 'react-native';
 import { getWorkout } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
-import { formatFullDate } from '@/domain/dates';
-import { WorkoutSection } from '@/features/history/WorkoutSection';
-import { Screen } from '@/ui';
+import { formatFullDate, formatTime } from '@/domain/dates';
+import { WorkoutActionsSheet } from '@/features/history/WorkoutActionsSheet';
+import { WorkoutDetailsBody } from '@/features/history/WorkoutDetailsBody';
+import { IconButton, Screen, Text, spacing } from '@/ui';
 
-/** Одна тренировка из списка истории: выглядит так же, как день из календаря. */
+/**
+ * Одна тренировка из списка истории. В отличие от дня в календаре тренировка тут одна,
+ * поэтому время и меню «⋯» стоят в шапке, а не над тренировкой.
+ */
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { i18n } = useTranslation();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const workout = useQuery(() => (id ? getWorkout(id) : undefined), [id]);
 
   if (!workout) {
@@ -18,8 +25,34 @@ export default function WorkoutDetailScreen() {
   }
 
   return (
-    <Screen header={{ backButton: true, title: formatFullDate(workout.startedAt, i18n.language) }}>
-      <WorkoutSection workout={workout} onDeleted={() => router.back()} />
+    <Screen
+      header={{
+        backButton: true,
+        title: `${formatFullDate(workout.startedAt, i18n.language)}, ${formatTime(workout.startedAt)}`,
+        right: (
+          <IconButton
+            icon={Ellipsis}
+            variant="filled"
+            onPress={() => setIsMenuOpen(true)}
+            haptic="selection"
+          />
+        ),
+      }}
+    >
+      <Text variant="h3" style={styles.workoutName}>
+        {workout.name}
+      </Text>
+      <WorkoutDetailsBody workout={workout} />
+      <WorkoutActionsSheet
+        workout={workout}
+        visible={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        onDeleted={() => router.back()}
+      />
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  workoutName: { marginBottom: spacing.md },
+});
