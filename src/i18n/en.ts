@@ -125,7 +125,6 @@ const en = {
     skip: 'Skip',
     duration: 'Duration',
     setsDone: 'Sets',
-    prs: 'PRs',
     finishTitle: 'Finish workout?',
     finishHint: 'Incomplete sets will be discarded.',
     finishEmpty: 'No completed sets',

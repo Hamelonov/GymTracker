@@ -55,8 +55,6 @@ export default function SummaryScreen() {
     );
   }
 
-  const recordCount = saveResult.prs.reduce((total, record) => total + record.hits.length, 0);
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.accent }}>
       <ScrollView
@@ -81,7 +79,6 @@ export default function SummaryScreen() {
             durationSec={saveResult.durationSec}
             exerciseCount={saveResult.exerciseCount}
             setCount={saveResult.setCount}
-            prCount={recordCount}
           />
         </Animated.View>
 

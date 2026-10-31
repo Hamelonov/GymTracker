@@ -25,7 +25,6 @@ export function WorkoutDetailsBody({ workout }: { workout: WorkoutDetail }) {
         durationSec={workout.durationSec}
         exerciseCount={workout.exercises.length}
         setCount={workout.setCount}
-        prCount={workout.prCount}
         style={{ marginBottom: spacing.lg }}
       />
       {workout.notes ? (
