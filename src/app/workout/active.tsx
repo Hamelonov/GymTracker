@@ -300,6 +300,11 @@ export default function ActiveWorkoutScreen() {
     if (isPenMode && !(await applyPenNow())) return;
     setSheet({ kind: 'finish' });
   };
+  // Правка завершённой тренировки сохраняется сразу: шторка завершения нужна только новой тренировке.
+  const handleFinishPress = () => {
+    if (session.mode === 'edit') void finishWorkout();
+    else void openFinishSheet();
+  };
   // При редактировании завершённой тренировки показывается сохранённая длительность вместо живого таймера.
   const fixedDurationSeconds =
     session.mode === 'new' ? undefined : Math.round((session.finishedAt - workout.startedAt) / 1000);
@@ -405,7 +410,7 @@ export default function ActiveWorkoutScreen() {
         canFinish={canFinish}
         onMinimizePress={() => router.back()}
         onNamePress={openRename}
-        onFinishPress={() => void openFinishSheet()}
+        onFinishPress={handleFinishPress}
       />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
