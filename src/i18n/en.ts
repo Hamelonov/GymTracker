@@ -335,7 +335,6 @@ const en = {
     repeat: 'Repeat workout',
     saveAsRoutine: 'Save as routine',
     exercisesDone: 'Exercises',
-    noWorkoutsOnDay: 'No workouts on this day',
     bestSet: 'Best set',
   },
   stats: {

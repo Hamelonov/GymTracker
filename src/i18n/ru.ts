@@ -347,7 +347,6 @@ const ru = {
     repeat: 'Повторить тренировку',
     saveAsRoutine: 'Сохранить как программу',
     exercisesDone: 'Упражнения',
-    noWorkoutsOnDay: 'В этот день тренировок не было',
     bestSet: 'Лучший подход',
   },
   stats: {

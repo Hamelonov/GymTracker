@@ -13,36 +13,27 @@ interface HistoryCalendarProps {
   /** Количество тренировок по ключу дня для дней показанного месяца. */
   workoutCountByDay: Map<string, number>;
   monthWorkoutCount: number;
-  selectedDay: string | null;
-  hasNoWorkoutsOnSelectedDay: boolean;
   onShowPreviousMonth: () => void;
   onShowNextMonth: () => void;
-  onSelectDay: (dayKey: string | null) => void;
+  /** Вызывается только для дней, в которые были тренировки. */
+  onOpenDay: (dayKey: string) => void;
 }
 
-/** Сетка месяца для вкладки «История»: дни с тренировками выделены, нажатие на день фильтрует список. */
+/** Сетка месяца для вкладки «История»: дни с тренировками выделены, нажатие открывает этот день. */
 export function HistoryCalendar({
   month,
   monthEnd,
   now,
   workoutCountByDay,
   monthWorkoutCount,
-  selectedDay,
-  hasNoWorkoutsOnSelectedDay,
   onShowPreviousMonth,
   onShowNextMonth,
-  onSelectDay,
+  onOpenDay,
 }: HistoryCalendarProps) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
 
   const calendarCells = useMemo(() => buildCalendarCells(month, monthEnd), [month, monthEnd]);
-
-  const getDayBackgroundColor = (workoutCount: number, isSelected: boolean) => {
-    if (workoutCount > 0) return colors.accent;
-    if (isSelected) return colors.surfaceAlt;
-    return 'transparent';
-  };
 
   return (
     <View style={{ paddingHorizontal: spacing.lg }}>
@@ -62,12 +53,13 @@ export function HistoryCalendar({
           const key = toDayKey(day);
           const workoutCount = workoutCountByDay.get(key) ?? 0;
           const isToday = key === toDayKey(now);
-          const isSelected = key === selectedDay;
+          const hasWorkouts = workoutCount > 0;
           return (
             <Pressable
               key={key}
               style={styles.dayCell}
-              onPress={() => onSelectDay(isSelected ? null : key)}
+              onPress={() => onOpenDay(key)}
+              disabled={!hasWorkouts}
               haptic="selection"
               scaleTo={0.9}
             >
@@ -75,8 +67,8 @@ export function HistoryCalendar({
                 style={[
                   styles.dayCellContent,
                   {
-                    backgroundColor: getDayBackgroundColor(workoutCount, isSelected),
-                    borderColor: isToday || isSelected ? colors.text : 'transparent',
+                    backgroundColor: hasWorkouts ? colors.accent : 'transparent',
+                    borderColor: isToday ? colors.text : 'transparent',
                   },
                 ]}
               >
@@ -88,11 +80,6 @@ export function HistoryCalendar({
           );
         })}
       </View>
-      {hasNoWorkoutsOnSelectedDay ? (
-        <Text color="faint" align="center" style={{ marginVertical: spacing.lg }}>
-          {translate('history.noWorkoutsOnDay')}
-        </Text>
-      ) : null}
       <View style={{ height: spacing.lg }} />
     </View>
   );

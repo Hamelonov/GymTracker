@@ -44,6 +44,11 @@ export function formatLongDate(timestamp: number, language: string): string {
   return format(timestamp, 'EEEE, d MMMM', { locale: dateLocale(language) });
 }
 
+/** Дата целиком без времени: «31 октября 2026». */
+export function formatFullDate(timestamp: number, language: string): string {
+  return format(timestamp, 'd MMMM yyyy', { locale: dateLocale(language) });
+}
+
 export function formatShortDate(timestamp: number, language: string): string {
   return format(timestamp, 'd MMM', { locale: dateLocale(language) });
 }
