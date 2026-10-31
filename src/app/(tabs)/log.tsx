@@ -10,13 +10,18 @@ import {
   type ExerciseHistoryEntry,
 } from '@/db/repo/exercises';
 import { useQuery } from '@/db/version';
-import { ExerciseLogTable } from '@/features/log/ExerciseLogTable';
+import { ExerciseLogTable, naturalLogTableWidth } from '@/features/log/ExerciseLogTable';
 import { ExerciseSelect } from '@/features/log/ExerciseSelect';
+import { ZoomPanCanvas } from '@/features/log/ZoomPanCanvas';
+import { useActiveWorkout } from '@/store/activeWorkout';
 import { useSettings } from '@/store/settings';
 import { EmptyState, Screen, Text, spacing } from '@/ui';
 
 /** Особый пункт фильтра: вместо одного упражнения показывает их все по порядку имени. */
 const ALL_EXERCISES_ID = 'all';
+const CANVAS_PADDING = spacing.sm;
+// Плашка свёрнутой тренировки висит над нижним краем: последние строки можно поднять над ней.
+const WORKOUT_PILL_SPACE = 88;
 
 export default function LogTab() {
   const { t: translate, i18n } = useTranslation();
@@ -79,6 +84,9 @@ export default function LogTab() {
     [isAllSelected, exercisesByName.map((row) => row.id).join(',')],
   );
   const units = useMemo(() => ({ weight: weightUnit, distance: distanceUnit }), [weightUnit, distanceUnit]);
+  const isWorkoutPillVisible = useActiveWorkout(
+    (state) => !!state.workout && state.minimized && state.session.mode !== 'edit',
+  );
 
   if (performedExercises.length === 0 || (!selectedExercise && !isAllSelected)) {
     return (
@@ -88,35 +96,59 @@ export default function LogTab() {
     );
   }
 
+  const buildShownTables = () => {
+    if (isAllSelected) {
+      return exercisesByName.map((row) => ({
+        exercise: row,
+        entries: historyByExerciseId.get(row.id) ?? [],
+      }));
+    }
+    if (selectedExercise) return [{ exercise: selectedExercise, entries: history }];
+    return [];
+  };
+  const shownTables = buildShownTables();
+  // Все таблицы одной ширины — по самой широкой, чтобы в режиме «Все» правые края шли ровно.
+  const tableWidth = Math.max(
+    0,
+    ...shownTables.map((table) => naturalLogTableWidth(table.entries, table.exercise.type)),
+  );
+
   return (
-    <Screen header={{ title: translate('log.title'), large: true }} contentStyle={styles.content}>
-      <View style={styles.select}>
+    // Страница не прокручивается: внутри ScrollView жесты холста отменялись бы прокруткой.
+    <Screen header={{ title: translate('log.title'), large: true }} scrollable={false} padded={false}>
+      <View style={styles.filterBar}>
         <ExerciseSelect items={selectItems} selectedId={selectedExerciseId} onSelect={setChosenExerciseId} />
       </View>
-
-      {isAllSelected
-        ? exercisesByName.map((row, index) => (
-            <View key={row.id} style={index > 0 ? styles.nextTable : null}>
-              <Text variant="h3" style={styles.exerciseTitle}>
-                {exerciseName(row, i18n.language)}
-              </Text>
+      <ZoomPanCanvas
+        key={selectedExerciseId ?? 'none'}
+        contentWidth={tableWidth + 2 * CANVAS_PADDING}
+        bottomInset={isWorkoutPillVisible ? WORKOUT_PILL_SPACE : 0}
+      >
+        <View style={styles.canvasContent}>
+          {shownTables.map((table, index) => (
+            <View key={table.exercise.id} style={index > 0 ? styles.nextTable : null}>
+              {isAllSelected ? (
+                <Text variant="h3" style={styles.exerciseTitle}>
+                  {exerciseName(table.exercise, i18n.language)}
+                </Text>
+              ) : null}
               <ExerciseLogTable
-                entries={historyByExerciseId.get(row.id) ?? []}
-                exerciseType={row.type}
+                entries={table.entries}
+                exerciseType={table.exercise.type}
                 units={units}
+                width={tableWidth}
               />
             </View>
-          ))
-        : selectedExercise && (
-            <ExerciseLogTable entries={history} exerciseType={selectedExercise.type} units={units} />
-          )}
+          ))}
+        </View>
+      </ZoomPanCanvas>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: 120 },
-  select: { marginBottom: spacing.md },
+  filterBar: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+  canvasContent: { padding: CANVAS_PADDING },
   nextTable: { marginTop: spacing.xl },
   exerciseTitle: { marginBottom: spacing.sm },
 });
