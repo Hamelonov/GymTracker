@@ -93,7 +93,7 @@ test('лист упражнения повторяет журнал: строк�
   expect(sheet?.rows[3]?.cells[0]?.style?.borderTopColor).toBeUndefined();
 });
 
-test('подтягивания без отягощения: колонок веса нет, с отягощением вес со знаком «+»', () => {
+test('подтягивания без отягощения: колонок веса нет, с отягощением — вес обычным числом', () => {
   const workbook = buildProgressWorkbook(
     [
       {
@@ -111,5 +111,5 @@ test('подтягивания без отягощения: колонок ве�
   );
   expect(values(workbook.sheets[0]?.rows[1])).toEqual(['log.columnDay', 'log.columnSets', 'log.columnNote']);
   expect(values(workbook.sheets[0]?.rows[2])).toEqual([46320, '10/8', null]);
-  expect(workbook.sheets[1]?.rows[2]?.cells[1]?.style?.numberFormat).toBe('"+"General"кг"');
+  expect(workbook.sheets[1]?.rows[2]?.cells[1]?.style?.numberFormat).toBe('General"кг"');
 });

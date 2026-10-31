@@ -26,13 +26,14 @@ export function formatSetValues(
     parts.push(`${weightText} × ${repsText}`);
   } else if (fields.reps) {
     if (values.reps == null) return '—';
-    // Дополнительный вес у упражнений со своим весом: «+10 kg × 8».
+    // Дополнительный вес у упражнений со своим весом: «10 kg × 8». Без знака «+» — это просто число,
+    // не текст «Ручки»: там он нужен парсеру, здесь был бы лишним на фоне обычных значений.
     const extraWeightText =
-      values.weightKg != null ? `+${formatWeight(values.weightKg, units.weight, showUnitLabel)} × ` : '';
+      values.weightKg != null ? `${formatWeight(values.weightKg, units.weight, showUnitLabel)} × ` : '';
     parts.push(`${extraWeightText}${values.reps}`);
   } else if (values.weightKg != null) {
-    // Планка с блином: «+20 kg · 1:00».
-    parts.push(`+${formatWeight(values.weightKg, units.weight, showUnitLabel)}`);
+    // Планка с блином: «20 kg · 1:00».
+    parts.push(formatWeight(values.weightKg, units.weight, showUnitLabel));
   }
   if (fields.distance && values.distanceM != null)
     parts.push(formatDistance(values.distanceM, units.distance, showUnitLabel));
@@ -41,8 +42,9 @@ export function formatSetValues(
 }
 
 /**
- * Строка подхода для истории в записи режима «Ручка»: «70кг х 8(1)», «+10кг х 8», «1:00»;
+ * Строка подхода для истории в записи режима «Ручка»: «70кг х 8(1)», «10кг х 8», «1:00»;
  * RPE дописывается как «@8». Пустые дополнительные поля не показываются вовсе.
+ * Знака «+»/«-» у добавленного веса нет: это просмотр истории, а не редактируемый текст «Ручки».
  */
 export function formatSetLineWithExtras(
   set: SetValues & { type: SetType },
@@ -52,7 +54,10 @@ export function formatSetLineWithExtras(
 ): string {
   const options = { weightUnit: units.weight, distanceUnit: units.distance, language };
   const value = formatPenSetValue(set, exerciseType, options);
-  const weight = set.weightKg != null ? formatPenWeight(set.weightKg, exerciseType, options) : null;
+  const weight =
+    set.weightKg != null
+      ? formatPenWeight(set.weightKg, exerciseType, options, { includeWeightSign: false })
+      : null;
   let text = value || '—';
   if (weight && value) text = `${weight} ${penTimesSign(language)} ${value}`;
   else if (weight) text = weight;

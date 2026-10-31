@@ -1,10 +1,5 @@
 import type { ExerciseHistoryEntry } from '@/db/repo/exercises';
-import {
-  penTimesSign,
-  penWeightSign,
-  weightUnitToken,
-  type PenFormatOptions,
-} from '@/domain/pen/serializeWorkout';
+import { penTimesSign, weightUnitToken, type PenFormatOptions } from '@/domain/pen/serializeWorkout';
 import type { ExerciseType } from '@/domain/types';
 import { kgToUnit, roundForDisplay } from '@/domain/units';
 import type { XlsxCell, XlsxCellStyle, XlsxRow, XlsxSheet, XlsxWorkbook } from '@/domain/xlsx/types';
@@ -54,8 +49,8 @@ const HEADER_STYLE: XlsxCellStyle = {
 };
 
 /** Колонки листа: пустые для этого упражнения (вес, RIR, RPE) не выводятся, как и в журнале. */
-function sheetColumns(entries: ExerciseHistoryEntry[], exerciseType: ExerciseType): ColumnKey[] {
-  const { hasWeight, hasRir, hasRpe } = describeLogColumns(entries, exerciseType);
+function sheetColumns(entries: ExerciseHistoryEntry[]): ColumnKey[] {
+  const { hasWeight, hasRir, hasRpe } = describeLogColumns(entries);
   const columns: ColumnKey[] = ['day'];
   if (hasWeight) columns.push('weight', 'timesSign');
   columns.push('sets');
@@ -65,32 +60,26 @@ function sheetColumns(entries: ExerciseHistoryEntry[], exerciseType: ExerciseTyp
   return columns;
 }
 
-function headerTitle(
-  column: ColumnKey,
-  exercise: ExerciseProgress,
-  translate: (key: string) => string,
-): string {
-  const titleKeys: Record<Exclude<ColumnKey, 'weight' | 'timesSign'>, string> = {
+function headerTitle(column: ColumnKey, translate: (key: string) => string): string {
+  const titleKeys: Record<Exclude<ColumnKey, 'timesSign'>, string> = {
     day: 'log.columnDay',
+    weight: 'log.columnWeight',
     sets: 'log.columnSets',
     rir: 'workout.rir',
     rpe: 'workout.rpe',
     note: 'log.columnNote',
   };
   if (column === 'timesSign') return '';
-  if (column === 'weight')
-    return translate(describeLogColumns(exercise.entries, exercise.exerciseType).weightTitleKey);
   return translate(titleKeys[column]);
 }
 
 /**
- * Вес хранится числом, а «кг» и знак дописывает формат ячейки:
- * в Excel видно «70кг» или «+10кг», но по колонке можно считать и строить графики.
+ * Вес хранится числом, а «кг» дописывает формат ячейки: в Excel видно «70кг», но по колонке
+ * можно считать и строить графики. Без знака «+»/«-»: это таблица с историей, а не текст «Ручки».
  */
-function weightNumberFormat(exerciseType: ExerciseType, options: PenFormatOptions): string {
-  const sign = penWeightSign(exerciseType);
+function weightNumberFormat(options: PenFormatOptions): string {
   const unit = weightUnitToken(options.weightUnit, options.language);
-  return `${sign ? `"${sign}"` : ''}General"${unit}"`;
+  return `General"${unit}"`;
 }
 
 /** Строки одного дня: на каждый вес своя строка, дата, RIR, RPE и примечание — в первой. */
@@ -122,7 +111,7 @@ function dayRows(
               line.weightKg != null ? roundForDisplay(kgToUnit(line.weightKg, options.weightUnit), 2) : null,
             style: {
               ...baseStyle,
-              numberFormat: weightNumberFormat(exercise.exerciseType, options),
+              numberFormat: weightNumberFormat(options),
               horizontalAlign: 'right',
             },
           };
@@ -150,7 +139,7 @@ function dayRows(
 }
 
 function exerciseSheet(exercise: ExerciseProgress, options: ProgressWorkbookOptions): XlsxSheet {
-  const columns = sheetColumns(exercise.entries, exercise.exerciseType);
+  const columns = sheetColumns(exercise.entries);
   const titleRow: XlsxRow = {
     height: 24,
     cells: columns.map((_, index) => ({ value: index === 0 ? exercise.name : null, style: TITLE_STYLE })),
@@ -158,7 +147,7 @@ function exerciseSheet(exercise: ExerciseProgress, options: ProgressWorkbookOpti
   const headerRow: XlsxRow = {
     height: 20,
     cells: columns.map((column) => ({
-      value: headerTitle(column, exercise, options.translate) || null,
+      value: headerTitle(column, options.translate) || null,
       style: { ...HEADER_STYLE, horizontalAlign: column === 'weight' ? 'right' : 'left' },
     })),
   };

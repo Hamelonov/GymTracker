@@ -12,10 +12,10 @@ const values = (partial: Partial<SetValues>): SetValues => ({
   ...partial,
 });
 
-test('дополнительный вес у подтягиваний и планки виден в истории', () => {
+test('дополнительный вес у подтягиваний и планки виден в истории без знака «+»', () => {
   expect(
     formatSetValues(values({ weightKg: 10, reps: 8 }), getSetFieldsForExerciseType('bodyweight_reps'), units),
-  ).toBe('+10 kg × 8');
+  ).toBe('10 kg × 8');
   expect(formatSetValues(values({ reps: 8 }), getSetFieldsForExerciseType('bodyweight_reps'), units)).toBe(
     '8',
   );
@@ -25,10 +25,10 @@ test('дополнительный вес у подтягиваний и пла�
       getSetFieldsForExerciseType('duration'),
       units,
     ),
-  ).toBe('+20 kg · 1:00');
+  ).toBe('20 kg · 1:00');
 });
 
-test('строка истории пишется как в «Ручке», RPE — через @', () => {
+test('строка истории пишется как в «Ручке», RPE — через @, но без знака «+» у добавленного веса', () => {
   const set = (partial: Partial<SetValues>) => ({ ...values(partial), type: 'normal' as const });
   expect(
     formatSetLineWithExtras(set({ weightKg: 100, reps: 8, rir: 1, rpe: 8.5 }), 'weight_reps', units, 'ru'),
@@ -37,7 +37,7 @@ test('строка истории пишется как в «Ручке», RPE �
     '100kg x 8',
   );
   expect(formatSetLineWithExtras(set({ weightKg: 10, reps: 8 }), 'bodyweight_reps', units, 'ru')).toBe(
-    '+10кг х 8',
+    '10кг х 8',
   );
   expect(formatSetLineWithExtras(set({ durationSec: 60 }), 'duration', units, 'ru')).toBe('1:00');
 });

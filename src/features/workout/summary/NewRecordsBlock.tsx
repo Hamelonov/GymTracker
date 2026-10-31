@@ -132,9 +132,10 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
       if (!recordSet) continue;
 
       const gain = recordGain(hits, metric);
+      // Без знака «+»/«-»: его на отдельной строке ниже уже добавляет «прибавка», дважды он не нужен.
       const formatGainValue = (value: number) =>
         metric === 'weight'
-          ? formatPenWeight(value, workoutExercise.exercise.type, penOptions)
+          ? formatPenWeight(value, workoutExercise.exercise.type, penOptions, { includeWeightSign: false })
           : formatRecordValue(value, metric, formatters);
       let change: RecordChange | null = null;
       if (gain && gain.previous != null && gain.best > gain.previous) {
@@ -155,7 +156,9 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
           weight: {
             value:
               recordSet.weightKg != null
-                ? formatPenWeight(recordSet.weightKg, workoutExercise.exercise.type, penOptions)
+                ? formatPenWeight(recordSet.weightKg, workoutExercise.exercise.type, penOptions, {
+                    includeWeightSign: false,
+                  })
                 : '—',
             change: metric === 'weight' ? change : null,
           },

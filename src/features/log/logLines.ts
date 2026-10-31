@@ -1,7 +1,7 @@
 import type { ExerciseHistoryEntry } from '@/db/repo/exercises';
 import type { SetRow } from '@/db/schema';
 import { buildPenGroups, formatPenSetValue, type PenFormatOptions } from '@/domain/pen/serializeWorkout';
-import { getSetFieldsForExerciseType, type ExerciseType } from '@/domain/types';
+import type { ExerciseType } from '@/domain/types';
 import { formatNumberWithoutTrailingZeros, roundForDisplay } from '@/domain/units';
 
 /**
@@ -18,13 +18,17 @@ export interface WeightLine {
   sets: string;
 }
 
-/** Строки одного дня — как в «Сегодня сделано»: каждый новый вес на своей строке, «70кг х 9/8», «65кг х 10». */
+/**
+ * Строки одного дня — как в «Сегодня сделано»: каждый новый вес на своей строке, «70кг х 9/8», «65кг х 10».
+ * У упражнений со своим весом добавленный груз показан обычным числом, без знака «+»: это таблица
+ * с историей, а не текст «Ручки», где знак нужен парсеру. Подробнее — в комментарии к `formatPenWeight`.
+ */
 export function buildWeightLines(
   sets: SetRow[],
   exerciseType: ExerciseType,
   options: PenFormatOptions,
 ): WeightLine[] {
-  const lines = buildPenGroups(sets, exerciseType, options).map((group) => ({
+  const lines = buildPenGroups(sets, exerciseType, options, { includeWeightSign: false }).map((group) => ({
     weightKg: group.weightKg,
     weight: group.weightText,
     // RIR стоит в своей колонке, поэтому в подходах его скобок нет: иначе одно и то же написано дважды.
@@ -52,20 +56,14 @@ export interface LogColumns {
   hasWeight: boolean;
   hasRir: boolean;
   hasRpe: boolean;
-  /** Ключ перевода подписи колонки веса. */
-  weightTitleKey: 'log.columnWeight' | 'log.columnVariation';
 }
 
 /** Какие колонки нужны упражнению: колонки без единого значения не показываются. */
-export function describeLogColumns(entries: ExerciseHistoryEntry[], exerciseType: ExerciseType): LogColumns {
+export function describeLogColumns(entries: ExerciseHistoryEntry[]): LogColumns {
   const allSets = entries.flatMap((entry) => entry.sets);
   return {
     hasWeight: allSets.some((set) => set.weightKg != null),
     hasRir: allSets.some((set) => set.rir != null),
     hasRpe: allSets.some((set) => set.rpe != null),
-    // У упражнений со своим весом в этой колонке дополнительный вес — это усложнение, а не рабочий вес.
-    weightTitleKey: getSetFieldsForExerciseType(exerciseType).weight
-      ? 'log.columnWeight'
-      : 'log.columnVariation',
   };
 }

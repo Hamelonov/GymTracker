@@ -97,15 +97,21 @@ export function penWeightSign(exerciseType: ExerciseType): '' | '+' | '-' {
   return '';
 }
 
-/** «70кг», «+10кг» у упражнений со своим весом, «-20кг» у упражнений с помощью. */
+/**
+ * «70кг», и у упражнений со своим весом — «+10кг»/«-20кг», если `includeWeightSign` не выключен.
+ * Знак нужен только в тексте «Ручки»: там по нему парсер отличает добавленный вес и помощь
+ * гравитрона от рабочего веса штанги. В таблицах и истории он лишний — это обычное число.
+ */
 export function formatPenWeight(
   weightKg: number,
   exerciseType: ExerciseType,
   options: PenFormatOptions,
+  { includeWeightSign = true }: { includeWeightSign?: boolean } = {},
 ): string {
   const weight = formatNumberWithoutTrailingZeros(roundForDisplay(kgToUnit(weightKg, options.weightUnit), 2));
   const unit = weightUnitToken(options.weightUnit, options.language);
-  return `${penWeightSign(exerciseType)}${weight}${unit}`;
+  const sign = includeWeightSign ? penWeightSign(exerciseType) : '';
+  return `${sign}${weight}${unit}`;
 }
 
 export interface PenGroup<Set extends PenSet = PenSet> {
@@ -123,6 +129,7 @@ export function buildPenGroups<Set extends PenSet>(
   sets: Set[],
   exerciseType: ExerciseType,
   options: PenFormatOptions,
+  { includeWeightSign = true }: { includeWeightSign?: boolean } = {},
 ): PenGroup<Set>[] {
   const groups: { weightKg: number | null; values: string[]; sets: Set[] }[] = [];
   for (const set of sets.filter(hasAnyValue)) {
@@ -140,7 +147,10 @@ export function buildPenGroups<Set extends PenSet>(
   }
   return groups.map((group) => ({
     weightKg: group.weightKg,
-    weightText: group.weightKg == null ? null : formatPenWeight(group.weightKg, exerciseType, options),
+    weightText:
+      group.weightKg == null
+        ? null
+        : formatPenWeight(group.weightKg, exerciseType, options, { includeWeightSign }),
     valuesText: group.values.filter((value) => value.length > 0).join('/'),
     sets: group.sets,
   }));

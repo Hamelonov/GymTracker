@@ -50,12 +50,13 @@ export function TodayDoneBlock({ workoutDetail }: TodayDoneBlockProps) {
   const exerciseRows = useMemo<ExerciseRow[]>(() => {
     return (workoutDetail?.exercises ?? []).map((workoutExercise) => {
       // Разминочные подходы остаются в списке с суффиксом «р», как и в тексте «Ручки».
-      const lines = buildPenGroups(workoutExercise.sets, workoutExercise.exercise.type, penOptions).map(
-        (group) => ({
-          weight: group.weightText,
-          setsAndReps: group.valuesText || '—',
-        }),
-      );
+      // Знак «+» у добавленного веса здесь не нужен — это таблица с историей, а не текст «Ручки».
+      const lines = buildPenGroups(workoutExercise.sets, workoutExercise.exercise.type, penOptions, {
+        includeWeightSign: false,
+      }).map((group) => ({
+        weight: group.weightText,
+        setsAndReps: group.valuesText || '—',
+      }));
       return {
         id: workoutExercise.id,
         name: exerciseName(workoutExercise.exercise, i18n.language),

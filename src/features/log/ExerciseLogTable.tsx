@@ -12,9 +12,11 @@ import { Card, Text, spacing, useColors } from '@/ui';
 type Units = { weight: WeightUnit; distance: DistanceUnit };
 
 /** Ширины колонок фиксированы: таблица шире экрана, её двигают и масштабируют на холсте. */
-// Вес шире своих значений: подпись «УСЛОЖНЕНИЕ» иначе переносится на вторую строку.
-const COLUMN_WIDTHS = { day: 100, weight: 92, timesSign: 14, sets: 110, rir: 80, rpe: 80, note: 180 };
-const CELL_GAP = spacing.sm;
+const COLUMN_WIDTHS = { day: 100, weight: 64, timesSign: 14, sets: 110, rir: 80, rpe: 80, note: 180 };
+// Между столбцами зазор шире, чтобы их было легче различать; внутри «вес х подходы» — уже, это одна фраза.
+const COLUMN_GAP = spacing.lg;
+const INNER_GAP = spacing.sm;
+const DIVIDER_WIDTH = StyleSheet.hairlineWidth;
 const CARD_HORIZONTAL_PADDING = spacing.md;
 
 /** Дата цифрами в формате языка: «28.03.2026». */
@@ -27,13 +29,20 @@ function formatDay(timestamp: number, language: string): string {
  * Нужна холсту заранее — измерить её нельзя, вёрстка упирает ширину в ширину экрана.
  */
 export function naturalLogTableWidth(entries: ExerciseHistoryEntry[], exerciseType: ExerciseType): number {
-  const { hasWeight, hasRir, hasRpe } = describeLogColumns(entries, exerciseType);
-  const weightLinesWidth =
-    COLUMN_WIDTHS.sets + (hasWeight ? COLUMN_WIDTHS.weight + COLUMN_WIDTHS.timesSign + 2 * CELL_GAP : 0);
-  const rirWidth = hasRir ? COLUMN_WIDTHS.rir + CELL_GAP : 0;
-  const rpeWidth = hasRpe ? COLUMN_WIDTHS.rpe + CELL_GAP : 0;
+  const { hasWeight, hasRir, hasRpe } = describeLogColumns(entries);
+  // День, «вес х подходы» (или один «подходы») и примечание есть всегда; RIR и RPE — не всегда.
+  const groupWidth = hasWeight
+    ? COLUMN_WIDTHS.weight + COLUMN_WIDTHS.timesSign + COLUMN_WIDTHS.sets + 2 * INNER_GAP
+    : COLUMN_WIDTHS.sets;
+  const columnCount = 3 + (hasRir ? 1 : 0) + (hasRpe ? 1 : 0);
+  const dividersWidth = (columnCount - 1) * (2 * COLUMN_GAP + DIVIDER_WIDTH);
   const cellsWidth =
-    COLUMN_WIDTHS.day + CELL_GAP + weightLinesWidth + CELL_GAP + rirWidth + rpeWidth + COLUMN_WIDTHS.note;
+    COLUMN_WIDTHS.day +
+    groupWidth +
+    (hasRir ? COLUMN_WIDTHS.rir : 0) +
+    (hasRpe ? COLUMN_WIDTHS.rpe : 0) +
+    COLUMN_WIDTHS.note +
+    dividersWidth;
   return cellsWidth + 2 * CARD_HORIZONTAL_PADDING;
 }
 
@@ -45,40 +54,61 @@ interface ExerciseLogTableProps {
   width: number;
 }
 
+/** Вставляет тонкую линию между соседними столбцами, не трогая первый. */
+function joinWithDividers(cells: (React.ReactNode | null)[], keyPrefix: string): React.ReactNode[] {
+  return cells
+    .filter((cell): cell is React.ReactNode => cell != null)
+    .flatMap((cell, index) =>
+      index === 0 ? [cell] : [<ColumnDivider key={`${keyPrefix}-divider-${index}`} />, cell],
+    );
+}
+
+function ColumnDivider() {
+  const colors = useColors();
+  return <View style={[styles.columnDivider, { backgroundColor: colors.border }]} />;
+}
+
 /** Таблица прогресса по упражнению: строка на день тренировки, в вёрстке блока «Сегодня сделано». */
 export function ExerciseLogTable({ entries, exerciseType, units, width }: ExerciseLogTableProps) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
   const penOptions = { weightUnit: units.weight, distanceUnit: units.distance, language: i18n.language };
   const timesSign = penTimesSign(i18n.language);
-  const { hasWeight, hasRir, hasRpe, weightTitleKey } = describeLogColumns(entries, exerciseType);
-  const weightTitle = translate(weightTitleKey);
+  const { hasWeight, hasRir, hasRpe } = describeLogColumns(entries);
   const dividerStyle = { borderTopColor: colors.border };
+
+  const headerCells = [
+    <HeaderCell key="day" title={translate('log.columnDay')} style={{ width: COLUMN_WIDTHS.day }} />,
+    hasWeight ? (
+      <View key="weight-group" style={styles.innerRow}>
+        <HeaderCell title={translate('log.columnWeight')} style={styles.weightColumn} />
+        <View style={{ width: COLUMN_WIDTHS.timesSign }} />
+        <HeaderCell title={translate('log.columnSets')} style={{ width: COLUMN_WIDTHS.sets }} />
+      </View>
+    ) : (
+      <HeaderCell key="sets" title={translate('log.columnSets')} style={{ width: COLUMN_WIDTHS.sets }} />
+    ),
+    hasRir ? (
+      <HeaderCell key="rir" title={translate('workout.rir')} style={{ width: COLUMN_WIDTHS.rir }} />
+    ) : null,
+    hasRpe ? (
+      <HeaderCell key="rpe" title={translate('workout.rpe')} style={{ width: COLUMN_WIDTHS.rpe }} />
+    ) : null,
+    <HeaderCell key="note" title={translate('log.columnNote')} style={styles.noteColumn} />,
+  ];
 
   return (
     <Card raised style={[styles.card, { width }]}>
-      <View style={[styles.row, styles.headerRow]}>
-        <HeaderCell title={translate('log.columnDay')} style={{ width: COLUMN_WIDTHS.day }} />
-        {hasWeight ? (
-          <>
-            <HeaderCell title={weightTitle} style={styles.weightColumn} />
-            <View style={{ width: COLUMN_WIDTHS.timesSign }} />
-          </>
-        ) : null}
-        <HeaderCell title={translate('log.columnSets')} style={{ width: COLUMN_WIDTHS.sets }} />
-        {hasRir ? <HeaderCell title={translate('workout.rir')} style={{ width: COLUMN_WIDTHS.rir }} /> : null}
-        {hasRpe ? <HeaderCell title={translate('workout.rpe')} style={{ width: COLUMN_WIDTHS.rpe }} /> : null}
-        <HeaderCell title={translate('log.columnNote')} style={styles.noteColumn} />
-      </View>
+      <View style={[styles.outerRow, styles.headerRow]}>{joinWithDividers(headerCells, 'header')}</View>
 
-      {entries.map((entry) => (
-        <View key={entry.workoutId} style={[styles.row, styles.dayRow, dividerStyle]}>
-          <Text variant="bodyMedium" tabular style={{ width: COLUMN_WIDTHS.day }}>
+      {entries.map((entry) => {
+        const dayCells = [
+          <Text key="day" variant="bodyMedium" tabular style={{ width: COLUMN_WIDTHS.day }}>
             {formatDay(entry.startedAt, i18n.language)}
-          </Text>
-          <View style={styles.weightLines}>
+          </Text>,
+          <View key="weight-group" style={styles.weightLines}>
             {buildWeightLines(entry.sets, exerciseType, penOptions).map((line, lineIndex) => (
-              <View key={lineIndex} style={styles.row}>
+              <View key={lineIndex} style={styles.innerRow}>
                 {hasWeight ? (
                   <>
                     <Text variant="bodyMedium" tabular style={styles.weightColumn}>
@@ -94,22 +124,32 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
                 </Text>
               </View>
             ))}
-          </View>
-          {hasRir ? (
-            <Text variant="bodyMedium" tabular style={{ width: COLUMN_WIDTHS.rir }}>
+          </View>,
+          hasRir ? (
+            <Text key="rir" variant="bodyMedium" tabular style={{ width: COLUMN_WIDTHS.rir }}>
               {formatPerSet(entry.sets, (set) => set.rir)}
             </Text>
-          ) : null}
-          {hasRpe ? (
-            <Text variant="bodyMedium" tabular style={{ width: COLUMN_WIDTHS.rpe }}>
+          ) : null,
+          hasRpe ? (
+            <Text key="rpe" variant="bodyMedium" tabular style={{ width: COLUMN_WIDTHS.rpe }}>
               {formatPerSet(entry.sets, (set) => set.rpe)}
             </Text>
-          ) : null}
-          <Text variant="bodyMedium" color={entry.note ? 'text' : 'faint'} style={styles.noteColumn}>
+          ) : null,
+          <Text
+            key="note"
+            variant="bodyMedium"
+            color={entry.note ? 'text' : 'faint'}
+            style={styles.noteColumn}
+          >
             {entry.note || '—'}
-          </Text>
-        </View>
-      ))}
+          </Text>,
+        ];
+        return (
+          <View key={entry.workoutId} style={[styles.outerRow, styles.dayRow, dividerStyle]}>
+            {joinWithDividers(dayCells, entry.workoutId)}
+          </View>
+        );
+      })}
     </Card>
   );
 }
@@ -125,9 +165,13 @@ function HeaderCell({ title, style }: { title: string; style: StyleProp<TextStyl
 const styles = StyleSheet.create({
   card: { paddingHorizontal: CARD_HORIZONTAL_PADDING, paddingTop: spacing.lg, paddingBottom: 0 },
   headerRow: { paddingBottom: spacing.md },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: CELL_GAP },
+  // Между столбцами таблицы — широкий зазор с линией-разделителем между ними.
+  outerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: COLUMN_GAP },
+  // Внутри «вес х подходы» зазор у́же: это одна фраза, а не два разных столбца.
+  innerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: INNER_GAP },
   dayRow: { paddingVertical: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
   weightLines: { gap: spacing.xs },
+  columnDivider: { width: DIVIDER_WIDTH, alignSelf: 'stretch' },
   // Подпись и значения веса прижаты вправо, ближе к знаку «х».
   weightColumn: { width: COLUMN_WIDTHS.weight, textAlign: 'right' },
   timesSignColumn: { width: COLUMN_WIDTHS.timesSign, textAlign: 'center' },
