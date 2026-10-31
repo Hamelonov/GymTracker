@@ -142,6 +142,10 @@ function Navigation() {
           name="measurements/log"
           options={{ presentation: 'modal', animation: 'fade_from_bottom' }}
         />
+        <Stack.Screen
+          name="profile/edit"
+          options={{ presentation: 'modal', animation: 'fade_from_bottom' }}
+        />
       </Stack>
       <ToastHost />
       <DialogHost />

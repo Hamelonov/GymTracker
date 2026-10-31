@@ -1,6 +1,7 @@
 import { subMonths } from 'date-fns';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 import {
   listTopOneRepMaxRecords,
   listWorkouts,
@@ -10,6 +11,7 @@ import {
   listWorkoutsSince,
 } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
+import { formatDuration } from '@/domain/units';
 import { MuscleSplitCard } from '@/features/stats/MuscleSplitCard';
 import { StatsSummaryTiles } from '@/features/stats/StatsSummaryTiles';
 import { TopExercisesCard } from '@/features/stats/TopExercisesCard';
@@ -18,7 +20,7 @@ import { WeeklyChart } from '@/features/stats/WeeklyChart';
 import { calculateWeekStreak } from '@/features/stats/weekStreak';
 import { useNow } from '@/lib/useNow';
 import { useSettings } from '@/store/settings';
-import { Screen, Segmented } from '@/ui';
+import { Card, Screen, Segmented, Text, spacing } from '@/ui';
 
 type Period = '3m' | '6m' | '1y' | 'all';
 
@@ -39,6 +41,7 @@ export default function StatsScreen() {
   const [period, setPeriod] = useState<Period>('3m');
   const periodStart = useMemo(() => getPeriodStart(period, now), [period, now]);
 
+  const allTimeTotals = useQuery(() => getWorkoutTotals(), []);
   const periodTotals = useQuery(() => getWorkoutTotals(periodStart || undefined), [periodStart]);
   const periodWorkouts = useQuery(() => listWorkoutsSince(periodStart), [periodStart]);
   const setsByMuscle = useQuery(() => muscleSplit(periodStart), [periodStart]);
@@ -56,6 +59,13 @@ export default function StatsScreen() {
 
   return (
     <Screen header={{ backButton: true, title: translate('stats.title') }}>
+      <Card style={styles.allTimeCard}>
+        <AllTimeTile label={translate('stats.workouts')} value={String(allTimeTotals.workouts)} />
+        <AllTimeTile
+          label={translate('stats.time')}
+          value={formatDuration(allTimeTotals.durationSec, { compact: true })}
+        />
+      </Card>
       <Segmented
         options={[
           { value: '3m', label: translate('stats.period3m') },
@@ -74,3 +84,22 @@ export default function StatsScreen() {
     </Screen>
   );
 }
+
+/** Число за всё время, не зависит от выбранного периода: тренировки и время. */
+function AllTimeTile({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.allTimeTile}>
+      <Text variant="label" color="muted">
+        {label.toUpperCase()}
+      </Text>
+      <Text variant="h3" tabular>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  allTimeCard: { flexDirection: 'row', marginBottom: spacing.lg },
+  allTimeTile: { flex: 1, gap: 4 },
+});

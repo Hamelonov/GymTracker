@@ -24,6 +24,8 @@ export interface HeaderProps {
   right?: React.ReactNode;
   left?: React.ReactNode;
   onBack?: () => void;
+  /** Элемент в одной строке с крупным заголовком (`large`), справа от текста, а не над ним. */
+  largeRight?: React.ReactNode;
 }
 
 /** Возвращает назад или на главную вкладку, если экран открыт напрямую (возвращаться некуда). */
@@ -32,7 +34,7 @@ function goBackOrHome() {
   else router.replace('/');
 }
 
-export function Header({ title, subtitle, large, backButton, right, left, onBack }: HeaderProps) {
+export function Header({ title, subtitle, large, backButton, right, left, largeRight, onBack }: HeaderProps) {
   const colors = useColors();
   const handleBackPress = onBack ?? goBackOrHome;
   const showsSmallTitle = !large && title;
@@ -70,13 +72,16 @@ export function Header({ title, subtitle, large, backButton, right, left, onBack
         <View style={[styles.headerSide, styles.headerRight]}>{right}</View>
       </View>
       {showsLargeTitle ? (
-        <View style={styles.largeTitle}>
-          <Text variant="h1">{title}</Text>
-          {subtitle ? (
-            <Text variant="body" color="muted" style={styles.largeSubtitle}>
-              {subtitle}
-            </Text>
-          ) : null}
+        <View style={styles.largeTitleRow}>
+          <View style={styles.largeTitleColumn}>
+            <Text variant="h1">{title}</Text>
+            {subtitle ? (
+              <Text variant="body" color="muted" style={styles.largeSubtitle}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+          {largeRight}
         </View>
       ) : null}
     </View>
@@ -154,7 +159,14 @@ const styles = StyleSheet.create({
   headerSide: { minWidth: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerRight: { justifyContent: 'flex-end', flexShrink: 0 },
   headerCenter: { flex: 1, alignItems: 'center' },
-  largeTitle: { marginTop: spacing.sm },
+  largeTitleRow: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  largeTitleColumn: { flex: 1 },
   largeSubtitle: { marginTop: 2 },
   backButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },

@@ -2,6 +2,7 @@ import { push } from '@/lib/nav';
 import {
   Calculator,
   ChartLine,
+  ChevronRight,
   Database,
   Info,
   PersonStanding,
@@ -12,11 +13,8 @@ import {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
-import { getWorkoutTotals } from '@/db/repo/workouts';
-import { useQuery } from '@/db/version';
-import { formatDuration } from '@/domain/units';
 import { useSettings } from '@/store/settings';
-import { Card, Icon, ListItem, Screen, SectionTitle, Text, spacing, useColors } from '@/ui';
+import { Card, Icon, ListItem, Pressable, Screen, Text, spacing, useColors } from '@/ui';
 
 interface ProfileLink {
   icon: typeof ChartLine;
@@ -28,7 +26,6 @@ export default function ProfileTab() {
   const { t: translate } = useTranslation();
   const colors = useColors();
   const profileName = useSettings((state) => state.profileName);
-  const allTimeTotals = useQuery(() => getWorkoutTotals(), []);
   const profileLinks: ProfileLink[] = [
     { icon: ChartLine, title: translate('profile.stats'), href: '/stats' },
     { icon: Ruler, title: translate('profile.measurements'), href: '/measurements' },
@@ -43,19 +40,18 @@ export default function ProfileTab() {
     <Screen
       header={{
         title: translate('profile.title'),
-        subtitle: profileName || undefined,
         large: true,
+        largeRight: (
+          <Pressable style={styles.nameButton} onPress={() => push('/profile/edit')} haptic="selection">
+            <Text variant="bodyMedium" numberOfLines={1} style={styles.nameText}>
+              {profileName || translate('profile.editTitle')}
+            </Text>
+            <Icon icon={ChevronRight} size={18} color="faint" />
+          </Pressable>
+        ),
       }}
       contentStyle={{ paddingBottom: 120 }}
     >
-      <Card style={styles.statsCard}>
-        <StatTile label={translate('stats.workouts')} value={String(allTimeTotals.workouts)} />
-        <StatTile
-          label={translate('stats.time')}
-          value={formatDuration(allTimeTotals.durationSec, { compact: true })}
-        />
-      </Card>
-      <SectionTitle title={translate('common.more')} />
       <Card padded={false}>
         {profileLinks.map((link, index) => (
           <View
@@ -82,20 +78,8 @@ export default function ProfileTab() {
   );
 }
 
-function StatTile({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={{ flex: 1, gap: 4 }}>
-      <Text variant="label" color="muted">
-        {label.toUpperCase()}
-      </Text>
-      <Text variant="h3" tabular>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  statsCard: { flexDirection: 'row' },
   iconCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  nameButton: { flexDirection: 'row', alignItems: 'center', gap: 2, maxWidth: 160 },
+  nameText: { flexShrink: 1 },
 });

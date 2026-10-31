@@ -7,6 +7,7 @@ import { dateLocale } from '@/domain/dates';
 import { penTimesSign } from '@/domain/pen/serializeWorkout';
 import type { DistanceUnit, ExerciseType, WeightUnit } from '@/domain/types';
 import { buildWeightLines, describeLogColumns, formatPerSet } from './logLines';
+import { PinchZoomView } from './PinchZoomView';
 import { Card, Text, spacing, useColors } from '@/ui';
 
 type Units = { weight: WeightUnit; distance: DistanceUnit };
@@ -42,7 +43,7 @@ export function ExerciseLogTable({ entries, exerciseType, units }: ExerciseLogTa
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tableContent}
       >
-        <View>
+        <PinchZoomView>
           <View style={[styles.row, styles.headerRow]}>
             <HeaderCell title={translate('log.columnDay')} width={COLUMN_WIDTHS.day} />
             {hasWeight ? (
@@ -100,7 +101,7 @@ export function ExerciseLogTable({ entries, exerciseType, units }: ExerciseLogTa
               </Text>
             </View>
           ))}
-        </View>
+        </PinchZoomView>
       </ScrollView>
     </Card>
   );

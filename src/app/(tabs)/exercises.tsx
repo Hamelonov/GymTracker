@@ -16,7 +16,7 @@ export default function ExercisesTab() {
       <Header
         title={translate('exercise.library')}
         large
-        right={
+        largeRight={
           <IconButton icon={Plus} variant="accent" onPress={() => push('/exercise/edit')} haptic="light" />
         }
       />
