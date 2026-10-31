@@ -7,12 +7,12 @@ import { dateLocale } from '@/domain/dates';
 import { penTimesSign } from '@/domain/pen/serializeWorkout';
 import type { DistanceUnit, ExerciseType, WeightUnit } from '@/domain/types';
 import { buildWeightLines, describeLogColumns, formatPerSet } from './logLines';
-import { PinchZoomScrollView } from './PinchZoomScrollView';
+import { PinchPanTable } from './PinchPanTable';
 import { Card, Text, spacing, useColors } from '@/ui';
 
 type Units = { weight: WeightUnit; distance: DistanceUnit };
 
-/** Ширины колонок фиксированы: таблица шире экрана и прокручивается по горизонтали. */
+/** Ширины колонок фиксированы: таблица шире экрана, смотреть её целиком — через PinchPanTable. */
 const COLUMN_WIDTHS = { day: 100, weight: 64, timesSign: 14, sets: 110, rir: 80, rpe: 80, note: 180 };
 
 /** Дата цифрами в формате языка: «28.03.2026». */
@@ -38,7 +38,7 @@ export function ExerciseLogTable({ entries, exerciseType, units }: ExerciseLogTa
 
   return (
     <Card raised style={styles.card}>
-      <PinchZoomScrollView contentContainerStyle={styles.tableContent}>
+      <PinchPanTable>
         <View style={[styles.row, styles.headerRow]}>
           <HeaderCell title={translate('log.columnDay')} width={COLUMN_WIDTHS.day} />
           {hasWeight ? (
@@ -96,7 +96,7 @@ export function ExerciseLogTable({ entries, exerciseType, units }: ExerciseLogTa
             </Text>
           </View>
         ))}
-      </PinchZoomScrollView>
+      </PinchPanTable>
     </Card>
   );
 }
@@ -117,10 +117,8 @@ function HeaderCell({ title, width, alignRight = false }: HeaderCellProps) {
 }
 
 const styles = StyleSheet.create({
-  // Отступы делает сама таблица внутри прокрутки, чтобы при сдвиге вбок текст не обрезался краем карточки.
-  card: { paddingHorizontal: 0, paddingTop: spacing.lg, paddingBottom: 0 },
+  card: { paddingHorizontal: spacing.sm, paddingTop: spacing.lg, paddingBottom: 0 },
   headerRow: { paddingBottom: spacing.md },
-  tableContent: { paddingHorizontal: spacing.lg },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   dayRow: { paddingVertical: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
   weightLines: { gap: spacing.xs },
