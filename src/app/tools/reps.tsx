@@ -1,31 +1,31 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
-import {
-  REPS_PERCENT_TABLE,
-  SET_COUNT_OPTIONS,
-  WORK_RANGE_PERCENT,
-  buildRepsPlan,
-  repsAtPercentOfMax,
-} from '@/domain/repsPlan';
-import { parseNumberInput } from '@/domain/units';
-import { Card, Input, Screen, SectionTitle, Segmented, Text, spacing, useColors } from '@/ui';
+import { REPS_PERCENT_TABLE, WORK_RANGE_PERCENT, buildRepsPlan, repsAtPercentOfMax } from '@/domain/repsPlan';
+import { formatDuration, parseNumberInput } from '@/domain/units';
+import { useSettings } from '@/store/settings';
+import { Card, Input, Screen, SectionTitle, Text, spacing, useColors } from '@/ui';
 
-/** Максимум повторений или null, пока в поле нет положительного числа. */
-function parseMaxReps(maxRepsText: string): number | null {
-  const maxReps = parseNumberInput(maxRepsText);
-  if (maxReps == null || maxReps < 1) return null;
-  return Math.round(maxReps);
+/** Положительное целое число или null, пока в поле нет такого числа. */
+function parsePositiveInteger(text: string): number | null {
+  const value = parseNumberInput(text);
+  if (value == null || value < 1) return null;
+  return Math.round(value);
 }
 
 export default function RepsCalculatorScreen() {
   const { t: translate } = useTranslation();
   const colors = useColors();
+  const defaultRestSeconds = useSettings((state) => state.defaultRestSeconds);
   const [maxRepsText, setMaxRepsText] = useState('');
-  const [setCount, setSetCount] = useState<string>('4');
-  const maxReps = parseMaxReps(maxRepsText);
-  const plan = maxReps != null ? buildRepsPlan(maxReps, Number(setCount)) : [];
+  const [setCountText, setSetCountText] = useState('4');
+  const [restSecondsText, setRestSecondsText] = useState(() => String(defaultRestSeconds));
+  const maxReps = parsePositiveInteger(maxRepsText);
+  const setCount = parsePositiveInteger(setCountText);
+  const restSeconds = parsePositiveInteger(restSecondsText);
+  const plan = maxReps != null && setCount != null ? buildRepsPlan(maxReps, setCount) : [];
   const totalReps = plan.reduce((sum, plannedSet) => sum + plannedSet.reps, 0);
+  const totalRestSeconds = restSeconds != null && plan.length > 1 ? restSeconds * (plan.length - 1) : null;
 
   const formatWorkRange = () => {
     if (maxReps == null) return '—';
@@ -52,6 +52,24 @@ export default function RepsCalculatorScreen() {
         containerStyle={styles.inputContainer}
         style={styles.input}
       />
+      <View style={styles.inputsRow}>
+        <Input
+          label={translate('tools.setCountLabel')}
+          value={setCountText}
+          onChangeText={setSetCountText}
+          keyboardType="number-pad"
+          placeholder="4"
+          containerStyle={styles.inputHalf}
+        />
+        <Input
+          label={translate('tools.restSecondsLabel')}
+          value={restSecondsText}
+          onChangeText={setRestSecondsText}
+          keyboardType="number-pad"
+          placeholder="90"
+          containerStyle={styles.inputHalf}
+        />
+      </View>
       <Card style={[styles.result, { backgroundColor: colors.text }]}>
         <Text variant="label" color={colors.textFaint}>
           {translate('tools.workRange').toUpperCase()}
@@ -72,14 +90,6 @@ export default function RepsCalculatorScreen() {
       </Card>
 
       <SectionTitle title={translate('tools.setPlan')} />
-      <Segmented
-        options={SET_COUNT_OPTIONS.map((count) => ({
-          value: String(count),
-          label: translate('tools.setCount', { count }),
-        }))}
-        value={setCount}
-        onChange={setSetCount}
-      />
       {plan.length > 0 ? (
         <Card padded={false} style={styles.planCard}>
           {plan.map((plannedSet, index) => (
@@ -109,6 +119,16 @@ export default function RepsCalculatorScreen() {
               {totalReps} {translate('common.reps')}
             </Text>
           </View>
+          {totalRestSeconds != null ? (
+            <View style={[styles.tableRow, styles.divider, { borderTopColor: colors.border }]}>
+              <Text variant="bodyMedium" color="muted" style={styles.setNumberColumn}>
+                {translate('tools.totalRestTime')}
+              </Text>
+              <Text variant="bodyMedium" tabular style={styles.repsColumn}>
+                {formatDuration(totalRestSeconds)}
+              </Text>
+            </View>
+          ) : null}
         </Card>
       ) : null}
       <Text variant="caption" color="muted" style={styles.planHint}>
@@ -138,6 +158,8 @@ export default function RepsCalculatorScreen() {
 const styles = StyleSheet.create({
   inputContainer: { marginTop: spacing.sm },
   input: { fontSize: 24, minHeight: 56 },
+  inputsRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
+  inputHalf: { flex: 1 },
   result: { marginTop: spacing.lg, alignItems: 'center', gap: 4 },
   planCard: { marginTop: spacing.md },
   planHint: { marginTop: spacing.sm, paddingHorizontal: spacing.xs },

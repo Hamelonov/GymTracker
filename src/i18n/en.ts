@@ -417,11 +417,13 @@ const en = {
     workRange: 'Working range',
     workRangeCaption: '{{low}}–{{high}}% of max',
     setPlan: 'Set plan',
-    setCount: '{{count}} sets',
+    setCountLabel: 'Number of sets',
+    restSecondsLabel: 'Rest between sets, sec',
     setNumber: 'Set {{number}}',
     totalReps: 'Total',
+    totalRestTime: 'Rest time',
     repsPlanHint:
-      'The first set sits at the top of the range and later sets get fewer reps to account for fatigue. Rest 1.5–2 minutes. When every set feels easy, retest your max.',
+      'The first set sits at the top of the range and later sets get fewer reps to account for fatigue. When every set feels easy, retest your max.',
   },
   settings: {
     title: 'Settings',

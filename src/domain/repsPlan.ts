@@ -6,8 +6,6 @@
 /** Рабочий диапазон в процентах от максимума: тяжело, но без отказа. */
 export const WORK_RANGE_PERCENT = { low: 70, high: 85 } as const;
 
-export const SET_COUNT_OPTIONS = [3, 4, 5, 6] as const;
-
 export const REPS_PERCENT_TABLE = [100, 90, 85, 80, 75, 70, 60, 50] as const;
 
 /** Повторения на заданный процент от максимума, не меньше одного. */
