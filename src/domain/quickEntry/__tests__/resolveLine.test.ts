@@ -90,10 +90,12 @@ test('найденное, новое и ошибочное', () => {
   expect(
     resolveLine(line('фермерская прогулка', [set({ weightKg: 30, reps: 40 })]), candidates, types, 'km'),
   ).toMatchObject({ kind: 'new', name: 'Фермерская прогулка', inferred: { type: 'weight_reps' } });
-  expect(resolveLine(line('присед', [set({ durationSec: 60 })]), candidates, types, 'km')).toEqual({
-    kind: 'error',
-    error: { lineIndex: 0, rawText: 'присед', reason: 'repsExpected' },
-  });
+  expect(resolveLine(line('присед со штангой', [set({ durationSec: 60 })]), candidates, types, 'km')).toEqual(
+    {
+      kind: 'error',
+      error: { lineIndex: 0, rawText: 'присед со штангой', reason: 'repsExpected' },
+    },
+  );
 });
 
 test('голое число у бега — дистанция в единицах пользователя', () => {

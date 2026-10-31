@@ -777,7 +777,7 @@ export const EXTRA_SEED_EXERCISES: SeedExercise[] = [
   [
     'db-bodyweight-squat',
     'Bodyweight Squat',
-    'Приседания без веса',
+    'Приседания',
     'quads',
     ['glutes', 'hamstrings'],
     'bodyweight',

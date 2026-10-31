@@ -1,4 +1,5 @@
 import type { Equipment, ExerciseType, MuscleGroup } from '@/domain/types';
+import { BODYWEIGHT_SEED_EXERCISES } from './exercisesBodyweight';
 import { EXTRA_SEED_EXERCISES } from './exercisesExtra';
 
 /** [id, nameEn, nameRu, muscle, secondary, equipment, type, descriptionEn, descriptionRu] */
@@ -14,7 +15,7 @@ export type SeedExercise = [
   string,
 ];
 
-export const SEED_VERSION = 3;
+export const SEED_VERSION = 4;
 
 const BASE_SEED_EXERCISES: SeedExercise[] = [
   // ───────── Грудь
@@ -1339,4 +1340,8 @@ const BASE_SEED_EXERCISES: SeedExercise[] = [
 ];
 
 /** Базовые упражнения идут первыми: при одинаковой оценке подбор по названию предпочитает их. */
-export const SEED_EXERCISES: SeedExercise[] = [...BASE_SEED_EXERCISES, ...EXTRA_SEED_EXERCISES];
+export const SEED_EXERCISES: SeedExercise[] = [
+  ...BASE_SEED_EXERCISES,
+  ...BODYWEIGHT_SEED_EXERCISES,
+  ...EXTRA_SEED_EXERCISES,
+];

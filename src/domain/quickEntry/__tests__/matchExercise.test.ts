@@ -42,30 +42,37 @@ test('основы: окончания, ё, стоп-слова', () => {
   expect(nameToStems('Bench Press (Barbell)')).toEqual(['bench', 'pres', 'barbell']);
 });
 
-test('опечатки владельца находят нужное упражнение', () => {
+test('опечатки, формы слов и сокращения находят нужное упражнение', () => {
   expect(pick('Присед со штаного')).toBe('squat');
   expect(pick('Присидания с штонгой')).toBe('squat');
-  expect(pick('жым лежа')).toBe('bench');
+  expect(pick('жым штанги лежа')).toBe('bench');
   expect(pick('подтягивание')).toBe('pullup');
-  expect(pick('тяга верхнего блока')).toBe('lat-pulldown');
-  expect(pick('bench press')).toBe('bench');
+  expect(pick('тяга верхнего блока к груди')).toBe('lat-pulldown');
+  expect(pick('bench press barbell')).toBe('bench');
 });
 
-test('короткий запрос предпочитает точное, а не более длинное название', () => {
-  expect(pick('присед со штангой')).toBe('squat');
-  expect(pick('фронтальный присед')).toBe('front-squat');
+test('лишние слова с любой стороны — уже другое упражнение', () => {
+  expect(pick('фронтальный присед со штангой')).toBe('front-squat');
+  expect(pick('присед')).toBeNull();
+  expect(pick('жим')).toBeNull();
+  expect(pick('тяга верхнего блока')).toBeNull();
+  expect(pick('подтягивания широким хватом')).toBeNull();
 });
 
 test('ничья решается упражнением в тренировке, затем частотой', () => {
-  expect(pick('жим')).toBe('bench');
+  const twins = prepareCandidates([
+    candidate('bench', 'Жим лёжа', 'Bench Press', { order: 0 }),
+    candidate('custom-bench', 'Жим лежа', 'Жим лежа', { order: 1, isCustom: true }),
+  ]);
+  expect(pick('жим лежа', twins)).toBe('bench');
   const withUsage = prepareCandidates(
-    library.map((item) => (item.id === 'db-bench' ? { ...item, usageCount: 5 } : item)),
+    twins.map((item) => (item.id === 'custom-bench' ? { ...item, usageCount: 5 } : item)),
   );
-  expect(pick('жим', withUsage)).toBe('db-bench');
+  expect(pick('жим лежа', withUsage)).toBe('custom-bench');
   const inWorkout = prepareCandidates(
     withUsage.map((item) => (item.id === 'bench' ? { ...item, isInWorkout: true } : item)),
   );
-  expect(pick('жим', inWorkout)).toBe('bench');
+  expect(pick('жим лежа', inWorkout)).toBe('bench');
 });
 
 test('ничего похожего — null', () => {
@@ -73,28 +80,32 @@ test('ничего похожего — null', () => {
   expect(pick('Burpee')).toBeNull();
 });
 
+const realLibrary = prepareCandidates(
+  SEED_EXERCISES.map(([id, nameEn, nameRu], order) => candidate(id, nameRu, nameEn, { order })),
+);
+
 test('опечатки владельца против настоящей библиотеки упражнений', () => {
-  const realLibrary = prepareCandidates(
-    SEED_EXERCISES.map(([id, nameEn, nameRu], order) => candidate(id, nameRu, nameEn, { order })),
-  );
   expect(pick('Присед со штаного', realLibrary)).toBe('bb-squat');
   expect(pick('Присидания с штонгой', realLibrary)).toBe('bb-squat');
-  expect(pick('жым лежа', realLibrary)).toBe('bb-bench-press');
+  expect(pick('жым штанги лежа', realLibrary)).toBe('bb-bench-press');
   expect(pick('подтягивание', realLibrary)).toBe('pull-up');
-  expect(pick('тяга верхнего блока к груди', realLibrary)).toBe('lat-pulldown');
+  expect(pick('тяга верхнего блока', realLibrary)).toBe('lat-pulldown');
   expect(pick('планка', realLibrary)).toBe('plank');
-  expect(pick('становая', realLibrary)).toBe('deadlift');
+  expect(pick('становая тяга', realLibrary)).toBe('deadlift');
 });
 
-test('короткие и похожие запросы против настоящей библиотеки', () => {
-  const realLibrary = prepareCandidates(
-    SEED_EXERCISES.map(([id, nameEn, nameRu], order) => candidate(id, nameRu, nameEn, { order })),
-  );
-  expect(pick('присед', realLibrary)).toBe('bb-squat');
-  expect(pick('приседания', realLibrary)).toBe('bb-squat');
-  expect(pick('жим', realLibrary)).toBe('bb-bench-press');
-  expect(pick('тяга', realLibrary)).toBe('bb-row');
-  expect(pick('подтягивания широким хватом', realLibrary)).toBe('pull-up');
+test('упражнения со своим весом по короткому названию', () => {
+  expect(pick('приседания', realLibrary)).toBe('db-bodyweight-squat');
+  expect(pick('присед', realLibrary)).toBe('db-bodyweight-squat');
+  expect(pick('присидания', realLibrary)).toBe('db-bodyweight-squat');
+  expect(pick('приседания на одной ноге', realLibrary)).toBe('bw-pistol-squat');
+  expect(pick('выпады', realLibrary)).toBe('bw-lunge');
+  expect(pick('отжимания', realLibrary)).toBe('push-up');
+});
+
+test('не подставляет упражнение с лишними словами из настоящей библиотеки', () => {
+  expect(pick('жим', realLibrary)).toBeNull();
+  expect(pick('приседания на одной ноге на тумбе', realLibrary)).toBeNull();
   expect(pick('трицепс', realLibrary)).not.toBe('bb-curl');
   expect(pick('отжимания узким хватом', realLibrary)).not.toBe('close-grip-bench');
 });

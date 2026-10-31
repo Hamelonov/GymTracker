@@ -18,17 +18,12 @@ export interface PreparedCandidate extends ExerciseCandidate {
 
 export interface ExerciseMatch {
   candidate: PreparedCandidate;
-  /** Доля основ запроса, нашедшихся в названии (0…1). */
-  score: number;
-  /** Все основы названия нашлись в запросе: пользователь не пропустил ни одного слова названия. */
-  isExactCover: boolean;
   /** Первая основа названия совпала с первой основой запроса («жим», «присед», «тяга»). */
   isFirstStemMatched: boolean;
   /** Длина совпавшего названия; нужна для последней ступени ничьей. */
   matchedNameLength: number;
 }
 
-export const MATCH_THRESHOLD = 0.6;
 const PREFIX_MINIMUM_LENGTH = 4;
 
 /** Считает основы один раз; вызывающая сторона кэширует результат через useMemo. */
@@ -48,17 +43,15 @@ function areStemsClose(left: string, right: string): boolean {
 }
 
 interface Coverage {
-  queryCoverage: number;
-  isExactCover: boolean;
+  /** Каждое слово запроса нашло пару в названии, и в названии не осталось лишних слов. */
+  isSameName: boolean;
   isFirstStemMatched: boolean;
-  isHeadMatched: boolean;
 }
 
 /** Жадное сопоставление основ запроса с основами названия. */
 function coverageOf(queryStems: string[], candidateStems: string[]): Coverage {
   const usedCandidateIndexes = new Set<number>();
   let matchedCount = 0;
-  let isHeadMatched = false;
   let isFirstStemMatched = false;
   queryStems.forEach((queryStem, queryIndex) => {
     const matchIndex = candidateStems.findIndex(
@@ -67,37 +60,26 @@ function coverageOf(queryStems: string[], candidateStems: string[]): Coverage {
     if (matchIndex === -1) return;
     usedCandidateIndexes.add(matchIndex);
     matchedCount += 1;
-    if (queryIndex === 0) isHeadMatched = true;
     if (queryIndex === 0 && matchIndex === 0) isFirstStemMatched = true;
   });
   return {
-    queryCoverage: queryStems.length === 0 ? 0 : matchedCount / queryStems.length,
-    isExactCover: candidateStems.length > 0 && matchedCount === candidateStems.length,
+    isSameName: matchedCount === queryStems.length && matchedCount === candidateStems.length,
     isFirstStemMatched,
-    isHeadMatched,
   };
 }
 
 /**
- * Кандидат подходит, если первое слово запроса (само движение: «присед», «жим») нашлось в названии
- * и при этом либо совпала большая часть запроса, либо название целиком содержится в запросе.
- * Второе пускает «Подтягивания» для запроса «подтягивания широким хватом», которого в библиотеке нет.
+ * Упражнение подставляется, только если название то же самое: опечатки, формы слов и сокращения
+ * прощаются, лишние слова — нет. Иначе «Приседания на одной ноге» молча становились
+ * «Приседаниями на одной ноге на высокой тумбе»: лучше создать новое упражнение, чем записать в чужое.
  */
-function isAcceptable(coverage: Coverage): boolean {
-  if (!coverage.isHeadMatched) return false;
-  return coverage.isExactCover || coverage.queryCoverage >= MATCH_THRESHOLD;
-}
-
-/** Лучшее из названий кандидата (русское или английское). */
 function bestMatchFor(queryStems: string[], candidate: PreparedCandidate): ExerciseMatch | null {
   let best: ExerciseMatch | null = null;
   candidate.stemSets.forEach((stems, nameIndex) => {
     const coverage = coverageOf(queryStems, stems);
-    if (!isAcceptable(coverage)) return;
+    if (!coverage.isSameName) return;
     const match: ExerciseMatch = {
       candidate,
-      score: coverage.queryCoverage,
-      isExactCover: coverage.isExactCover,
       isFirstStemMatched: coverage.isFirstStemMatched,
       matchedNameLength: candidate.names[nameIndex]?.length ?? 0,
     };
@@ -112,15 +94,12 @@ function compareBooleans(left: boolean, right: boolean): number {
 }
 
 /**
- * Порядок предпочтения: название без лишних слов → больше совпавших слов запроса → уже в тренировке →
- * чаще делали → первое слово совпало → встроенное → порядок в библиотеке → короче название.
- * Название без лишних слов идёт первым, чтобы «подтягивания широким хватом» дали «Подтягивания»,
- * а не «Подтягивания обратным хватом»: ошибиться в сторону базового упражнения безопаснее.
+ * Несколько названий подходят, когда опечатка или сокращение близки к разным словам.
+ * Порядок предпочтения: уже в тренировке → чаще делали → первое слово совпало → встроенное →
+ * порядок в библиотеке → короче название.
  */
 function compareMatches(left: ExerciseMatch, right: ExerciseMatch): number {
   return (
-    compareBooleans(left.isExactCover, right.isExactCover) ||
-    right.score - left.score ||
     compareBooleans(left.candidate.isInWorkout, right.candidate.isInWorkout) ||
     right.candidate.usageCount - left.candidate.usageCount ||
     compareBooleans(left.isFirstStemMatched, right.isFirstStemMatched) ||
@@ -148,9 +127,8 @@ function findExactMatches(queryStems: string[], candidates: PreparedCandidate[])
 }
 
 /**
- * Точное название побеждает нечёткое и правило «сначала из тренировки»: иначе строка «Подтягивания»
- * при карточке «Подтягивания обратным хватом» переехала бы на неё. Дальше — сначала среди упражнений
- * текущей тренировки, потом по всей библиотеке.
+ * Название, совпавшее без опечаток, побеждает совпавшее с опечаткой, даже если второе уже есть
+ * в тренировке. Дальше — сначала среди упражнений текущей тренировки, потом по всей библиотеке.
  */
 export function matchExerciseName(query: string, candidates: PreparedCandidate[]): ExerciseMatch | null {
   const queryStems = nameToStems(query);
