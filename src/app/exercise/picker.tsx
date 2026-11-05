@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExerciseList } from '@/features/exercises/ExerciseList';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { usePickerResult } from '@/store/picker';
-import { Button, Header, spacing, useColors } from '@/ui';
+import { Button, Header, Icon, layout, spacing, useColors } from '@/ui';
 
 /** workout: добавить в активную тренировку; routine: вернуть в редактор шаблона; replace: заменить одно упражнение. */
 type PickerMode = 'workout' | 'routine' | 'replace';
@@ -52,7 +52,7 @@ export default function ExercisePickerScreen() {
         onCreate={() =>
           push({ pathname: '/exercise/edit', params: { addToWorkout: isReplaceMode ? 'false' : 'true' } })
         }
-        bottomPadding={selectedExerciseIds.length > 0 ? 90 : 0}
+        bottomPadding={selectedExerciseIds.length > 0 ? layout.rowMinHeight + spacing.xxl : 0}
         onPress={(exercise) => {
           // Замена берёт ровно одно упражнение, поэтому экран закрывается сразу после нажатия.
           if (isReplaceMode) {
@@ -77,7 +77,7 @@ export default function ExercisePickerScreen() {
             title={translate('exercise.addSelected', { count: selectedExerciseIds.length })}
             size="lg"
             fullWidth
-            icon={<Plus size={20} color={colors.onAccent} strokeWidth={2.5} />}
+            icon={<Icon icon={Plus} size={20} color="onAccent" strokeWidth={2.5} />}
             onPress={() => finishWithExercises(selectedExerciseIds)}
           />
         </View>

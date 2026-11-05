@@ -1,7 +1,7 @@
 import { Trophy } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import type { RecordDetail } from '@/db/repo/exercises';
 import { formatRelativeDay } from '@/domain/dates';
 import type { DistanceUnit, RecordType, WeightUnit } from '@/domain/types';
@@ -41,7 +41,7 @@ export function ExerciseRecordsTab({ records, units }: ExerciseRecordsTabProps) 
   }
 
   return (
-    <View style={styles.recordGrid}>
+    <ScrollView contentContainerStyle={styles.recordGrid} showsVerticalScrollIndicator={false}>
       {records.map((record) => (
         <Pressable
           key={record.type}
@@ -52,25 +52,31 @@ export function ExerciseRecordsTab({ records, units }: ExerciseRecordsTabProps) 
           scaleTo={0.97}
         >
           <View style={styles.recordTitleRow}>
-            <Icon icon={Trophy} size={14} color="accent" />
+            <Icon icon={Trophy} size={16} />
             <Text variant="label" color="muted">
               {translate(`pr.${record.type}`).toUpperCase()}
             </Text>
           </View>
-          <Text variant="h2" tabular>
+          <Text variant="stat" tabular>
             {formatRecordValue(record.type, record.value, units)}
           </Text>
-          <Text variant="caption" color="faint">
+          <Text variant="caption" color="muted">
             {formatRelativeDay(record.achievedAt, i18n.language, translate)}
           </Text>
         </Pressable>
       ))}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  recordGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  recordTile: { width: '47%', flexGrow: 1, padding: spacing.lg, borderRadius: radius.lg, gap: 4 },
-  recordTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  recordGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  recordTile: { width: '47%', flexGrow: 1, padding: spacing.lg, borderRadius: radius.lg, gap: spacing.xs },
+  recordTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

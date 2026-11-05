@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { deleteExercise, setExerciseArchived } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import { push } from '@/lib/nav';
-import { Icon, ListItem, Sheet, confirm, useColors } from '@/ui';
+import { Icon, ListItem, Sheet, confirm } from '@/ui';
 
 interface ExerciseMenuSheetProps {
   visible: boolean;
@@ -21,7 +21,6 @@ export function ExerciseMenuSheet({
   exerciseDisplayName,
   onClose,
 }: ExerciseMenuSheetProps) {
-  const colors = useColors();
   const { t: translate } = useTranslation();
 
   const deleteAfterConfirm = async () => {
@@ -59,7 +58,7 @@ export function ExerciseMenuSheet({
       {exercise.isCustom ? (
         <ListItem
           title={translate('common.delete')}
-          titleColor={colors.danger}
+          tone="danger"
           left={<Icon icon={Trash2} color="danger" />}
           onPress={deleteAfterConfirm}
         />

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import type { ExerciseHistoryEntry } from '@/db/repo/exercises';
 import type { SetRow } from '@/db/schema';
 import { formatShortDate } from '@/domain/dates';
@@ -100,7 +100,7 @@ export function ExerciseChartsTab({
     activeMetric === 'duration' ? formatDuration(value) : String(Math.round(value));
 
   return (
-    <View>
+    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <View style={styles.metricChips}>
         {availableMetrics.map((metric) => (
           <Chip
@@ -117,10 +117,11 @@ export function ExerciseChartsTab({
       ) : (
         <LineChart data={chartPoints} formatY={formatYAxisValue} />
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  content: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   metricChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
 });

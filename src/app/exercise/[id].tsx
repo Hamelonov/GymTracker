@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { Ellipsis } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { getExerciseHistory, exerciseName, getExercise, getRecordDetails } from '@/db/repo/exercises';
 import { useQuery } from '@/db/version';
 import { recordTypesForExercise } from '@/domain/records';
@@ -12,15 +12,15 @@ import { ExerciseHistoryTab } from '@/features/exercises/ExerciseHistoryTab';
 import { ExerciseMenuSheet } from '@/features/exercises/ExerciseMenuSheet';
 import { ExerciseRecordsTab } from '@/features/exercises/ExerciseRecordsTab';
 import { useSettings } from '@/store/settings';
-import { IconButton, Screen, Segmented, spacing, useColors } from '@/ui';
+import { IconButton, Screen, Segmented, spacing } from '@/ui';
 
 type ExerciseTab = 'about' | 'history' | 'charts' | 'records';
 
 export default function ExerciseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colors = useColors();
   const { t: translate, i18n } = useTranslation();
-  const settings = useSettings();
+  const weightUnit = useSettings((state) => state.weightUnit);
+  const distanceUnit = useSettings((state) => state.distanceUnit);
   const [activeTab, setActiveTab] = useState<ExerciseTab>('about');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const exercise = useQuery(() => (id ? getExercise(id) : undefined), [id]);
@@ -36,10 +36,7 @@ export default function ExerciseDetailScreen() {
     selectedMetric && availableMetrics.includes(selectedMetric)
       ? selectedMetric
       : (availableMetrics[0] ?? 'weight');
-  const units = useMemo(
-    () => ({ weight: settings.weightUnit, distance: settings.distanceUnit }),
-    [settings.weightUnit, settings.distanceUnit],
-  );
+  const units = useMemo(() => ({ weight: weightUnit, distance: distanceUnit }), [weightUnit, distanceUnit]);
 
   if (!exercise) return <Screen header={{ backButton: true }} />;
   const displayName = exerciseName(exercise, i18n.language);
@@ -59,9 +56,10 @@ export default function ExerciseDetailScreen() {
           />
         ),
       }}
-      stickyHeaderIndices={[0]}
+      scrollable={false}
+      padded={false}
     >
-      <View style={{ backgroundColor: colors.background, paddingBottom: spacing.md }}>
+      <View style={styles.tabSwitcher}>
         <Segmented
           options={[
             { value: 'about', label: translate('exercise.about') },
@@ -74,25 +72,27 @@ export default function ExerciseDetailScreen() {
         />
       </View>
 
-      {activeTab === 'about' ? (
-        <ExerciseAboutTab exercise={exercise} timesPerformed={history.length} />
-      ) : null}
+      <View style={styles.tabContent}>
+        {activeTab === 'about' ? (
+          <ExerciseAboutTab exercise={exercise} timesPerformed={history.length} />
+        ) : null}
 
-      {activeTab === 'history' ? (
-        <ExerciseHistoryTab history={history} exerciseType={exercise.type} units={units} />
-      ) : null}
+        {activeTab === 'history' ? (
+          <ExerciseHistoryTab history={history} exerciseType={exercise.type} units={units} />
+        ) : null}
 
-      {activeTab === 'charts' ? (
-        <ExerciseChartsTab
-          history={history}
-          availableMetrics={availableMetrics}
-          activeMetric={activeMetric}
-          onSelectMetric={setSelectedMetric}
-          units={units}
-        />
-      ) : null}
+        {activeTab === 'charts' ? (
+          <ExerciseChartsTab
+            history={history}
+            availableMetrics={availableMetrics}
+            activeMetric={activeMetric}
+            onSelectMetric={setSelectedMetric}
+            units={units}
+          />
+        ) : null}
 
-      {activeTab === 'records' ? <ExerciseRecordsTab records={records} units={units} /> : null}
+        {activeTab === 'records' ? <ExerciseRecordsTab records={records} units={units} /> : null}
+      </View>
 
       <ExerciseMenuSheet
         visible={isMenuOpen}
@@ -103,3 +103,8 @@ export default function ExerciseDetailScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  tabContent: { flex: 1 },
+  tabSwitcher: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
+});

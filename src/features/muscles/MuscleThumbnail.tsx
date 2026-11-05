@@ -1,36 +1,41 @@
 import React, { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import type { MuscleGroup } from '@/domain/types';
-import { useColors } from '@/ui';
-import { MuscleMap } from './MuscleMap';
+import { radius, useColors } from '@/ui';
 import { sideForMuscle } from './bodyHighlighterSlugs';
+import { basePathForSide, pathForMuscles, viewBoxForSide } from './muscleGlyphPaths';
 
 interface MuscleThumbnailProps {
   primary: MuscleGroup;
   secondary: readonly MuscleGroup[];
-  /** Диаметр кружка; силуэт внутри занимает почти всю высоту. */
+  /** Сторона плитки; силуэт внутри занимает почти всю высоту. */
   size: number;
 }
 
-/** Маленький кружок с силуэтом для списков и карточек: показывает ту сторону, где видна основная мышца. */
+const FIGURE_HEIGHT_RATIO = 0.82;
+
+/** Плитка с силуэтом для списков: три контура вместо целого тела, поэтому дёшево рисуется. */
 export const MuscleThumbnail = memo(function MuscleThumbnail({
   primary,
   secondary,
   size,
 }: MuscleThumbnailProps) {
   const colors = useColors();
+  const side = sideForMuscle(primary);
+  const figureHeight = size * FIGURE_HEIGHT_RATIO;
+
   return (
-    <View
-      style={[
-        styles.circle,
-        { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.surfaceAlt },
-      ]}
-    >
-      <MuscleMap primary={primary} secondary={secondary} side={sideForMuscle(primary)} height={size * 0.82} />
+    <View style={[styles.tile, { width: size, height: size, backgroundColor: colors.surfaceAlt }]}>
+      <Svg viewBox={viewBoxForSide(side)} width={figureHeight / 2} height={figureHeight}>
+        <Path d={basePathForSide(side)} fill={colors.muscleBase} />
+        <Path d={pathForMuscles(side, secondary)} fill={colors.muscleSecondary} />
+        <Path d={pathForMuscles(side, [primary])} fill={colors.accent} />
+      </Svg>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  circle: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  tile: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: radius.sm },
 });

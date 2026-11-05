@@ -103,7 +103,7 @@ interface PenGroupLineProps {
   timesSign: string;
 }
 
-function PenGroupLine({ group, hasWeightColumn, timesSign }: PenGroupLineProps) {
+export function PenGroupLine({ group, hasWeightColumn, timesSign }: PenGroupLineProps) {
   const { t: translate } = useTranslation();
   const rpeText = buildRpeText(group.sets);
   const recordTypes = collectRecordTypes(group.sets);
