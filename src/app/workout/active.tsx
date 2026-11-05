@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react-native';
 import { push } from '@/lib/nav';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { ensureNotificationPermission } from '@/lib/notifications';
@@ -106,8 +106,10 @@ export default function ActiveWorkoutScreen() {
         }
       />
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Отступ считается от положения клавиатуры: если система сама сжала окно, он равен нулю. */}
+      <KeyboardAvoidingView style={styles.fill} behavior="padding">
         <ScrollView
+          style={styles.fill}
           keyboardShouldPersistTaps="handled"
           // Запас под плашку отдыха есть всегда, иначе при её появлении экран прыгал бы.
           contentContainerStyle={{ paddingBottom: insets.bottom + layout.restDockHeight + spacing.xl }}
@@ -181,15 +183,10 @@ export default function ActiveWorkoutScreen() {
             ) : null}
           </View>
         </ScrollView>
+        <RestTimerBar />
       </KeyboardAvoidingView>
 
       {shouldKeepAwake ? <KeepScreenAwake /> : null}
-      <View
-        style={[styles.restTimerWrapper, { bottom: insets.bottom + spacing.md }]}
-        pointerEvents="box-none"
-      >
-        <RestTimerBar />
-      </View>
 
       <ActiveWorkoutSheets
         workout={workout}
@@ -211,7 +208,7 @@ function KeepScreenAwake() {
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   penEditorWrapper: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   pageActions: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, gap: spacing.sm },
-  restTimerWrapper: { position: 'absolute', left: spacing.lg, right: spacing.lg },
 });
