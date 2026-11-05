@@ -16,7 +16,7 @@ import { IconButton, Screen, Text, spacing } from '@/ui';
  */
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { i18n } = useTranslation();
+  const { t: translate, i18n } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const workout = useQuery(() => (id ? getWorkout(id) : undefined), [id]);
 
@@ -32,14 +32,14 @@ export default function WorkoutDetailScreen() {
         right: (
           <IconButton
             icon={Ellipsis}
-            variant="filled"
+            label={translate('common.menu')}
             onPress={() => setIsMenuOpen(true)}
             haptic="selection"
           />
         ),
       }}
     >
-      <Text variant="h3" style={styles.workoutName}>
+      <Text variant="h2" style={styles.workoutName}>
         {workout.name}
       </Text>
       <WorkoutDetailsBody workout={workout} />

@@ -1,5 +1,6 @@
 import { Ellipsis } from 'lucide-react-native';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import type { WorkoutDetail } from '@/db/repo/workouts';
 import { formatTime } from '@/domain/dates';
@@ -14,17 +15,25 @@ interface WorkoutSectionProps {
 
 /** Одна тренировка на странице просмотра: название, время начала, меню «⋯» и её содержимое. */
 export function WorkoutSection({ workout, onDeleted }: WorkoutSectionProps) {
+  const { t: translate } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   return (
     <View>
       <View style={styles.titleRow}>
         <View style={styles.titleColumn}>
-          <Text variant="h3">{workout.name}</Text>
+          <Text variant="h2" numberOfLines={1}>
+            {workout.name}
+          </Text>
           <Text variant="caption" color="muted" tabular>
             {formatTime(workout.startedAt)}
           </Text>
         </View>
-        <IconButton icon={Ellipsis} variant="filled" onPress={() => setIsMenuOpen(true)} haptic="selection" />
+        <IconButton
+          icon={Ellipsis}
+          label={translate('common.menu')}
+          onPress={() => setIsMenuOpen(true)}
+          haptic="selection"
+        />
       </View>
       <WorkoutDetailsBody workout={workout} />
       <WorkoutActionsSheet

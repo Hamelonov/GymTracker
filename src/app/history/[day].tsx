@@ -49,6 +49,6 @@ export default function HistoryDayScreen() {
 }
 
 const styles = StyleSheet.create({
-  workoutSection: { paddingBottom: spacing.md },
-  workoutDivider: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.lg },
+  workoutSection: { paddingBottom: spacing.xxl },
+  workoutDivider: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.xxl },
 });

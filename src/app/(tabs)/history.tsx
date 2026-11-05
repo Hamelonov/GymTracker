@@ -2,16 +2,18 @@ import { FlashList } from '@shopify/flash-list';
 import { addDays, addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { push } from '@/lib/nav';
 import { Calendar } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { listWorkouts, countWorkoutsByDay } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import { HistoryCalendar } from '@/features/history/HistoryCalendar';
-import { WorkoutCard } from '@/features/history/WorkoutCard';
+import { buildHistoryRows, findMonthRowIndices, type HistoryRow } from '@/features/history/historyRows';
+import { HistoryMonthRow } from '@/features/history/HistoryMonthRow';
+import { WorkoutRow } from '@/features/history/WorkoutRow';
 import { useNow } from '@/lib/useNow';
-import { EmptyState, Header, Icon, Segmented, spacing, useColors } from '@/ui';
+import { EmptyState, Header, Segmented, spacing, useColors } from '@/ui';
 
 type HistoryViewMode = 'list' | 'calendar';
 
@@ -23,6 +25,8 @@ export default function HistoryTab() {
   const [viewMode, setViewMode] = useState<HistoryViewMode>('list');
   const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const allWorkouts = useQuery(() => listWorkouts(), []);
+  const historyRows = useMemo(() => buildHistoryRows(allWorkouts), [allWorkouts]);
+  const monthRowIndices = useMemo(() => findMonthRowIndices(historyRows), [historyRows]);
   const monthEnd = endOfMonth(month);
   const workoutCountByDay = useQuery(
     () => countWorkoutsByDay(month.getTime(), addDays(monthEnd, 1).getTime()),
@@ -34,12 +38,24 @@ export default function HistoryTab() {
     setMonth((currentMonth) => addMonths(currentMonth, monthCount));
   };
 
-  // В календаре только сетка месяца: тренировки дня открываются на отдельном экране.
-  const visibleWorkouts = viewMode === 'list' ? allWorkouts : [];
+  const openWorkout = useCallback((workoutId: string) => {
+    push({ pathname: '/workout/[id]', params: { id: workoutId } });
+  }, []);
 
-  const listHeader = (
-    <View>
-      <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.md }}>
+  const renderRow = useCallback(
+    ({ item }: { item: HistoryRow }) => {
+      if (item.kind === 'month') {
+        return <HistoryMonthRow monthStart={item.monthStart} workoutCount={item.workoutCount} />;
+      }
+      return <WorkoutRow workout={item.workout} onPress={openWorkout} />;
+    },
+    [openWorkout],
+  );
+
+  return (
+    <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <Header title={translate('history.title')} large />
+      <View style={styles.segmentedWrapper}>
         <Segmented
           options={[
             { value: 'list', label: translate('history.list') },
@@ -49,54 +65,41 @@ export default function HistoryTab() {
           onChange={setViewMode}
         />
       </View>
-      {viewMode === 'calendar' ? (
-        <HistoryCalendar
-          month={month}
-          monthEnd={monthEnd}
-          now={now}
-          workoutCountByDay={workoutCountByDay}
-          monthWorkoutCount={monthWorkoutCount}
-          onShowPreviousMonth={() => changeMonthBy(-1)}
-          onShowNextMonth={() => changeMonthBy(1)}
-          onOpenDay={(day) => push({ pathname: '/history/[day]', params: { day } })}
-        />
-      ) : null}
-    </View>
-  );
-
-  return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
-      <Header title={translate('history.title')} large />
-      <FlashList
-        data={visibleWorkouts}
-        keyExtractor={(workout) => workout.id}
-        ListHeaderComponent={listHeader}
-        contentContainerStyle={{ paddingBottom: 140 }}
-        ListEmptyComponent={
-          viewMode === 'list' ? (
+      {viewMode === 'list' ? (
+        <FlashList
+          data={historyRows}
+          keyExtractor={(row) => row.key}
+          getItemType={(row) => row.kind}
+          stickyHeaderIndices={monthRowIndices}
+          contentContainerStyle={{ paddingBottom: spacing.xl }}
+          ListEmptyComponent={
             <EmptyState
               icon={Calendar}
               title={translate('history.empty')}
               hint={translate('history.emptyHint')}
             />
-          ) : null
-        }
-        renderItem={({ item }) => (
-          <View style={{ paddingHorizontal: spacing.lg }}>
-            <WorkoutCard
-              workout={item}
-              onPress={() => push({ pathname: '/workout/[id]', params: { id: item.id } })}
-            />
-          </View>
-        )}
-      />
-      <View style={styles.hidden}>
-        <Icon icon={Calendar} />
-      </View>
+          }
+          renderItem={renderRow}
+        />
+      ) : (
+        <ScrollView contentContainerStyle={{ paddingBottom: spacing.xl }}>
+          <HistoryCalendar
+            month={month}
+            monthEnd={monthEnd}
+            now={now}
+            workoutCountByDay={workoutCountByDay}
+            monthWorkoutCount={monthWorkoutCount}
+            onShowPreviousMonth={() => changeMonthBy(-1)}
+            onShowNextMonth={() => changeMonthBy(1)}
+            onOpenDay={(day) => push({ pathname: '/history/[day]', params: { day } })}
+          />
+        </ScrollView>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  hidden: { display: 'none' },
+  screen: { flex: 1 },
+  segmentedWrapper: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
 });

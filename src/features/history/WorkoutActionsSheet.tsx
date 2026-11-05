@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { deleteWorkout, workoutToActiveWorkout, type WorkoutDetail } from '@/db/repo/workouts';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
-import { Icon, ListItem, Sheet, confirm, useColors } from '@/ui';
+import { Icon, ListItem, Sheet, confirm } from '@/ui';
 
 interface WorkoutActionsSheetProps {
   workout: WorkoutDetail;
@@ -17,7 +17,6 @@ interface WorkoutActionsSheetProps {
 
 /** Меню завершённой тренировки: только исправить ошибочную запись или удалить её. */
 export function WorkoutActionsSheet({ workout, visible, onClose, onDeleted }: WorkoutActionsSheetProps) {
-  const colors = useColors();
   const { t: translate } = useTranslation();
   const activeWorkout = useActiveWorkout((state) => state.workout);
   const session = useActiveWorkout((state) => state.session);
@@ -66,7 +65,7 @@ export function WorkoutActionsSheet({ workout, visible, onClose, onDeleted }: Wo
       <ListItem title={translate('common.edit')} left={<Icon icon={Pencil} />} onPress={editWorkout} />
       <ListItem
         title={translate('common.delete')}
-        titleColor={colors.danger}
+        tone="danger"
         left={<Icon icon={Trash2} color="danger" />}
         onPress={deleteThisWorkout}
       />
