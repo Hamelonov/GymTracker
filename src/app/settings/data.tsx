@@ -10,7 +10,7 @@ import {
   type DataFormat,
 } from '@/features/settings/useDataTransfer';
 import { TransferProgressModal } from '@/features/settings/TransferProgressModal';
-import { Button, Card, Screen, SectionTitle, Sheet, Text, spacing } from '@/ui';
+import { Button, Card, Icon, Screen, SectionTitle, Sheet, Text, spacing } from '@/ui';
 
 // У каждого формата пара кнопок: «Экспорт в …» в своей секции и «Импорт из …» в своей.
 const FORMATS: DataFormat[] = ['json', 'csv', 'xlsx'];
@@ -39,7 +39,7 @@ export default function DataScreen() {
             fullWidth
             contentAlign="start"
             // Стрелка из лотка — файл уходит из приложения.
-            icon={<Upload size={18} />}
+            icon={<Icon icon={Upload} size={20} />}
             disabled={busyAction != null}
             onPress={() => setSelectedExportFormat(format)}
           />
@@ -56,7 +56,7 @@ export default function DataScreen() {
             fullWidth
             contentAlign="start"
             // Стрелка в лоток — файл приходит в приложение.
-            icon={<Download size={18} />}
+            icon={<Icon icon={Download} size={20} />}
             disabled={busyAction != null}
             onPress={() => importData(format)}
           />
@@ -72,7 +72,7 @@ export default function DataScreen() {
         variant="danger"
         fullWidth
         contentAlign="start"
-        icon={<Trash2 size={18} color="#E5484D" />}
+        icon={<Icon icon={Trash2} size={20} color="danger" />}
         onPress={deleteAllData}
       />
 
@@ -90,7 +90,7 @@ export default function DataScreen() {
             variant="secondary"
             fullWidth
             contentAlign="start"
-            icon={<Share size={18} />}
+            icon={<Icon icon={Share} size={20} />}
             onPress={() => startExport('share')}
           />
           <Button
@@ -98,7 +98,7 @@ export default function DataScreen() {
             variant="outline"
             fullWidth
             contentAlign="start"
-            icon={<FolderDown size={18} />}
+            icon={<Icon icon={FolderDown} size={20} />}
             onPress={() => startExport('device')}
           />
           <Button

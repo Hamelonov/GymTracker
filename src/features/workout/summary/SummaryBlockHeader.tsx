@@ -1,12 +1,7 @@
 import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Icon, Text, spacing } from '@/ui';
-
-// Карточки итогов всегда белые на жёлтом экране, и в светлой, и в тёмной теме,
-// поэтому их второстепенные цвета фиксированы, а не берутся из темы.
-export const SUMMARY_MUTED_TEXT_COLOR = '#6A6A66';
-export const SUMMARY_DIVIDER_COLOR = '#E6E6E2';
+import { Icon, Text, lightColors, spacing } from '@/ui';
 
 /** Иконка и заголовок над каждой карточкой на экране итогов. */
 export function SummaryBlockHeader({ icon, title }: { icon: LucideIcon; title: string }) {
@@ -21,7 +16,8 @@ export function SummaryBlockHeader({ icon, title }: { icon: LucideIcon; title: s
 }
 
 export const summaryStyles = StyleSheet.create({
-  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: SUMMARY_DIVIDER_COLOR },
+  // Цвета paper не меняются с темой, поэтому их можно взять из любой палитры прямо в стилях.
+  divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: lightColors.paperBorder },
 });
 
 const styles = StyleSheet.create({

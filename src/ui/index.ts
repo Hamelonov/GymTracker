@@ -9,6 +9,7 @@ export * from './Icon';
 export * from './IconButton';
 export * from './Input';
 export * from './ListItem';
+export * from './motion';
 export * from './Pressable';
 export * from './Screen';
 export * from './Segmented';

@@ -59,18 +59,18 @@ function MinimizedWorkoutPill({
       <Pressable
         onPress={() => push('/workout/active')}
         haptic="light"
-        style={[styles.pill, { backgroundColor: colors.text }]}
+        style={[styles.pill, { backgroundColor: colors.inverseSurface }]}
       >
         <View style={[styles.liveDot, { backgroundColor: colors.accent }]} />
         <View style={styles.textColumn}>
           <WorkoutName
             variant="caption"
-            color={colors.background}
-            signColor={colors.textFaint}
+            color="inverseText"
+            signColor="inverseMuted"
             numberOfLines={1}
             name={name || translate('workout.defaultName')}
           />
-          <Text variant="label" color={colors.textFaint}>
+          <Text variant="label" color="inverseMuted">
             {formatDuration(elapsedSeconds)} · {completedSetCount} {translate('common.sets')}
           </Text>
         </View>
@@ -82,7 +82,7 @@ function MinimizedWorkoutPill({
             </Text>
           </View>
         ) : null}
-        <Icon icon={ChevronUp} size={18} color={colors.background} />
+        <Icon icon={ChevronUp} size={18} color="inverseText" />
       </Pressable>
     </Animated.View>
   );

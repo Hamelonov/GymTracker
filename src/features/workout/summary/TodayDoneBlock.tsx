@@ -8,7 +8,7 @@ import type { WorkoutDetail } from '@/db/repo/workouts';
 import { buildPenGroups, penTimesSign } from '@/domain/pen/serializeWorkout';
 import { useSettings } from '@/store/settings';
 import { Card, Text, spacing, useColors } from '@/ui';
-import { SUMMARY_MUTED_TEXT_COLOR, SummaryBlockHeader, summaryStyles } from './SummaryBlockHeader';
+import { SummaryBlockHeader, summaryStyles } from './SummaryBlockHeader';
 import { SummaryTableHeader, summaryTableStyles } from './SummaryTable';
 
 interface TodayDoneBlockProps {
@@ -99,7 +99,7 @@ export function TodayDoneBlock({ workoutDetail }: TodayDoneBlockProps) {
                       </Text>
                       <Text
                         variant="bodyMedium"
-                        color={SUMMARY_MUTED_TEXT_COLOR}
+                        color="paperMuted"
                         style={summaryTableStyles.timesSignColumn}
                       >
                         {line.weight != null ? penTimesSign(i18n.language) : ''}

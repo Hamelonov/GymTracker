@@ -82,14 +82,14 @@ export function ToastHost({ bottomOffset = 0 }: { bottomOffset?: number }) {
         key={current.id}
         entering={FadeInDown.duration(120)}
         exiting={FadeOutDown.duration(100)}
-        style={[styles.toast, { backgroundColor: colors.text }]}
+        style={[styles.toast, { backgroundColor: colors.inverseSurface }]}
       >
-        <Text variant="bodyMedium" color={colors.background} style={styles.message} numberOfLines={2}>
+        <Text variant="bodyMedium" color="inverseText" style={styles.message} numberOfLines={2}>
           {current.message}
         </Text>
         {current.actionLabel ? (
           <Pressable onPress={handleActionPress} hitSlop={8}>
-            <Text variant="h3" color={colors.accent}>
+            <Text variant="h3" color="accent">
               {current.actionLabel}
             </Text>
           </Pressable>

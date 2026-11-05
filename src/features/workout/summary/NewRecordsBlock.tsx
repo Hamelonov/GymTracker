@@ -10,7 +10,7 @@ import { formatPenSetValue, formatPenWeight, penTimesSign } from '@/domain/pen/s
 import { getSetFieldsForExerciseType, type SetValues } from '@/domain/types';
 import { useSettings } from '@/store/settings';
 import { Card, Text, spacing, useColors } from '@/ui';
-import { SUMMARY_MUTED_TEXT_COLOR, SummaryBlockHeader, summaryStyles } from './SummaryBlockHeader';
+import { SummaryBlockHeader, summaryStyles } from './SummaryBlockHeader';
 import { SummaryTableHeader, summaryTableStyles } from './SummaryTable';
 
 // Неразрывный пробел: «80 кг» не должно разрываться на две строки в узкой колонке.
@@ -212,11 +212,7 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
                     <View style={[summaryTableStyles.weightColumn, styles.weightCell]}>
                       {row.weight ? <RecordCellContent cell={row.weight} alignRight /> : null}
                     </View>
-                    <Text
-                      variant="bodyMedium"
-                      color={SUMMARY_MUTED_TEXT_COLOR}
-                      style={summaryTableStyles.timesSignColumn}
-                    >
+                    <Text variant="bodyMedium" color="paperMuted" style={summaryTableStyles.timesSignColumn}>
                       {row.weight ? penTimesSign(i18n.language) : ''}
                     </Text>
                   </>
@@ -245,7 +241,7 @@ function RecordCellContent({ cell, alignRight = false }: { cell: RecordCell; ali
         {cell.value}
       </Text>
       {cell.change?.kind === 'gain' ? (
-        <Text variant="caption" color={SUMMARY_MUTED_TEXT_COLOR} tabular style={textAlignStyle}>
+        <Text variant="caption" color="paperMuted" tabular style={textAlignStyle}>
           {cell.change.previousValue}{' '}
           <Text variant="caption" color={colors.success} tabular>
             {cell.change.gainText}

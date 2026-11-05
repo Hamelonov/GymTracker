@@ -51,13 +51,13 @@ export default function OneRmScreen() {
           style={styles.input}
         />
       </View>
-      <Card style={[styles.result, { backgroundColor: colors.text }]}>
-        <Text variant="label" color={colors.textFaint}>
+      <Card style={[styles.result, { backgroundColor: colors.inverseSurface }]}>
+        <Text variant="label" color="inverseMuted">
           {translate('tools.estimated').toUpperCase()}
         </Text>
-        <Text variant="display" color={colors.accent} tabular>
+        <Text variant="display" color="accent" tabular>
           {oneRm != null ? `${formatNumberWithoutTrailingZeros(roundForDisplay(oneRm, 1))}` : '—'}
-          <Text variant="h2" color={colors.textFaint}>
+          <Text variant="h2" color="inverseMuted">
             {' '}
             {weightUnit}
           </Text>

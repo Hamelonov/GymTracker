@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text, spacing } from '@/ui';
-import { SUMMARY_MUTED_TEXT_COLOR } from './SummaryBlockHeader';
 
 interface SummaryTableHeaderProps {
   exerciseTitle: string;
@@ -14,20 +13,20 @@ interface SummaryTableHeaderProps {
 export function SummaryTableHeader({ exerciseTitle, weightTitle, valuesTitle }: SummaryTableHeaderProps) {
   return (
     <View style={summaryTableStyles.headerRow}>
-      <Text variant="label" color={SUMMARY_MUTED_TEXT_COLOR} style={summaryTableStyles.nameColumn}>
+      <Text variant="label" color="paperMuted" style={summaryTableStyles.nameColumn}>
         {exerciseTitle.toUpperCase()}
       </Text>
       <View style={summaryTableStyles.valuesColumn}>
         <View style={summaryTableStyles.headerRow}>
           {weightTitle != null ? (
             <>
-              <Text variant="label" color={SUMMARY_MUTED_TEXT_COLOR} style={summaryTableStyles.weightColumn}>
+              <Text variant="label" color="paperMuted" style={summaryTableStyles.weightColumn}>
                 {weightTitle.toUpperCase()}
               </Text>
               <View style={summaryTableStyles.timesSignColumn} />
             </>
           ) : null}
-          <Text variant="label" color={SUMMARY_MUTED_TEXT_COLOR} style={summaryTableStyles.repsColumn}>
+          <Text variant="label" color="paperMuted" style={summaryTableStyles.repsColumn}>
             {valuesTitle.toUpperCase()}
           </Text>
         </View>

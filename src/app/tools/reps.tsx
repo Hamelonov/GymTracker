@@ -70,18 +70,18 @@ export default function RepsCalculatorScreen() {
           containerStyle={styles.inputHalf}
         />
       </View>
-      <Card style={[styles.result, { backgroundColor: colors.text }]}>
-        <Text variant="label" color={colors.textFaint}>
+      <Card style={[styles.result, { backgroundColor: colors.inverseSurface }]}>
+        <Text variant="label" color="inverseMuted">
           {translate('tools.workRange').toUpperCase()}
         </Text>
-        <Text variant="display" color={colors.accent} tabular>
+        <Text variant="display" color="accent" tabular>
           {formatWorkRange()}
-          <Text variant="h2" color={colors.textFaint}>
+          <Text variant="h2" color="inverseMuted">
             {' '}
             {translate('common.reps')}
           </Text>
         </Text>
-        <Text variant="caption" color={colors.textFaint}>
+        <Text variant="caption" color="inverseMuted">
           {translate('tools.workRangeCaption', {
             low: WORK_RANGE_PERCENT.low,
             high: WORK_RANGE_PERCENT.high,

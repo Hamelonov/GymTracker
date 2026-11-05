@@ -32,7 +32,7 @@ export function RestTimerBar() {
     <Animated.View
       entering={FadeInDown.duration(120)}
       exiting={FadeOutDown.duration(100)}
-      style={[styles.wrapper, { backgroundColor: colors.text }]}
+      style={[styles.wrapper, { backgroundColor: colors.inverseSurface }]}
     >
       <View style={[styles.progressTrack, { backgroundColor: colors.borderStrong }]}>
         <Animated.View style={[styles.progressFill, { backgroundColor: colors.accent }, progressFillWidth]} />
@@ -41,26 +41,26 @@ export function RestTimerBar() {
         <Pressable
           onPress={() => adjustRest(-15)}
           haptic="selection"
-          style={[styles.adjustButton, { borderColor: colors.textFaint }]}
+          style={[styles.adjustButton, { borderColor: colors.inverseMuted }]}
         >
-          <Text variant="caption" color={colors.background}>
+          <Text variant="caption" color="inverseText">
             −15
           </Text>
         </Pressable>
         <View style={styles.centerColumn}>
-          <Text variant="label" color={colors.textFaint}>
+          <Text variant="label" color="inverseMuted">
             {translate('workout.restTimerTitle').toUpperCase()}
           </Text>
-          <Text variant="h1" color={colors.background} tabular>
+          <Text variant="h1" color="inverseText" tabular>
             {formatDuration(remaining)}
           </Text>
         </View>
         <Pressable
           onPress={() => adjustRest(15)}
           haptic="selection"
-          style={[styles.adjustButton, { borderColor: colors.textFaint }]}
+          style={[styles.adjustButton, { borderColor: colors.inverseMuted }]}
         >
-          <Text variant="caption" color={colors.background}>
+          <Text variant="caption" color="inverseText">
             +15
           </Text>
         </Pressable>
