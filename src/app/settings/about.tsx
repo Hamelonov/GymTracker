@@ -8,7 +8,7 @@ import { StyleSheet, View } from 'react-native';
 import { RefreshCw } from 'lucide-react-native';
 import { dateLocale } from '@/domain/dates';
 import { useAppUpdate } from '@/features/settings/useAppUpdate';
-import { Button, Card, Icon, ListItem, Screen, Text, radius, spacing, useColors } from '@/ui';
+import { Button, Icon, ListGroup, ListItem, Screen, Text, radius, spacing, useColors } from '@/ui';
 
 const REPO_URL = 'https://github.com/Hamelonov/GymTracker';
 
@@ -42,30 +42,38 @@ export default function AboutScreen() {
           {translate('settings.aboutText')}
         </Text>
       </View>
-      <Card padded={false}>
+      <ListGroup>
         <ListItem
           title={translate('settings.version')}
-          right={<Text color="muted">{appVersion}</Text>}
-          style={styles.listItem}
+          right={
+            <Text variant="caption" color="muted" numberOfLines={1}>
+              {appVersion}
+            </Text>
+          }
         />
         <ListItem
           title={translate('settings.update')}
-          right={<Text color="muted">{describeCurrentUpdate(i18n.language, translate)}</Text>}
-          style={styles.listItem}
+          right={
+            <Text variant="caption" color="muted" numberOfLines={1}>
+              {describeCurrentUpdate(i18n.language, translate)}
+            </Text>
+          }
         />
         <ListItem
           title={translate('settings.license')}
-          right={<Text color="muted">GPL-3.0</Text>}
-          style={styles.listItem}
+          right={
+            <Text variant="caption" color="muted" numberOfLines={1}>
+              GPL-3.0
+            </Text>
+          }
         />
         <ListItem
           title={translate('settings.source')}
           subtitle={REPO_URL}
           chevron
           onPress={() => void Linking.openURL(REPO_URL)}
-          style={styles.listItem}
         />
-      </Card>
+      </ListGroup>
       <Button
         title={buttonTitle}
         variant="secondary"
@@ -90,6 +98,5 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   description: { marginTop: spacing.sm, maxWidth: 320 },
-  listItem: { paddingHorizontal: spacing.lg },
   updateButton: { marginTop: spacing.lg },
 });

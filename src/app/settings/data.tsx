@@ -10,7 +10,7 @@ import {
   type DataFormat,
 } from '@/features/settings/useDataTransfer';
 import { TransferProgressModal } from '@/features/settings/TransferProgressModal';
-import { Button, Card, Icon, Screen, SectionTitle, Sheet, Text, spacing } from '@/ui';
+import { Button, Icon, Screen, SectionTitle, Sheet, Text, spacing } from '@/ui';
 
 // У каждого формата пара кнопок: «Экспорт в …» в своей секции и «Импорт из …» в своей.
 const FORMATS: DataFormat[] = ['json', 'csv', 'xlsx'];
@@ -30,7 +30,7 @@ export default function DataScreen() {
   return (
     <Screen header={{ backButton: true, title: translate('profile.data') }}>
       <SectionTitle title={translate('settings.exportSection')} first />
-      <Card style={styles.buttonsCard}>
+      <View style={styles.buttons}>
         {FORMATS.map((format) => (
           <Button
             key={format}
@@ -44,15 +44,15 @@ export default function DataScreen() {
             onPress={() => setSelectedExportFormat(format)}
           />
         ))}
-      </Card>
+      </View>
 
       <SectionTitle title={translate('settings.importSection')} />
-      <Card style={styles.buttonsCard}>
+      <View style={styles.buttons}>
         {FORMATS.map((format) => (
           <Button
             key={format}
             title={translate(IMPORT_TITLE_KEYS[format])}
-            variant="outline"
+            variant="secondary"
             fullWidth
             contentAlign="start"
             // Стрелка в лоток — файл приходит в приложение.
@@ -61,10 +61,10 @@ export default function DataScreen() {
             onPress={() => importData(format)}
           />
         ))}
-        <Text variant="caption" color="faint">
+        <Text variant="caption" color="muted">
           {translate('settings.importHint')}
         </Text>
-      </Card>
+      </View>
 
       <SectionTitle title={translate('settings.clearSection')} />
       <Button
@@ -95,7 +95,7 @@ export default function DataScreen() {
           />
           <Button
             title={translate('settings.exportToDevice')}
-            variant="outline"
+            variant="secondary"
             fullWidth
             contentAlign="start"
             icon={<Icon icon={FolderDown} size={20} />}
@@ -116,7 +116,7 @@ export default function DataScreen() {
 }
 
 const styles = StyleSheet.create({
-  buttonsCard: { gap: spacing.sm },
+  buttons: { gap: spacing.sm },
   destinationDescription: { marginBottom: spacing.md },
   destinationActions: { gap: spacing.sm },
 });

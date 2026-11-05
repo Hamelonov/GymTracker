@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { UserRound } from 'lucide-react-native';
 import { useSettings } from '@/store/settings';
-import { Button, Input, Screen, spacing, Text, useColors } from '@/ui';
+import { Button, Input, Screen, radius, spacing, Text, useColors } from '@/ui';
 
 export function ProfileSetupScreen() {
   const { t: translate } = useTranslation();
@@ -21,10 +20,8 @@ export function ProfileSetupScreen() {
     <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Screen scrollable contentContainerStyle={styles.screenContent} keyboardShouldPersistTaps="handled">
         <View style={styles.content}>
-          <View style={[styles.iconCircle, { backgroundColor: colors.accentSoft }]}>
-            <UserRound size={34} color={colors.accent} strokeWidth={1.8} />
-          </View>
-          <Text variant="label" color="muted" style={styles.eyebrow}>
+          <View style={[styles.markerStroke, { backgroundColor: colors.accent }]} />
+          <Text variant="label" color="muted">
             {translate('onboarding.profileNameEyebrow')}
           </Text>
           <Text variant="h1" align="center">
@@ -61,15 +58,8 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   screenContent: { flexGrow: 1, justifyContent: 'center', paddingTop: spacing.xxl },
   content: { alignItems: 'center', gap: spacing.lg },
-  iconCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  eyebrow: { letterSpacing: 1.2 },
+  // Тот же штрих маркера, что в пустых состояниях.
+  markerStroke: { width: 40, height: 8, borderRadius: radius.xs, marginBottom: spacing.sm },
   description: { marginTop: spacing.xs, marginBottom: spacing.sm },
   input: { width: '100%' },
 });

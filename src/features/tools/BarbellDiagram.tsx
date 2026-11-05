@@ -42,7 +42,13 @@ export function BarbellDiagram({ plates, heaviestPlate }: BarbellDiagramProps) {
 }
 
 const styles = StyleSheet.create({
-  barbell: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 140, paddingLeft: spacing.lg },
-  barEnd: { width: 40, height: 10, borderRadius: 5 },
-  plate: { width: 30, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  barbell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    height: 140,
+    paddingLeft: spacing.lg,
+  },
+  barEnd: { width: 40, height: 10, borderRadius: radius.xs },
+  plate: { width: 30, borderRadius: radius.xs, alignItems: 'center', justifyContent: 'center' },
 });
