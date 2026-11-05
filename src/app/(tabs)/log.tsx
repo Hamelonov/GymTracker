@@ -14,13 +14,15 @@ import { ExerciseLogTable, naturalLogTableWidth } from '@/features/log/ExerciseL
 import { ExerciseSelect } from '@/features/log/ExerciseSelect';
 import { ZoomPanCanvas } from '@/features/log/ZoomPanCanvas';
 import { useSettings } from '@/store/settings';
-import { EmptyState, Screen, Text, spacing } from '@/ui';
+import { EmptyState, Screen, Text, spacing, useColors } from '@/ui';
 
 /** Особый пункт фильтра: вместо одного упражнения показывает их все по порядку имени. */
 const ALL_EXERCISES_ID = 'all';
-const CANVAS_PADDING = spacing.sm;
+// Поля даёт сама таблица, холст упирается в края экрана.
+const CANVAS_PADDING = 0;
 
 export default function LogTab() {
+  const colors = useColors();
   const { t: translate, i18n } = useTranslation();
   const weightUnit = useSettings((state) => state.weightUnit);
   const distanceUnit = useSettings((state) => state.distanceUnit);
@@ -110,7 +112,7 @@ export default function LogTab() {
   return (
     // Страница не прокручивается: внутри ScrollView жесты холста отменялись бы прокруткой.
     <Screen header={{ title: translate('log.title'), large: true }} scrollable={false} padded={false}>
-      <View style={styles.filterBar}>
+      <View style={[styles.filterBar, { borderBottomColor: colors.border }]}>
         <ExerciseSelect items={selectItems} selectedId={selectedExerciseId} onSelect={setChosenExerciseId} />
       </View>
       <ZoomPanCanvas key={selectedExerciseId ?? 'none'} contentWidth={tableWidth + 2 * CANVAS_PADDING}>
@@ -137,8 +139,12 @@ export default function LogTab() {
 }
 
 const styles = StyleSheet.create({
-  filterBar: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
+  filterBar: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   canvasContent: { padding: CANVAS_PADDING },
-  nextTable: { marginTop: spacing.xl },
-  exerciseTitle: { marginBottom: spacing.sm },
+  nextTable: { marginTop: spacing.xxl },
+  exerciseTitle: { marginBottom: spacing.sm, paddingHorizontal: spacing.lg },
 });
