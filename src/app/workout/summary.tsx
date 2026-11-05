@@ -68,7 +68,7 @@ export default function SummaryScreen() {
           <Text variant="display" color="onAccent">
             {translate('workout.summaryTitle')}
           </Text>
-          <Text variant="body" color="onAccent" style={{ marginTop: spacing.sm, opacity: 0.75 }}>
+          <Text variant="body" color="onAccentMuted" style={styles.subtitle}>
             {translate('workout.summarySubtitle')}
           </Text>
         </Animated.View>
@@ -90,10 +90,8 @@ export default function SummaryScreen() {
           title={translate('common.done')}
           size="lg"
           fullWidth
-          variant="secondary"
+          variant="ink"
           onPress={closeSummary}
-          style={{ backgroundColor: colors.black }}
-          textColor={colors.accent}
           haptic="light"
         />
       </View>
@@ -102,5 +100,6 @@ export default function SummaryScreen() {
 }
 
 const styles = StyleSheet.create({
+  subtitle: { marginTop: spacing.sm },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
 });
