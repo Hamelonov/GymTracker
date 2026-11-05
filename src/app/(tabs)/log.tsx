@@ -1,4 +1,3 @@
-import { Table2 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -87,7 +86,7 @@ export default function LogTab() {
   if (performedExercises.length === 0 || (!selectedExercise && !isAllSelected)) {
     return (
       <Screen header={{ title: translate('log.title'), large: true }} tabScreen>
-        <EmptyState icon={Table2} title={translate('log.empty')} hint={translate('log.emptyHint')} />
+        <EmptyState title={translate('log.empty')} hint={translate('log.emptyHint')} />
       </Screen>
     );
   }

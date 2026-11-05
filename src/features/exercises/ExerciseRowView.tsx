@@ -3,7 +3,7 @@ import React, { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { ExerciseRow } from '@/db/schema';
 import { MuscleThumbnail } from '@/features/muscles/MuscleThumbnail';
-import { FastPressable, Icon, Text, spacing, type ThemeColors } from '@/ui';
+import { FastPressable, Icon, Text, radius, spacing, type ThemeColors } from '@/ui';
 
 /** Упражнение с заранее вычисленными строками, чтобы строки списка были дешёвыми для рендера. */
 export interface ExerciseListItem {
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   checkCircle: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },

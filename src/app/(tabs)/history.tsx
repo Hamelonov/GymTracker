@@ -1,7 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { addDays, addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { push } from '@/lib/nav';
-import { Calendar } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -73,11 +72,7 @@ export default function HistoryTab() {
           stickyHeaderIndices={monthRowIndices}
           contentContainerStyle={{ paddingBottom: spacing.xl }}
           ListEmptyComponent={
-            <EmptyState
-              icon={Calendar}
-              title={translate('history.empty')}
-              hint={translate('history.emptyHint')}
-            />
+            <EmptyState title={translate('history.empty')} hint={translate('history.emptyHint')} />
           }
           renderItem={renderRow}
         />

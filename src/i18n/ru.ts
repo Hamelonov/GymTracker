@@ -71,7 +71,6 @@ const ru = {
   },
   home: {
     title: 'Тренировка',
-    quickStart: 'Быстрый старт',
     startEmpty: 'Начать пустую тренировку',
     routines: 'Программы',
     newRoutine: 'Новая программа',
@@ -86,7 +85,6 @@ const ru = {
     exercisesCount_other: '{{count}} упражнений',
     startRoutine: 'Начать программу',
     inProgress: 'Тренировка идёт',
-    resume: 'Продолжить',
     weekSummary: 'Эта неделя',
     workoutsThisWeek_one: '{{count}} тренировка',
     workoutsThisWeek_few: '{{count}} тренировки',

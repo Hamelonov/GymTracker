@@ -1,6 +1,6 @@
 import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams } from 'expo-router';
-import { Plus, Ruler } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -82,7 +82,7 @@ export default function MeasurementTypeScreen() {
       padded={false}
     >
       {measurements.length === 0 ? (
-        <EmptyState icon={Ruler} title={translate('measurements.noData')} />
+        <EmptyState title={translate('measurements.noData')} />
       ) : (
         <FlashList
           data={measurements}

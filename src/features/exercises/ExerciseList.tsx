@@ -1,5 +1,5 @@
 import { FlashList } from '@shopify/flash-list';
-import { Plus, Search } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -133,7 +133,7 @@ export function ExerciseList({
             </Pressable>
           ) : null
         }
-        ListEmptyComponent={<EmptyState icon={Search} title={translate('common.noResults')} />}
+        ListEmptyComponent={<EmptyState title={translate('common.noResults')} />}
         renderItem={renderItem}
       />
     </View>

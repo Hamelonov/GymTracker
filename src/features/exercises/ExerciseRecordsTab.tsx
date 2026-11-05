@@ -31,13 +31,7 @@ export function ExerciseRecordsTab({ records, units }: ExerciseRecordsTabProps) 
   const { t: translate, i18n } = useTranslation();
 
   if (records.length === 0) {
-    return (
-      <EmptyState
-        icon={Trophy}
-        title={translate('exercise.noHistory')}
-        hint={translate('exercise.noHistoryHint')}
-      />
-    );
+    return <EmptyState title={translate('exercise.noHistory')} hint={translate('exercise.noHistoryHint')} />;
   }
 
   return (

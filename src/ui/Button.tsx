@@ -18,8 +18,6 @@ export interface ButtonProps extends Omit<AnimatedPressableProps, 'children' | '
   loading?: boolean;
   fullWidth?: boolean;
   style?: StyleProp<ViewStyle>;
-  /** Переопределяет цвет подписи (например, чёрная кнопка на жёлтом экране). */
-  textColor?: string;
   /** `danger` красит подпись: разрушительное действие без заливки. */
   tone?: 'danger';
   /** 'start' — иконка и подпись у левого края: в столбце кнопок разной длины так ровнее. */
@@ -83,7 +81,6 @@ export function Button({
   fullWidth,
   disabled,
   style,
-  textColor,
   tone,
   contentAlign = 'center',
   onPress,
@@ -96,7 +93,7 @@ export function Button({
   const isDisabled = Boolean(disabled);
   const isBusy = Boolean(loading);
   const backgroundColor = getBackgroundColor(variant, colors, isDisabled, isPressed);
-  const labelColor = isDisabled ? colors.textFaint : (textColor ?? getLabelColor(variant, colors, tone));
+  const labelColor = isDisabled ? colors.textFaint : getLabelColor(variant, colors, tone);
   const leadingIcon = isDisabled ? tintIcon(icon, labelColor) : icon;
   const endingIcon = isDisabled ? tintIcon(trailingIcon, labelColor) : trailingIcon;
   const hasOutline = variant === 'outline' && !isDisabled;

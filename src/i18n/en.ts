@@ -71,7 +71,6 @@ const en = {
   },
   home: {
     title: 'Workout',
-    quickStart: 'Quick start',
     startEmpty: 'Start an empty workout',
     routines: 'Routines',
     newRoutine: 'New routine',
@@ -84,7 +83,6 @@ const en = {
     exercisesCount_other: '{{count}} exercises',
     startRoutine: 'Start routine',
     inProgress: 'Workout in progress',
-    resume: 'Resume',
     weekSummary: 'This week',
     workoutsThisWeek_one: '{{count}} workout',
     workoutsThisWeek_other: '{{count}} workouts',

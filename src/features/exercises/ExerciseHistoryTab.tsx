@@ -1,5 +1,4 @@
 import { FlashList } from '@shopify/flash-list';
-import { Trophy } from 'lucide-react-native';
 import React, { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -40,13 +39,7 @@ export function ExerciseHistoryTab({ history, exerciseType, units }: ExerciseHis
   );
 
   if (history.length === 0) {
-    return (
-      <EmptyState
-        icon={Trophy}
-        title={translate('exercise.noHistory')}
-        hint={translate('exercise.noHistoryHint')}
-      />
-    );
+    return <EmptyState title={translate('exercise.noHistory')} hint={translate('exercise.noHistoryHint')} />;
   }
 
   return (

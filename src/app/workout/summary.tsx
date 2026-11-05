@@ -19,13 +19,12 @@ export default function SummaryScreen() {
   const { t: translate, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const saveResult = useLastSave((state) => state.result);
-  const settings = useSettings();
   const workoutDetail = useQuery(
     () => (saveResult ? getWorkout(saveResult.workoutId) : undefined),
     [saveResult?.workoutId],
   );
-  const weightUnit = settings.weightUnit;
-  const distanceUnit = settings.distanceUnit;
+  const weightUnit = useSettings((state) => state.weightUnit);
+  const distanceUnit = useSettings((state) => state.distanceUnit);
 
   const usesDecimalComma = i18n.language.startsWith('ru');
   const formatters = useMemo(

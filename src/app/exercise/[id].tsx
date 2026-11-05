@@ -51,6 +51,7 @@ export default function ExerciseDetailScreen() {
           <IconButton
             icon={Ellipsis}
             variant="filled"
+            label={translate('common.menu')}
             onPress={() => setIsMenuOpen(true)}
             haptic="selection"
           />

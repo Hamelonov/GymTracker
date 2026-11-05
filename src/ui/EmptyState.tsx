@@ -1,4 +1,3 @@
-import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from './Text';
@@ -10,8 +9,6 @@ export function EmptyState({
   hint,
   action,
 }: {
-  /** Больше не рисуется: вместо значка штрих маркера. Уходит из вызовов вместе с экранами. */
-  icon?: LucideIcon;
   title: string;
   hint?: string;
   action?: React.ReactNode;

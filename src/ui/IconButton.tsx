@@ -15,7 +15,7 @@ export interface IconButtonProps extends Omit<AnimatedPressableProps, 'children'
   color?: IconProps['color'];
   variant?: IconButtonVariant;
   /** Подпись для экранного диктора: текста на кнопке нет. */
-  label?: string;
+  label: string;
   style?: StyleProp<ViewStyle>;
 }
 

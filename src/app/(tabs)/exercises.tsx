@@ -13,7 +13,13 @@ export default function ExercisesTab() {
         title: translate('exercise.library'),
         large: true,
         largeRight: (
-          <IconButton icon={Plus} variant="accent" onPress={() => push('/exercise/edit')} haptic="light" />
+          <IconButton
+            icon={Plus}
+            variant="accent"
+            label={translate('exercise.create')}
+            onPress={() => push('/exercise/edit')}
+            haptic="light"
+          />
         ),
       }}
       scrollable={false}

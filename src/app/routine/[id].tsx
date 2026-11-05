@@ -19,7 +19,8 @@ export default function RoutineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t: translate, i18n } = useTranslation();
   const colors = useColors();
-  const settings = useSettings();
+  const weightUnit = useSettings((state) => state.weightUnit);
+  const distanceUnit = useSettings((state) => state.distanceUnit);
   const routine = useQuery(() => (id ? getRoutine(id) : undefined), [id]);
   const exerciseIds = useMemo(
     () => routine?.exercises.map((routineExercise) => routineExercise.exerciseId) ?? [],
@@ -27,7 +28,7 @@ export default function RoutineDetailScreen() {
   );
   const exercisesById = useQuery(() => getExercisesByIds(exerciseIds), [exerciseIds.join(',')]);
   const activeWorkout = useActiveWorkout((state) => state.workout);
-  const units = { weight: settings.weightUnit, distance: settings.distanceUnit } as const;
+  const units = { weight: weightUnit, distance: distanceUnit } as const;
 
   if (!routine) return <Screen header={{ backButton: true }} />;
 

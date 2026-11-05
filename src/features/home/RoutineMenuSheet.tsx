@@ -3,7 +3,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { deleteRoutine, duplicateRoutine, type RoutineSummary } from '@/db/repo/routines';
 import { push } from '@/lib/nav';
-import { Icon, ListItem, Sheet, confirm, useColors } from '@/ui';
+import { Icon, ListItem, Sheet, confirm } from '@/ui';
 
 interface RoutineMenuSheetProps {
   visible: boolean;
@@ -23,7 +23,6 @@ export function RoutineMenuSheet({
   onStartRoutine,
   onOpenMoveToFolder,
 }: RoutineMenuSheetProps) {
-  const colors = useColors();
   const { t: translate } = useTranslation();
 
   return (
@@ -63,7 +62,7 @@ export function RoutineMenuSheet({
           ) : null}
           <ListItem
             title={translate('common.delete')}
-            titleColor={colors.danger}
+            tone="danger"
             left={<Icon icon={Trash2} color="danger" />}
             onPress={async () => {
               onClose();

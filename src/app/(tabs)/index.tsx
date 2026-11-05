@@ -1,5 +1,5 @@
 import { push } from '@/lib/nav';
-import { Dumbbell, Ellipsis, Folder, FolderPlus, Play, Plus } from 'lucide-react-native';
+import { Ellipsis, Folder, FolderPlus, Play, Plus } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -176,7 +176,6 @@ export default function HomeTab() {
       />
       {routines.length === 0 ? (
         <EmptyState
-          icon={Dumbbell}
           title={translate('home.noRoutines')}
           hint={translate('home.noRoutinesHint')}
           action={

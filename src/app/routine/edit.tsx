@@ -29,7 +29,9 @@ type OpenSheet =
 export default function RoutineEditScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { t: translate } = useTranslation();
-  const settings = useSettings();
+  const weightUnit = useSettings((state) => state.weightUnit);
+  const distanceUnit = useSettings((state) => state.distanceUnit);
+  const defaultRestSeconds = useSettings((state) => state.defaultRestSeconds);
   const draft = useRoutineDraft();
   // Ленивый инициализатор состояния: сбрасывает черновик один раз при монтировании экрана и создаёт токен выбора.
   const [pickerToken] = useState(() => {
@@ -53,10 +55,7 @@ export default function RoutineEditScreen() {
     [draft.exercises],
   );
   const exercisesById = useQuery(() => getExercisesByIds(exerciseIds), [exerciseIds.join(',')]);
-  const units = useMemo(
-    () => ({ weight: settings.weightUnit, distance: settings.distanceUnit }),
-    [settings.weightUnit, settings.distanceUnit],
-  );
+  const units = useMemo(() => ({ weight: weightUnit, distance: distanceUnit }), [weightUnit, distanceUnit]);
   const selectedExercise =
     'draftExerciseId' in openSheet
       ? draft.exercises.find((draftExercise) => draftExercise.id === openSheet.draftExerciseId)
@@ -146,7 +145,7 @@ export default function RoutineEditScreen() {
           draftExercise={draftExercise}
           exercise={exercisesById.get(draftExercise.exerciseId)}
           units={units}
-          defaultRestSeconds={settings.defaultRestSeconds}
+          defaultRestSeconds={defaultRestSeconds}
           onOpenRestSheet={(draftExerciseId) => setOpenSheet({ kind: 'restTime', draftExerciseId })}
           onOpenMenuSheet={(draftExerciseId) => setOpenSheet({ kind: 'exerciseMenu', draftExerciseId })}
           onOpenSetTypeSheet={(draftExerciseId, setId) =>
@@ -185,7 +184,7 @@ export default function RoutineEditScreen() {
       <RestTimerPickerSheet
         visible={openSheet.kind === 'restTime'}
         selectedSeconds={selectedExercise?.restSeconds ?? null}
-        defaultRestSeconds={settings.defaultRestSeconds}
+        defaultRestSeconds={defaultRestSeconds}
         onClose={closeSheet}
         onRestSelect={(restSeconds) => {
           if (selectedExercise) draft.setRestSeconds(selectedExercise.id, restSeconds);

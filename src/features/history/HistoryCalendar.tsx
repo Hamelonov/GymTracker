@@ -42,17 +42,31 @@ export function HistoryCalendar({
     );
   }, [now, i18n.language]);
 
+  const monthTitle = formatMonthYear(month.getTime(), i18n.language);
+
   return (
     <View style={styles.calendar}>
       <View style={styles.monthRow}>
-        <IconButton icon={ChevronLeft} onPress={onShowPreviousMonth} haptic="selection" debounceMs={0} />
+        <IconButton
+          icon={ChevronLeft}
+          label={monthTitle}
+          onPress={onShowPreviousMonth}
+          haptic="selection"
+          debounceMs={0}
+        />
         <View style={styles.monthTitle}>
-          <Text variant="h3">{formatMonthYear(month.getTime(), i18n.language)}</Text>
+          <Text variant="h3">{monthTitle}</Text>
           <Text variant="caption" color="muted">
             {translate('history.workoutsInMonth', { count: monthWorkoutCount })}
           </Text>
         </View>
-        <IconButton icon={ChevronRight} onPress={onShowNextMonth} haptic="selection" debounceMs={0} />
+        <IconButton
+          icon={ChevronRight}
+          label={monthTitle}
+          onPress={onShowNextMonth}
+          haptic="selection"
+          debounceMs={0}
+        />
       </View>
       <View style={styles.weekdayRow}>
         {weekdayLabels.map((weekdayLabel) => (

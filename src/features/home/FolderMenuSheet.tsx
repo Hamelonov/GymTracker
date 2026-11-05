@@ -1,7 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Icon, ListItem, Sheet, useColors } from '@/ui';
+import { Icon, ListItem, Sheet } from '@/ui';
 
 interface FolderMenuSheetProps {
   visible: boolean;
@@ -13,7 +13,6 @@ interface FolderMenuSheetProps {
 
 /** Действия для заголовка папки шаблонов: переименовать или удалить. */
 export function FolderMenuSheet({ visible, folderName, onClose, onRename, onDelete }: FolderMenuSheetProps) {
-  const colors = useColors();
   const { t: translate } = useTranslation();
   return (
     <Sheet visible={visible} onClose={onClose} title={folderName} unpadded>
@@ -21,7 +20,7 @@ export function FolderMenuSheet({ visible, folderName, onClose, onRename, onDele
       <ListItem
         title={translate('home.deleteFolder')}
         subtitle={translate('home.deleteFolderHint')}
-        titleColor={colors.danger}
+        tone="danger"
         left={<Icon icon={Trash2} color="danger" />}
         onPress={onDelete}
       />
