@@ -101,26 +101,25 @@ export default function ActiveWorkoutScreen() {
         onFinishPress={actions.handleFinishPress}
       />
 
+      <WorkoutStats
+        variant="strip"
+        startedAt={workout.startedAt}
+        durationSec={fixedDurationSeconds}
+        exerciseCount={exerciseCount}
+        setCount={workingSetCount}
+        trailing={
+          session.mode === 'new' ? (
+            <EntryModeTabs value={entryMode} onChange={(mode) => void switchEntryMode(mode)} />
+          ) : null
+        }
+      />
+
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 140 }]}
           showsVerticalScrollIndicator={false}
         >
-          <WorkoutStats
-            startedAt={workout.startedAt}
-            durationSec={fixedDurationSeconds}
-            exerciseCount={exerciseCount}
-            setCount={workingSetCount}
-            style={{ marginBottom: spacing.md }}
-          />
-
-          {session.mode === 'new' ? (
-            <View style={{ marginBottom: spacing.md }}>
-              <EntryModeTabs value={entryMode} onChange={(mode) => void switchEntryMode(mode)} />
-            </View>
-          ) : null}
-
           {isPenMode ? (
             <PenEditor
               text={penText}
