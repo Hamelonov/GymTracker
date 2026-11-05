@@ -1,4 +1,3 @@
-import { push } from '@/lib/nav';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -9,7 +8,7 @@ import { PlateSettings } from '@/features/settings/PlateSettings';
 import { SettingSwitchRow } from '@/features/settings/SettingSwitchRow';
 import { RestVibrationSetting } from '@/features/settings/RestVibrationSetting';
 import { useSettings } from '@/store/settings';
-import { Card, Chip, ListItem, Screen, SectionTitle, Segmented, Text, spacing } from '@/ui';
+import { Card, Chip, Screen, SectionTitle, Segmented, Text, spacing } from '@/ui';
 
 const REST_SECONDS_OPTIONS = [30, 45, 60, 90, 120, 150, 180, 240];
 
@@ -137,22 +136,6 @@ export default function SettingsScreen() {
 
       <SectionTitle title={translate('settings.plates')} />
       <PlateSettings />
-
-      <SectionTitle title={translate('settings.data')} />
-      <Card padded={false}>
-        <ListItem
-          title={translate('profile.data')}
-          chevron
-          onPress={() => push('/settings/data')}
-          style={styles.listItem}
-        />
-        <ListItem
-          title={translate('settings.about')}
-          chevron
-          onPress={() => push('/settings/about')}
-          style={styles.listItem}
-        />
-      </Card>
     </Screen>
   );
 }
@@ -161,5 +144,4 @@ const styles = StyleSheet.create({
   segmentedCard: { gap: spacing.md },
   restSection: { padding: spacing.lg, gap: spacing.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  listItem: { paddingHorizontal: spacing.lg },
 });

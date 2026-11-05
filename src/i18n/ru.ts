@@ -458,7 +458,6 @@ const ru = {
     keepAwake: 'Не гасить экран во время тренировки',
     barWeight: 'Вес грифа',
     plates: 'Доступные блины',
-    data: 'Данные',
     exportSection: 'Экспорт',
     importSection: 'Импорт',
     exportJson: 'Экспорт в JSON',

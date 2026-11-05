@@ -446,7 +446,6 @@ const en = {
     keepAwake: 'Keep screen on during workout',
     barWeight: 'Bar weight',
     plates: 'Available plates',
-    data: 'Data',
     exportSection: 'Export',
     importSection: 'Import',
     exportJson: 'Export to JSON',
