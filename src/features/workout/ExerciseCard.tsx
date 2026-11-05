@@ -188,6 +188,7 @@ export const ExerciseCard = memo(function ExerciseCard({
             icon={<Icon icon={Plus} size={16} />}
             onPress={() => onAddSet(workoutExercise.id)}
             haptic="selection"
+            debounceMs={0}
           />
         </View>
       ) : null}

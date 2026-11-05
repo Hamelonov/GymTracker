@@ -81,7 +81,13 @@ export default function LogMeasurementScreen() {
       />
       <SectionTitle title={translate('measurements.date')} />
       <View style={styles.dateRow}>
-        <IconButton icon={ChevronLeft} variant="filled" onPress={goToPreviousDay} haptic="selection" />
+        <IconButton
+          icon={ChevronLeft}
+          variant="filled"
+          onPress={goToPreviousDay}
+          haptic="selection"
+          debounceMs={0}
+        />
         <Text variant="h3" style={styles.dateText} align="center">
           {formatRelativeDay(measuredAt, i18n.language, translate)}
         </Text>
@@ -91,6 +97,7 @@ export default function LogMeasurementScreen() {
           disabled={isNextDayInFuture}
           onPress={goToNextDay}
           haptic="selection"
+          debounceMs={0}
         />
       </View>
       <Input

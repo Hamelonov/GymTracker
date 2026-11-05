@@ -1,10 +1,11 @@
 import { ChevronRight } from 'lucide-react-native';
-import React from 'react';
+import React, { useRef } from 'react';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { FastPressable } from './FastPressable';
 import { Icon } from './Icon';
-import { Pressable } from './Pressable';
 import { Text } from './Text';
-import { radius, spacing } from './tokens';
+import { useColors } from './ThemeProvider';
+import { layout, spacing } from './tokens';
 
 export interface ListItemProps {
   title: string;
@@ -16,8 +17,13 @@ export interface ListItemProps {
   onLongPress?: () => void;
   style?: StyleProp<ViewStyle>;
   compact?: boolean;
+  tone?: 'danger';
+  /** Вместо него `tone`, живёт до перехода последних экранов. */
   titleColor?: string;
 }
+
+// Шторка уезжает ещё 140 мс после нажатия, и второй тап по той же строке повторил бы действие.
+const DOUBLE_PRESS_GUARD_MS = 400;
 
 export function ListItem({
   title,
@@ -29,13 +35,20 @@ export function ListItem({
   onLongPress,
   style,
   compact,
+  tone,
   titleColor,
 }: ListItemProps) {
+  const colors = useColors();
+  const lastPressTime = useRef(0);
   const row = (
     <View style={[styles.row, compact ? styles.compact : null, style]}>
       {left ? <View style={styles.left}>{left}</View> : null}
       <View style={styles.textColumn}>
-        <Text variant="bodyMedium" numberOfLines={1} color={titleColor}>
+        <Text
+          variant="bodyMedium"
+          numberOfLines={1}
+          color={titleColor ?? (tone === 'danger' ? 'danger' : 'text')}
+        >
           {title}
         </Text>
         {subtitle ? (
@@ -44,18 +57,30 @@ export function ListItem({
           </Text>
         ) : null}
       </View>
-      {right}
-      {chevron ? <Icon icon={ChevronRight} size={18} color="faint" /> : null}
+      {right ? <View style={styles.right}>{right}</View> : null}
+      {chevron ? <Icon icon={ChevronRight} size={20} color="faint" /> : null}
     </View>
   );
 
   const isPressable = onPress || onLongPress;
   if (!isPressable) return row;
 
+  const handlePress = () => {
+    const now = Date.now();
+    if (now - lastPressTime.current < DOUBLE_PRESS_GUARD_MS) return;
+    lastPressTime.current = now;
+    onPress?.();
+  };
+
   return (
-    <Pressable onPress={onPress} onLongPress={onLongPress} scaleTo={0.985} style={styles.pressable}>
+    <FastPressable
+      onPress={handlePress}
+      onLongPress={onLongPress}
+      accessibilityRole="button"
+      style={({ pressed }) => (pressed ? { backgroundColor: colors.pressed } : null)}
+    >
       {row}
-    </Pressable>
+    </FastPressable>
   );
 }
 
@@ -65,12 +90,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    minHeight: 56,
+    paddingHorizontal: spacing.lg,
+    minHeight: layout.rowMinHeight,
   },
-  compact: { paddingVertical: spacing.sm, minHeight: 44 },
+  compact: { paddingVertical: spacing.sm, minHeight: layout.rowCompactMinHeight },
   left: { alignItems: 'center', justifyContent: 'center' },
   textColumn: { flex: 1 },
-  subtitle: { marginTop: 2 },
-  pressable: { borderRadius: radius.md },
+  subtitle: { marginTop: spacing.xxs },
+  right: { flexShrink: 1 },
 });

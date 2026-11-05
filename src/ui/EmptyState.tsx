@@ -1,18 +1,17 @@
 import type { LucideIcon } from 'lucide-react-native';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Icon } from './Icon';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
 import { spacing } from './tokens';
 
 export function EmptyState({
-  icon,
   title,
   hint,
   action,
 }: {
-  icon: LucideIcon;
+  /** Больше не рисуется: вместо значка штрих маркера. Уходит из вызовов вместе с экранами. */
+  icon?: LucideIcon;
   title: string;
   hint?: string;
   action?: React.ReactNode;
@@ -20,9 +19,7 @@ export function EmptyState({
   const colors = useColors();
   return (
     <View style={styles.wrapper}>
-      <View style={[styles.iconCircle, { backgroundColor: colors.accentSoft }]}>
-        <Icon icon={icon} size={28} color={colors.text} />
-      </View>
+      <View style={[styles.markerStroke, { backgroundColor: colors.accent }]} />
       <Text variant="h3" align="center">
         {title}
       </Text>
@@ -37,15 +34,8 @@ export function EmptyState({
 }
 
 const styles = StyleSheet.create({
-  wrapper: { alignItems: 'center', paddingVertical: spacing.xxl * 1.5, paddingHorizontal: spacing.xl },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
+  wrapper: { alignItems: 'center', paddingVertical: spacing.xxxl, paddingHorizontal: spacing.xl },
+  markerStroke: { width: 40, height: 8, borderRadius: 2, marginBottom: spacing.lg },
   hint: { marginTop: spacing.sm, maxWidth: 300 },
   action: { marginTop: spacing.xl },
 });

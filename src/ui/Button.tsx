@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { Pressable, type AnimatedPressableProps } from './Pressable';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
-import { radius, spacing, type ThemeColors } from './tokens';
+import { fonts, radius, spacing, type ThemeColors } from './tokens';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'ink';
 type Size = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends Omit<AnimatedPressableProps, 'children' | 'style'> {
@@ -24,17 +24,32 @@ export interface ButtonProps extends Omit<AnimatedPressableProps, 'children' | '
   contentAlign?: 'center' | 'start';
 }
 
-const buttonHeightBySize: Record<Size, number> = { sm: 36, md: 48, lg: 56 };
+const buttonHeightBySize: Record<Size, number> = { sm: 40, md: 48, lg: 56 };
+const horizontalPaddingBySize: Record<Size, number> = { sm: spacing.md, md: spacing.lg, lg: spacing.xl };
 
-function getBackgroundColor(variant: Variant, colors: ThemeColors): string {
+function getRestingBackgroundColor(variant: Variant, colors: ThemeColors): string {
   const backgroundColorByVariant: Record<Variant, string> = {
     primary: colors.accent,
     secondary: colors.surfaceAlt,
     danger: colors.dangerSoft,
     ghost: 'transparent',
     outline: 'transparent',
+    ink: colors.onAccent,
   };
   return backgroundColorByVariant[variant];
+}
+
+function getBackgroundColor(
+  variant: Variant,
+  colors: ThemeColors,
+  isDisabled: boolean,
+  isPressed: boolean,
+): string {
+  // Выключенная кнопка получает свой фон, а не прозрачность: на жёлтом она давала грязный цвет.
+  if (isDisabled) return variant === 'ghost' ? 'transparent' : colors.surfaceAlt;
+  if (isPressed && variant === 'primary') return colors.accentPressed;
+  if (isPressed && variant === 'ghost') return colors.pressed;
+  return getRestingBackgroundColor(variant, colors);
 }
 
 function getLabelColor(variant: Variant, colors: ThemeColors): string {
@@ -44,8 +59,15 @@ function getLabelColor(variant: Variant, colors: ThemeColors): string {
     ghost: colors.textMuted,
     secondary: colors.text,
     outline: colors.text,
+    ink: colors.accent,
   };
   return labelColorByVariant[variant];
+}
+
+/** Значок приходит готовым элементом, поэтому цвет выключенной кнопки подставляется здесь. */
+function tintIcon(icon: React.ReactNode, color: string): React.ReactNode {
+  if (!React.isValidElement<{ color?: string }>(icon)) return icon;
+  return React.cloneElement(icon, { color });
 }
 
 export function Button({
@@ -60,44 +82,69 @@ export function Button({
   style,
   textColor,
   contentAlign = 'center',
+  onPress,
+  onPressIn,
+  onPressOut,
   ...rest
 }: ButtonProps) {
   const colors = useColors();
-  const backgroundColor = getBackgroundColor(variant, colors);
-  const labelColor = textColor ?? getLabelColor(variant, colors);
+  const [isPressed, setIsPressed] = useState(false);
+  const isDisabled = Boolean(disabled);
+  const isBusy = Boolean(loading);
+  const backgroundColor = getBackgroundColor(variant, colors, isDisabled, isPressed);
+  const labelColor = isDisabled ? colors.textFaint : (textColor ?? getLabelColor(variant, colors));
+  const leadingIcon = isDisabled ? tintIcon(icon, labelColor) : icon;
+  const endingIcon = isDisabled ? tintIcon(trailingIcon, labelColor) : trailingIcon;
+  const hasOutline = variant === 'outline' && !isDisabled;
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: isDisabled || isBusy, busy: isBusy }}
+      // Призрачная кнопка отвечает фоном: сжатие на прозрачной подложке не видно.
+      scaleTo={variant === 'ghost' ? 1 : undefined}
       {...rest}
-      disabled={disabled || loading}
+      disabled={isDisabled || isBusy}
       haptic={rest.haptic ?? (variant === 'primary' ? 'light' : 'none')}
+      onPressIn={(event) => {
+        setIsPressed(true);
+        onPressIn?.(event);
+      }}
+      onPressOut={(event) => {
+        setIsPressed(false);
+        onPressOut?.(event);
+      }}
+      onPress={(event) => {
+        // React Native задерживает press-out до 130 мс, а вид нажатия не должен отставать от действия.
+        setIsPressed(false);
+        onPress?.(event);
+      }}
       style={[
         styles.button,
         {
           backgroundColor,
           height: buttonHeightBySize[size],
-          borderRadius: size === 'lg' ? radius.lg : radius.md,
-          opacity: disabled ? 0.45 : 1,
           borderWidth: variant === 'outline' ? 1.5 : 0,
-          borderColor: colors.borderStrong,
+          borderColor: hasOutline ? colors.borderStrong : 'transparent',
           alignSelf: fullWidth ? 'stretch' : 'auto',
-          paddingHorizontal: size === 'sm' || contentAlign === 'start' ? spacing.md : spacing.xl,
+          paddingHorizontal: horizontalPaddingBySize[size],
           // Кнопка раскладывает содержимое столбиком, поэтому к левому краю его прижимает alignItems.
           alignItems: contentAlign === 'start' ? 'flex-start' : 'center',
         },
         style,
       ]}
     >
-      {loading ? (
+      {isBusy ? (
         <ActivityIndicator color={labelColor} />
       ) : (
         <View style={styles.content}>
-          {icon ? <View style={styles.icon}>{icon}</View> : null}
+          {leadingIcon ? <View style={styles.icon}>{leadingIcon}</View> : null}
           {title ? (
-            <Text variant={size === 'sm' ? 'caption' : 'h3'} color={labelColor}>
+            <Text color={labelColor} style={labelStyles[size]}>
               {title}
             </Text>
           ) : null}
-          {trailingIcon ? <View style={styles.icon}>{trailingIcon}</View> : null}
+          {endingIcon ? <View style={styles.icon}>{endingIcon}</View> : null}
         </View>
       )}
     </Pressable>
@@ -105,7 +152,13 @@ export function Button({
 }
 
 const styles = StyleSheet.create({
-  button: { alignItems: 'center', justifyContent: 'center' },
+  button: { alignItems: 'center', justifyContent: 'center', borderRadius: radius.md },
   content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   icon: { alignItems: 'center', justifyContent: 'center' },
+});
+
+const labelStyles = StyleSheet.create({
+  sm: { fontFamily: fonts.semibold, fontSize: 14, lineHeight: 18 },
+  md: { fontFamily: fonts.semibold, fontSize: 15, lineHeight: 20 },
+  lg: { fontFamily: fonts.semibold, fontSize: 17, lineHeight: 22 },
 });

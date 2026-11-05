@@ -152,6 +152,7 @@ export function RoutineExerciseEditor({
           icon={<Icon icon={Plus} size={16} />}
           onPress={() => addSetToExercise(draftExercise.id)}
           haptic="selection"
+          debounceMs={0}
         />
       </View>
     </View>

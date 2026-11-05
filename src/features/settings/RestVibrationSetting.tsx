@@ -40,6 +40,8 @@ export function RestVibrationSetting() {
         }))}
         value={restVibration}
         onChange={handleStrengthChange}
+        // Выбор сам даёт почувствовать вибрацию, вторая поверх неё только мешает.
+        hasHaptic={false}
       />
       <Text variant="caption" color="faint">
         {translate('settings.restVibrationHint')}

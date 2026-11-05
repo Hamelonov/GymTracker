@@ -41,6 +41,7 @@ export function RestTimerBar() {
         <Pressable
           onPress={() => adjustRest(-15)}
           haptic="selection"
+          debounceMs={0}
           style={[styles.adjustButton, { borderColor: colors.inverseMuted }]}
         >
           <Text variant="caption" color="inverseText">
@@ -58,6 +59,7 @@ export function RestTimerBar() {
         <Pressable
           onPress={() => adjustRest(15)}
           haptic="selection"
+          debounceMs={0}
           style={[styles.adjustButton, { borderColor: colors.inverseMuted }]}
         >
           <Text variant="caption" color="inverseText">

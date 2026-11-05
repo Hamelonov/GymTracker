@@ -38,14 +38,26 @@ export function HistoryCalendar({
   return (
     <View style={{ paddingHorizontal: spacing.lg }}>
       <View style={styles.monthRow}>
-        <IconButton icon={ChevronLeft} variant="filled" onPress={onShowPreviousMonth} haptic="selection" />
+        <IconButton
+          icon={ChevronLeft}
+          variant="filled"
+          onPress={onShowPreviousMonth}
+          haptic="selection"
+          debounceMs={0}
+        />
         <View style={{ alignItems: 'center' }}>
           <Text variant="h3">{formatMonthYear(month.getTime(), i18n.language)}</Text>
           <Text variant="caption" color="muted">
             {translate('history.workoutsInMonth', { count: monthWorkoutCount })}
           </Text>
         </View>
-        <IconButton icon={ChevronRight} variant="filled" onPress={onShowNextMonth} haptic="selection" />
+        <IconButton
+          icon={ChevronRight}
+          variant="filled"
+          onPress={onShowNextMonth}
+          haptic="selection"
+          debounceMs={0}
+        />
       </View>
       <View style={styles.dayGrid}>
         {calendarCells.map((day, index) => {
