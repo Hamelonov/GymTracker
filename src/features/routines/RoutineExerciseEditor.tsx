@@ -12,7 +12,8 @@ import {
   type WeightUnit,
 } from '@/domain/types';
 import { formatDuration, unitLabels } from '@/domain/units';
-import { NO_EXTRA_FIELDS, SET_COLUMN_WIDTHS, SetRow } from '@/features/workout/SetRow';
+import { SetRow } from '@/features/workout/SetRow';
+import { NO_EXTRA_FIELDS, SET_COLUMN_WIDTHS } from '@/features/workout/setRowLayout';
 import { useRoutineDraft, type DraftExercise } from '@/store/routineDraft';
 import { Button, Icon, Pressable, Text, fonts, radius, spacing, useColors } from '@/ui';
 
@@ -100,7 +101,6 @@ export function RoutineExerciseEditor({
         >
           {translate('workout.setShort').toUpperCase()}
         </Text>
-        <View style={{ flex: 1.1 }} />
         {fields.weight ? (
           <Text variant="label" color="faint" style={styles.valueColumn}>
             {(unitLabels[units.weight] ?? units.weight).toUpperCase()}
@@ -134,6 +134,9 @@ export function RoutineExerciseEditor({
             units={units}
             extraFields={NO_EXTRA_FIELDS}
             hideCheck
+            hidePrevious
+            // Шаблон пока лежит в карточке: новая строка по умолчанию рассчитана на белую страницу.
+            restingRowColor={colors.surface}
             formatSetTypeLabel={(type: SetType) => translate(`workout.setTypeShort.${type}`)}
             workoutExerciseId={draftExercise.id}
             onChange={(draftExerciseId, setId, patch) => updateSet(draftExerciseId, setId, patch)}

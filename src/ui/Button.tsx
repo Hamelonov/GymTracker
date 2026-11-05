@@ -20,6 +20,8 @@ export interface ButtonProps extends Omit<AnimatedPressableProps, 'children' | '
   style?: StyleProp<ViewStyle>;
   /** Переопределяет цвет подписи (например, чёрная кнопка на жёлтом экране). */
   textColor?: string;
+  /** `danger` красит подпись: разрушительное действие без заливки. */
+  tone?: 'danger';
   /** 'start' — иконка и подпись у левого края: в столбце кнопок разной длины так ровнее. */
   contentAlign?: 'center' | 'start';
 }
@@ -52,7 +54,8 @@ function getBackgroundColor(
   return getRestingBackgroundColor(variant, colors);
 }
 
-function getLabelColor(variant: Variant, colors: ThemeColors): string {
+function getLabelColor(variant: Variant, colors: ThemeColors, tone: ButtonProps['tone']): string {
+  if (tone === 'danger') return colors.danger;
   const labelColorByVariant: Record<Variant, string> = {
     primary: colors.onAccent,
     danger: colors.danger,
@@ -81,6 +84,7 @@ export function Button({
   disabled,
   style,
   textColor,
+  tone,
   contentAlign = 'center',
   onPress,
   onPressIn,
@@ -92,7 +96,7 @@ export function Button({
   const isDisabled = Boolean(disabled);
   const isBusy = Boolean(loading);
   const backgroundColor = getBackgroundColor(variant, colors, isDisabled, isPressed);
-  const labelColor = isDisabled ? colors.textFaint : (textColor ?? getLabelColor(variant, colors));
+  const labelColor = isDisabled ? colors.textFaint : (textColor ?? getLabelColor(variant, colors, tone));
   const leadingIcon = isDisabled ? tintIcon(icon, labelColor) : icon;
   const endingIcon = isDisabled ? tintIcon(trailingIcon, labelColor) : trailingIcon;
   const hasOutline = variant === 'outline' && !isDisabled;

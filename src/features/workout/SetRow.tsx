@@ -1,38 +1,24 @@
-import { Check, Trash2 } from 'lucide-react-native';
-import React, { memo, useState } from 'react';
-import { Pressable as RNPressable, StyleSheet, TextInput, View } from 'react-native';
+import React, { memo } from 'react';
+import { Pressable as NativePressable, StyleSheet, View } from 'react-native';
 import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, {
-  interpolate,
-  LinearTransition,
-  type SharedValue,
-  useAnimatedStyle,
-} from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
-import { useSettings } from '@/store/settings';
+import type { SharedValue } from 'react-native-reanimated';
+import { isSetFilled } from '@/domain/summary';
 import type {
   ActiveSet,
+  DistanceUnit,
   ExtraField,
   SetFields,
   SetType,
-  WeightUnit,
-  DistanceUnit,
   SetValues,
+  WeightUnit,
 } from '@/domain/types';
-import {
-  durationToInput,
-  kgToUnit,
-  metersToUnit,
-  parseDurationInput,
-  parseNumberInput,
-  roundForDisplay,
-  formatNumberWithoutTrailingZeros,
-  unitToKg,
-  unitToMeters,
-} from '@/domain/units';
-import { Icon, Pressable, Text, fonts, radius, spacing, useColors } from '@/ui';
+import { Text, layout, playHaptic, spacing, useColors } from '@/ui';
 import { formatSetValues } from './format';
-import { isSetFilled } from '@/domain/summary';
+import { SetCheckButton } from './SetCheckButton';
+import { SetDeleteAction } from './SetDeleteAction';
+import { PREVIOUS_COLUMN_FLEX, SET_COLUMN_WIDTHS, getSetColumnGap } from './setRowLayout';
+import { SetTypeMark } from './SetTypeMark';
+import { SetValueFields } from './SetValueFields';
 
 export interface SetRowProps {
   set: ActiveSet;
@@ -43,6 +29,16 @@ export interface SetRowProps {
   extraFields: ExtraField[];
   readOnly?: boolean;
   hideCheck?: boolean;
+  /** Убирает колонку «прошлый»: поля растягиваются. Нужно шаблону, у него нет прошлого раза. */
+  hidePrevious?: boolean;
+  /** Первый невыполненный подход блока: его отметка чёрная и сама ведёт палец и глаз. */
+  isNextSet?: boolean;
+  /** Плотный режим для упражнений с дополнительными колонками. */
+  isDense?: boolean;
+  /** Подпись отметки для экранного диктора. Приходит строкой, чтобы строка не подписывалась на перевод. */
+  completeSetLabel?: string;
+  /** Фон строки без маркера. Непрозрачный: при свайпе строка должна закрывать кнопку удаления. */
+  restingRowColor?: string;
   /** Id упражнения-владельца; передаётся обратно в каждый обработчик. */
   workoutExerciseId: string;
   onChange: (workoutExerciseId: string, setId: string, patch: Partial<SetValues>) => void;
@@ -50,90 +46,6 @@ export interface SetRowProps {
   onDelete: (workoutExerciseId: string, setId: string) => void;
   onSetTypePress: (workoutExerciseId: string, setId: string) => void;
   formatSetTypeLabel: (type: SetType) => string;
-}
-
-function NumberField({
-  value,
-  onCommit,
-  placeholder,
-  parse,
-  format,
-  editable,
-  highlight,
-  narrow,
-}: {
-  value: number | null;
-  onCommit: (value: number | null) => void;
-  placeholder: string;
-  parse: (text: string) => number | null;
-  format: (value: number | null) => string;
-  editable: boolean;
-  highlight: boolean;
-  /** Узкая колонка для RIR и RPE, чтобы основные значения не теснились. */
-  narrow?: boolean;
-}) {
-  const colors = useColors();
-  const [text, setText] = useState(() => format(value));
-  const [isFocused, setIsFocused] = useState(false);
-  const [previousValue, setPreviousValue] = useState(value);
-  // Подхватываем изменения значений, сделанные в другом месте, но никогда не затираем то, что пользователь сейчас вводит.
-  if (value !== previousValue) {
-    setPreviousValue(value);
-    if (!isFocused) setText(format(value));
-  }
-  return (
-    <TextInput
-      value={text}
-      editable={editable}
-      onChangeText={(newText) => {
-        setText(newText);
-        onCommit(parse(newText));
-      }}
-      onFocus={() => setIsFocused(true)}
-      onBlur={() => {
-        setIsFocused(false);
-        setText(format(value));
-      }}
-      placeholder={placeholder}
-      placeholderTextColor={colors.textFaint}
-      keyboardType="decimal-pad"
-      selectTextOnFocus
-      selectionColor={colors.accent}
-      cursorColor={colors.text}
-      style={[
-        styles.input,
-        narrow ? styles.inputNarrow : null,
-        { color: colors.text, backgroundColor: highlight ? 'transparent' : colors.inputBackground },
-        isFocused ? { borderColor: colors.text } : null,
-      ]}
-    />
-  );
-}
-
-function DeleteAction({ progress, onPress }: { progress: SharedValue<number>; onPress: () => void }) {
-  const colors = useColors();
-  const fadeInStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 0.15], [0, 1], 'clamp'),
-  }));
-  return (
-    <Animated.View style={fadeInStyle}>
-      <Pressable
-        onPress={onPress}
-        style={[styles.deleteButton, { backgroundColor: colors.danger }]}
-        haptic="medium"
-      >
-        <Icon icon={Trash2} size={20} color={colors.background} />
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-/** Форматирует значение с прошлого раза как плейсхолдер или пустую строку, если его не было. */
-function placeholderFromPrevious(
-  previousValue: number | null | undefined,
-  format: (value: number) => string,
-): string {
-  return previousValue != null ? format(previousValue) : '';
 }
 
 export const SetRow = memo(function SetRow({
@@ -144,6 +56,11 @@ export const SetRow = memo(function SetRow({
   extraFields,
   readOnly,
   hideCheck,
+  hidePrevious,
+  isNextSet,
+  isDense,
+  completeSetLabel,
+  restingRowColor,
   workoutExerciseId,
   onChange: onChangeById,
   onToggle: onToggleById,
@@ -151,10 +68,18 @@ export const SetRow = memo(function SetRow({
   onSetTypePress: onTypePressById,
   formatSetTypeLabel,
 }: SetRowProps) {
+  const colors = useColors();
   const updateValues = (patch: Partial<SetValues>) => onChangeById(workoutExerciseId, set.id, patch);
-  const toggleCompleted = () => onToggleById(workoutExerciseId, set.id);
   const deleteSet = () => onDeleteById(workoutExerciseId, set.id);
-  const openSetTypePicker = () => onTypePressById(workoutExerciseId, set.id);
+  const openSetTypePicker = () => {
+    onTypePressById(workoutExerciseId, set.id);
+    playHaptic('selection');
+  };
+  // Сначала меняем экран, вибрация не должна откладывать смену цвета.
+  const toggleCompleted = () => {
+    onToggleById(workoutExerciseId, set.id);
+    playHaptic(set.completed ? 'light' : 'medium');
+  };
   // Пустой подход (ничего не введено или одни нули) нельзя отметить выполненным. Пустые
   // поля при завершении заполняются значениями с прошлого раза, поэтому они тоже считаются.
   const valuesOnCompletion: SetValues = {
@@ -166,26 +91,17 @@ export const SetRow = memo(function SetRow({
     rir: set.rir,
   };
   const canComplete = set.completed || isSetFilled(valuesOnCompletion, fields);
-  const colors = useColors();
-  const hapticsEnabled = useSettings((state) => state.haptics);
-  const rowBackgroundStyle = { backgroundColor: set.completed ? colors.accentSoft : colors.surface };
   const previousSetText = set.previous
     ? formatSetValues(set.previous, fields, units, { unitLabel: false })
     : '—';
-  const isNormalSet = set.type === 'normal';
-  const showsWeight = fields.weight || extraFields.includes('weight');
-
-  const formatWeightForInput = (weightKg: number) =>
-    formatNumberWithoutTrailingZeros(roundForDisplay(kgToUnit(weightKg, units.weight)));
-  const formatDistanceForInput = (meters: number) =>
-    formatNumberWithoutTrailingZeros(roundForDisplay(metersToUnit(meters, units.distance)));
+  const setTypeLabel = set.type === 'normal' ? String(index + 1) : formatSetTypeLabel(set.type);
 
   const renderDeleteAction = (
     progress: SharedValue<number>,
     _dragOffset: SharedValue<number>,
     swipeableMethods: SwipeableMethods,
   ) => (
-    <DeleteAction
+    <SetDeleteAction
       progress={progress}
       onPress={() => {
         swipeableMethods.close();
@@ -195,126 +111,50 @@ export const SetRow = memo(function SetRow({
   );
 
   const rowContent = (
-    <Animated.View style={[styles.row, rowBackgroundStyle]} layout={LinearTransition.duration(110)}>
-      <Pressable
-        onPress={openSetTypePicker}
-        disabled={readOnly}
-        style={[styles.setNumberBadge, { backgroundColor: isNormalSet ? colors.surfaceAlt : colors.text }]}
-        haptic="selection"
-      >
-        <Text variant="caption" color={isNormalSet ? colors.text : colors.background} tabular>
-          {isNormalSet ? String(index + 1) : formatSetTypeLabel(set.type)}
-        </Text>
-      </Pressable>
-      <View style={styles.previousColumn}>
-        <Text variant="caption" color="faint" numberOfLines={1} tabular>
-          {previousSetText}
-        </Text>
-      </View>
-      {showsWeight ? (
-        <NumberField
-          value={set.weightKg}
-          onCommit={(value) =>
-            updateValues({ weightKg: value == null ? null : unitToKg(value, units.weight) })
-          }
-          placeholder={placeholderFromPrevious(set.previous?.weightKg, formatWeightForInput)}
-          parse={parseNumberInput}
-          format={(value) => (value == null ? '' : formatWeightForInput(value))}
-          editable={!readOnly}
-          highlight={set.completed}
+    <View
+      style={[
+        styles.row,
+        {
+          gap: getSetColumnGap(isDense),
+          backgroundColor: set.completed ? colors.accentSoft : (restingRowColor ?? colors.background),
+        },
+      ]}
+    >
+      <NativePressable onPress={openSetTypePicker} disabled={readOnly} style={styles.setNumberColumn}>
+        <SetTypeMark
+          type={set.type}
+          label={setTypeLabel}
+          isPending={!set.completed && !isNextSet}
+          isNextSet={isNextSet}
         />
-      ) : null}
-      {fields.reps ? (
-        <NumberField
-          value={set.reps}
-          onCommit={(value) => updateValues({ reps: value == null ? null : Math.round(value) })}
-          placeholder={placeholderFromPrevious(set.previous?.reps, (reps) => String(reps))}
-          parse={parseNumberInput}
-          format={(value) => (value == null ? '' : String(value))}
-          editable={!readOnly}
-          highlight={set.completed}
-        />
-      ) : null}
-      {fields.distance ? (
-        <NumberField
-          value={set.distanceM}
-          onCommit={(value) =>
-            updateValues({ distanceM: value == null ? null : unitToMeters(value, units.distance) })
-          }
-          placeholder={placeholderFromPrevious(set.previous?.distanceM, formatDistanceForInput)}
-          parse={parseNumberInput}
-          format={(value) => (value == null ? '' : formatDistanceForInput(value))}
-          editable={!readOnly}
-          highlight={set.completed}
-        />
-      ) : null}
-      {fields.duration ? (
-        <NumberField
-          value={set.durationSec}
-          onCommit={(value) => updateValues({ durationSec: value })}
-          placeholder={placeholderFromPrevious(set.previous?.durationSec, (seconds) =>
-            durationToInput(seconds),
-          )}
-          parse={parseDurationInput}
-          format={(value) => durationToInput(value)}
-          editable={!readOnly}
-          highlight={set.completed}
-        />
-      ) : null}
-      {extraFields.includes('rir') ? (
-        <NumberField
-          value={set.rir}
-          onCommit={(value) =>
-            updateValues({ rir: value == null ? null : Math.min(10, Math.max(0, Math.round(value))) })
-          }
-          placeholder={placeholderFromPrevious(set.previous?.rir, (rir) => String(rir))}
-          parse={parseNumberInput}
-          format={(value) => (value == null ? '' : String(value))}
-          editable={!readOnly}
-          highlight={set.completed}
-          narrow
-        />
-      ) : null}
-      {extraFields.includes('rpe') ? (
-        <NumberField
-          value={set.rpe}
-          onCommit={(value) => updateValues({ rpe: value == null ? null : Math.min(10, Math.max(1, value)) })}
-          placeholder={placeholderFromPrevious(set.previous?.rpe, formatNumberWithoutTrailingZeros)}
-          parse={parseNumberInput}
-          format={(value) => (value == null ? '' : formatNumberWithoutTrailingZeros(value))}
-          editable={!readOnly}
-          highlight={set.completed}
-          narrow
-        />
-      ) : null}
+      </NativePressable>
+      {hidePrevious ? null : (
+        <View style={styles.previousColumn}>
+          {/* На полосе маркера бледный цвет не проходит по контрасту. */}
+          <Text variant="caption" color={set.completed ? 'muted' : 'faint'} numberOfLines={1} tabular>
+            {previousSetText}
+          </Text>
+        </View>
+      )}
+      <SetValueFields
+        set={set}
+        fields={fields}
+        extraFields={extraFields}
+        units={units}
+        isEditable={!readOnly}
+        isDense={isDense}
+        onChange={updateValues}
+      />
       {!readOnly && !hideCheck ? (
-        <RNPressable
-          disabled={!canComplete}
-          onPress={() => {
-            if (hapticsEnabled)
-              void Haptics.impactAsync(
-                set.completed ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium,
-              );
-            toggleCompleted();
-          }}
-          hitSlop={6}
-          style={[
-            styles.checkButton,
-            {
-              backgroundColor: set.completed ? colors.text : colors.surfaceAlt,
-              opacity: canComplete ? 1 : 0.35,
-            },
-          ]}
-        >
-          <Icon
-            icon={Check}
-            size={18}
-            color={set.completed ? colors.accent : colors.textFaint}
-            strokeWidth={3}
-          />
-        </RNPressable>
+        <SetCheckButton
+          isCompleted={set.completed}
+          canComplete={canComplete}
+          isNextSet={isNextSet}
+          label={completeSetLabel}
+          onPress={toggleCompleted}
+        />
       ) : null}
-    </Animated.View>
+    </View>
   );
 
   if (readOnly) return rowContent;
@@ -330,60 +170,18 @@ export const SetRow = memo(function SetRow({
   );
 });
 
-export const SET_COLUMN_WIDTHS = {
-  setNumber: 36,
-  checkButton: 40,
-};
-
-/** Доля ширины узких колонок RIR и RPE относительно основных. */
-export const NARROW_COLUMN_FLEX = 0.75;
-
-/** Стабильная пустая ссылка для карточек без дополнительных колонок (редактор программ). */
-export const NO_EXTRA_FIELDS: ExtraField[] = [];
-
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: 5,
+    height: layout.setRowHeight,
     paddingHorizontal: spacing.lg,
   },
-  setNumberBadge: {
+  setNumberColumn: {
     width: SET_COLUMN_WIDTHS.setNumber,
-    height: 36,
-    borderRadius: radius.sm,
+    height: layout.setCellHeight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  previousColumn: { flex: 1.1, alignItems: 'center' },
-  input: {
-    flex: 1,
-    height: 38,
-    borderRadius: radius.sm,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    textAlign: 'center',
-    fontFamily: fonts.semibold,
-    fontSize: 16,
-    paddingVertical: 0,
-    fontVariant: ['tabular-nums'],
-  },
-  inputNarrow: { flex: NARROW_COLUMN_FLEX },
-  checkButton: {
-    width: SET_COLUMN_WIDTHS.checkButton,
-    height: 36,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteButton: {
-    width: 72,
-    height: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 5,
-    marginRight: spacing.lg,
-    borderRadius: radius.sm,
-  },
+  previousColumn: { flex: PREVIOUS_COLUMN_FLEX },
 });

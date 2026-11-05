@@ -23,15 +23,7 @@ import { useActiveWorkoutActions } from '@/features/workout/useActiveWorkoutActi
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useSettings } from '@/store/settings';
-import { Button, Icon, spacing, useColors } from '@/ui';
-
-const SUPERSET_COLORS = ['#F5A524', '#3E63DD', '#30A46C', '#E5484D', '#8E4EC6', '#12A594'];
-
-/** У каждой группы суперсета свой цвет; группы сверх палитры используют цвета с начала. */
-function supersetColorForGroup(group: number | null): string | null {
-  if (group == null) return null;
-  return SUPERSET_COLORS[(group - 1) % SUPERSET_COLORS.length] ?? null;
-}
+import { Button, EmptyState, Icon, layout, spacing, useColors } from '@/ui';
 
 export default function ActiveWorkoutScreen() {
   const colors = useColors();
@@ -117,20 +109,23 @@ export default function ActiveWorkoutScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 140 }]}
+          // Запас под плашку отдыха есть всегда, иначе при её появлении экран прыгал бы.
+          contentContainerStyle={{ paddingBottom: insets.bottom + layout.restDockHeight + spacing.xl }}
           showsVerticalScrollIndicator={false}
         >
           {isPenMode ? (
-            <PenEditor
-              text={penText}
-              onTextChange={(text) => getWorkoutStore().setPenText(text)}
-              penState={penState}
-              onRestTimerPress={actions.openPenRestPicker}
-            />
+            <View style={styles.penEditorWrapper}>
+              <PenEditor
+                text={penText}
+                onTextChange={(text) => getWorkoutStore().setPenText(text)}
+                penState={penState}
+                onRestTimerPress={actions.openPenRestPicker}
+              />
+            </View>
           ) : null}
 
           {!isPenMode &&
-            workout.exercises.map((workoutExercise) => {
+            workout.exercises.map((workoutExercise, index) => {
               const exerciseDetails = exercisesById.get(workoutExercise.exerciseId);
               return (
                 <ExerciseCard
@@ -138,7 +133,7 @@ export default function ActiveWorkoutScreen() {
                   workoutExercise={workoutExercise}
                   exerciseDetails={exerciseDetails}
                   units={units}
-                  supersetColor={supersetColorForGroup(workoutExercise.supersetGroup)}
+                  isFirst={index === 0}
                   onMenu={actions.openExerciseMenu}
                   onNotePress={actions.openNote}
                   onAddSet={actions.addSet}
@@ -150,28 +145,41 @@ export default function ActiveWorkoutScreen() {
               );
             })}
 
-          {!isPenMode ? (
-            <Button
-              title={translate('workout.addExercise')}
-              size="lg"
-              fullWidth
-              variant={hasNoExercises ? 'primary' : 'secondary'}
-              icon={
-                <Icon icon={Plus} size={20} color={hasNoExercises ? 'onAccent' : 'text'} strokeWidth={2.5} />
-              }
-              onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
-              style={{ marginTop: spacing.sm }}
+          {!isPenMode && hasNoExercises ? (
+            <EmptyState
+              title={translate('workout.noExercises')}
+              hint={translate('workout.noExercisesHint')}
             />
           ) : null}
-          {session.mode === 'new' ? (
-            <Button
-              title={translate('workout.discard')}
-              variant="ghost"
-              fullWidth
-              onPress={actions.discardWorkout}
-              style={{ marginTop: spacing.sm }}
-            />
-          ) : null}
+
+          <View style={styles.pageActions}>
+            {!isPenMode ? (
+              <Button
+                title={translate('workout.addExercise')}
+                size="lg"
+                fullWidth
+                variant={hasNoExercises ? 'primary' : 'secondary'}
+                icon={
+                  <Icon
+                    icon={Plus}
+                    size={20}
+                    color={hasNoExercises ? 'onAccent' : 'text'}
+                    strokeWidth={2.5}
+                  />
+                }
+                onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
+              />
+            ) : null}
+            {session.mode === 'new' ? (
+              <Button
+                title={translate('workout.discard')}
+                variant="ghost"
+                tone="danger"
+                fullWidth
+                onPress={actions.discardWorkout}
+              />
+            ) : null}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -203,6 +211,7 @@ function KeepScreenAwake() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  penEditorWrapper: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  pageActions: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, gap: spacing.sm },
   restTimerWrapper: { position: 'absolute', left: spacing.lg, right: spacing.lg },
 });
