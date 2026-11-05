@@ -16,6 +16,7 @@ import { ActiveWorkoutSheets } from '@/features/workout/ActiveWorkoutSheets';
 import { EntryModeTabs } from '@/features/workout/EntryModeTabs';
 import { useEntryMode } from '@/features/workout/pen/useEntryMode';
 import { PenEditor } from '@/features/workout/pen/PenEditor';
+import { PenToolbar } from '@/features/workout/pen/PenToolbar';
 import { usePenText } from '@/features/workout/pen/usePenText';
 import { ExerciseCard } from '@/features/workout/ExerciseCard';
 import { RestTimerBar } from '@/features/workout/RestTimerBar';
@@ -106,6 +107,8 @@ export default function ActiveWorkoutScreen() {
         }
       />
 
+      {isPenMode ? <PenToolbar penState={penState} onRestTimerPress={actions.openPenRestPicker} /> : null}
+
       {/* Отступ считается от положения клавиатуры: если система сама сжала окно, он равен нулю. */}
       <KeyboardAvoidingView style={styles.fill} behavior="padding">
         <ScrollView
@@ -116,14 +119,11 @@ export default function ActiveWorkoutScreen() {
           showsVerticalScrollIndicator={false}
         >
           {isPenMode ? (
-            <View style={styles.penEditorWrapper}>
-              <PenEditor
-                text={penText}
-                onTextChange={(text) => getWorkoutStore().setPenText(text)}
-                penState={penState}
-                onRestTimerPress={actions.openPenRestPicker}
-              />
-            </View>
+            <PenEditor
+              text={penText}
+              onTextChange={(text) => getWorkoutStore().setPenText(text)}
+              penState={penState}
+            />
           ) : null}
 
           {!isPenMode &&
@@ -209,6 +209,5 @@ function KeepScreenAwake() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  penEditorWrapper: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
   pageActions: { paddingHorizontal: spacing.lg, paddingTop: spacing.xl, gap: spacing.sm },
 });
