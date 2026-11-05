@@ -10,6 +10,7 @@ import {
   type SetRow,
 } from '../schema';
 import { notifyDatabaseChanged } from '../version';
+import { mergeEntriesOfSameWorkout } from './mergeExerciseHistory';
 import { newId } from '@/domain/ids';
 import type { Equipment, ExerciseType, ExtraField, MuscleGroup, RecordType, SetValues } from '@/domain/types';
 import type { RecordTable } from '@/domain/records';
@@ -248,8 +249,8 @@ export function getExerciseHistory(exerciseId: string, limit = 200): ExerciseHis
     .from(workoutExercises)
     .innerJoin(workouts, eq(workouts.id, workoutExercises.workoutId))
     .where(eq(workoutExercises.exerciseId, exerciseId))
-    .orderBy(desc(workouts.startedAt))
-    .limit(limit)
+    // Лимит считается по тренировкам, а не здесь: иначе у самой старой тренировки обрезались бы круги.
+    .orderBy(desc(workouts.startedAt), asc(workoutExercises.position))
     .all();
   if (workoutExerciseRows.length === 0) return [];
   const setRows = database
@@ -269,11 +270,12 @@ export function getExerciseHistory(exerciseId: string, limit = 200): ExerciseHis
     list.push(set);
     setsByWorkoutExerciseId.set(set.workoutExerciseId, list);
   }
-  return workoutExerciseRows.map((workoutExercise) => ({
+  const entries = workoutExerciseRows.map((workoutExercise) => ({
     workoutId: workoutExercise.workoutId,
     workoutName: workoutExercise.workoutName,
     startedAt: workoutExercise.startedAt,
     note: workoutExercise.note,
     sets: setsByWorkoutExerciseId.get(workoutExercise.workoutExerciseId) ?? [],
   }));
+  return mergeEntriesOfSameWorkout(entries).slice(0, limit);
 }
