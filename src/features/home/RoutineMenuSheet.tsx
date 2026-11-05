@@ -1,4 +1,4 @@
-import { Copy, FolderInput, Pencil, Play, Trash2 } from 'lucide-react-native';
+import { Copy, Pencil, Play, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -9,21 +9,12 @@ import { Icon, ListItem, Sheet, confirm, spacing, useColors } from '@/ui';
 interface RoutineMenuSheetProps {
   visible: boolean;
   routine: RoutineSummary | undefined;
-  hasFolders: boolean;
   onClose: () => void;
   onStartRoutine: (routineId: string) => void;
-  onOpenMoveToFolder: (routineId: string) => void;
 }
 
-/** Действия для карточки шаблона: начать, изменить, дублировать, переместить в папку, удалить. */
-export function RoutineMenuSheet({
-  visible,
-  routine,
-  hasFolders,
-  onClose,
-  onStartRoutine,
-  onOpenMoveToFolder,
-}: RoutineMenuSheetProps) {
+/** Действия для карточки шаблона: начать, изменить, дублировать, удалить. */
+export function RoutineMenuSheet({ visible, routine, onClose, onStartRoutine }: RoutineMenuSheetProps) {
   const colors = useColors();
   const { t: translate } = useTranslation();
 
@@ -55,13 +46,6 @@ export function RoutineMenuSheet({
               onClose();
             }}
           />
-          {hasFolders ? (
-            <ListItem
-              title={translate('home.moveToFolder')}
-              left={<Icon icon={FolderInput} />}
-              onPress={() => onOpenMoveToFolder(routine.id)}
-            />
-          ) : null}
           <ListItem
             title={translate('common.delete')}
             titleColor={colors.danger}

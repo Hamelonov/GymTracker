@@ -24,7 +24,6 @@ interface RoutineDraftState {
   reset: (routine?: RoutineDetail) => void;
   setName: (name: string) => void;
   setNotes: (notes: string) => void;
-  setFolderId: (folderId: string | null) => void;
   addExercises: (exerciseIds: string[]) => void;
   removeExercise: (draftExerciseId: string) => void;
   moveExercise: (fromIndex: number, toIndex: number) => void;
@@ -84,7 +83,6 @@ export const useRoutineDraft = create<RoutineDraftState>((set, get) => {
       }),
     setName: (name) => set({ name }),
     setNotes: (notes) => set({ notes }),
-    setFolderId: (folderId) => set({ folderId }),
     addExercises: (exerciseIds) =>
       set({
         exercises: [

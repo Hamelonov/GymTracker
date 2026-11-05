@@ -3,9 +3,8 @@ import { push } from '@/lib/nav';
 import { Plus } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
 import { getExercisesByIds } from '@/db/repo/exercises';
-import { createRoutine, getRoutine, listFolders, updateRoutine, type RoutineInput } from '@/db/repo/routines';
+import { createRoutine, getRoutine, updateRoutine, type RoutineInput } from '@/db/repo/routines';
 import { useQuery } from '@/db/version';
 import { newId } from '@/domain/ids';
 import { RestTimeSheet } from '@/features/routines/RestTimeSheet';
@@ -16,7 +15,7 @@ import { SupersetPickerSheet } from '@/features/routines/SupersetPickerSheet';
 import { usePickerResult } from '@/store/picker';
 import { useRoutineDraft } from '@/store/routineDraft';
 import { useSettings } from '@/store/settings';
-import { Button, Chip, Icon, Input, Screen, SectionTitle, spacing, toast } from '@/ui';
+import { Button, Icon, Input, Screen, SectionTitle, spacing, toast } from '@/ui';
 
 /** Какой нижний лист открыт в редакторе шаблона (только один за раз). */
 type OpenSheet =
@@ -37,7 +36,6 @@ export default function RoutineEditScreen() {
     return newId();
   });
   const [openSheet, setOpenSheet] = useState<OpenSheet>({ kind: 'none' });
-  const folders = useQuery(() => listFolders(), []);
 
   useFocusEffect(
     useCallback(() => {
@@ -118,26 +116,6 @@ export default function RoutineEditScreen() {
         multiline
         containerStyle={{ marginTop: spacing.lg }}
       />
-      {folders.length > 0 ? (
-        <>
-          <SectionTitle title={translate('routine.folder')} />
-          <View style={styles.folderChips}>
-            <Chip
-              label={translate('home.noFolder')}
-              selected={draft.folderId == null}
-              onPress={() => draft.setFolderId(null)}
-            />
-            {folders.map((folder) => (
-              <Chip
-                key={folder.id}
-                label={folder.name}
-                selected={draft.folderId === folder.id}
-                onPress={() => draft.setFolderId(folder.id)}
-              />
-            ))}
-          </View>
-        </>
-      ) : null}
 
       <SectionTitle title={translate('routine.exercises')} />
       {draft.exercises.map((draftExercise) => (
@@ -210,7 +188,3 @@ export default function RoutineEditScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  folderChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-});

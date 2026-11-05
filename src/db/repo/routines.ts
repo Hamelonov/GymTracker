@@ -2,11 +2,9 @@ import { asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { database } from '../client';
 import {
   routineExercises,
-  routineFolders,
   routineSets,
   routines,
   type RoutineExerciseRow,
-  type RoutineFolderRow,
   type RoutineRow,
   type RoutineSetRow,
 } from '../schema';
@@ -40,41 +38,6 @@ export interface RoutineDetail extends RoutineRow {
 export interface RoutineSummary extends RoutineRow {
   exerciseCount: number;
   exerciseIds: string[];
-}
-
-export function listFolders(): RoutineFolderRow[] {
-  return database
-    .select()
-    .from(routineFolders)
-    .orderBy(asc(routineFolders.position), asc(routineFolders.createdAt))
-    .all();
-}
-
-export function createFolder(name: string): RoutineFolderRow {
-  const result = database
-    .select({ maxPosition: sql<number>`coalesce(max(${routineFolders.position}), -1)` })
-    .from(routineFolders)
-    .get();
-  const row: RoutineFolderRow = {
-    id: newId(),
-    name: name.trim(),
-    position: (result?.maxPosition ?? -1) + 1,
-    createdAt: Date.now(),
-  };
-  database.insert(routineFolders).values(row).run();
-  notifyDatabaseChanged();
-  return row;
-}
-
-export function renameFolder(id: string, name: string): void {
-  database.update(routineFolders).set({ name: name.trim() }).where(eq(routineFolders.id, id)).run();
-  notifyDatabaseChanged();
-}
-
-export function deleteFolder(id: string): void {
-  database.update(routines).set({ folderId: null }).where(eq(routines.folderId, id)).run();
-  database.delete(routineFolders).where(eq(routineFolders.id, id)).run();
-  notifyDatabaseChanged();
 }
 
 export function listRoutines(): RoutineSummary[] {
@@ -221,11 +184,6 @@ export function updateRoutine(id: string, input: RoutineInput): void {
     transaction.delete(routineExercises).where(eq(routineExercises.routineId, id)).run();
     writeRoutineExercises(id, input.exercises);
   });
-  notifyDatabaseChanged();
-}
-
-export function moveRoutineToFolder(id: string, folderId: string | null): void {
-  database.update(routines).set({ folderId, updatedAt: Date.now() }).where(eq(routines.id, id)).run();
   notifyDatabaseChanged();
 }
 

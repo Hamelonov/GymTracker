@@ -1,23 +1,10 @@
 import { push } from '@/lib/nav';
-import { Dumbbell, Folder, FolderPlus, Play, Plus } from 'lucide-react-native';
+import { Dumbbell, Play, Plus } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
 import { getExercisesByIds } from '@/db/repo/exercises';
-import {
-  createFolder,
-  deleteFolder,
-  getRoutine,
-  listFolders,
-  listRoutines,
-  moveRoutineToFolder,
-  renameFolder,
-  type RoutineSummary,
-} from '@/db/repo/routines';
+import { getRoutine, listRoutines, type RoutineSummary } from '@/db/repo/routines';
 import { useQuery } from '@/db/version';
-import { FolderMenuSheet } from '@/features/home/FolderMenuSheet';
-import { FolderNameSheet } from '@/features/home/FolderNameSheet';
-import { MoveToFolderSheet } from '@/features/home/MoveToFolderSheet';
 import { ResumeWorkoutBanner } from '@/features/home/ResumeWorkoutBanner';
 import { RoutineMenuSheet } from '@/features/home/RoutineMenuSheet';
 import { WeekSummaryCard } from '@/features/home/WeekSummaryCard';
@@ -26,32 +13,15 @@ import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
 import { nextWorkoutNumber, numberedWorkoutName } from '@/db/renameDefaultWorkoutNames';
 import { useNow } from '@/lib/useNow';
-import {
-  Button,
-  EmptyState,
-  Icon,
-  IconButton,
-  Pressable,
-  Screen,
-  SectionTitle,
-  Text,
-  confirm,
-  spacing,
-} from '@/ui';
+import { Button, EmptyState, Icon, IconButton, Screen, SectionTitle, confirm } from '@/ui';
 
 /** Какой нижний лист открыт на главном экране (только один за раз). */
-type OpenSheet =
-  | { kind: 'none' }
-  | { kind: 'routineMenu'; routineId: string }
-  | { kind: 'moveToFolder'; routineId: string }
-  | { kind: 'folderName'; folderId?: string }
-  | { kind: 'folderMenu'; folderId: string };
+type OpenSheet = { kind: 'none' } | { kind: 'routineMenu'; routineId: string };
 
 export default function HomeTab() {
   const { t: translate } = useTranslation();
   const now = useNow();
   const [openSheet, setOpenSheet] = useState<OpenSheet>({ kind: 'none' });
-  const [folderName, setFolderName] = useState('');
   const activeWorkout = useActiveWorkout((state) => state.workout);
   const session = useActiveWorkout((state) => state.session);
   // Только после ухода с экрана тренировки, но не во время его открытия.
@@ -59,7 +29,6 @@ export default function HomeTab() {
     (state) => !!state.workout && state.minimized && state.session.mode === 'new',
   );
   const routines = useQuery(() => listRoutines(), []);
-  const folders = useQuery(() => listFolders(), []);
   const exerciseIds = useMemo(
     () => [...new Set(routines.flatMap((routine) => routine.exerciseIds))],
     [routines],
@@ -98,27 +67,10 @@ export default function HomeTab() {
     push('/workout/active');
   };
 
-  const openNewFolderSheet = () => {
-    setFolderName('');
-    setOpenSheet({ kind: 'folderName' });
-  };
-
-  const saveFolderName = () => {
-    if (openSheet.kind === 'folderName' && openSheet.folderId) renameFolder(openSheet.folderId, folderName);
-    else createFolder(folderName);
-    closeSheet();
-  };
-
   const selectedRoutine =
-    openSheet.kind === 'routineMenu' || openSheet.kind === 'moveToFolder'
+    openSheet.kind === 'routineMenu'
       ? routines.find((routine) => routine.id === openSheet.routineId)
       : undefined;
-  const selectedFolder =
-    openSheet.kind === 'folderMenu' ? folders.find((folder) => folder.id === openSheet.folderId) : undefined;
-  // Шаблоны с удалённой папкой показываются вместе с шаблонами без папки.
-  const routinesWithoutFolder = routines.filter(
-    (routine) => routine.folderId == null || !folders.some((folder) => folder.id === routine.folderId),
-  );
 
   const renderRoutineCard = (routine: RoutineSummary) => (
     <RoutineCard
@@ -151,16 +103,13 @@ export default function HomeTab() {
       <SectionTitle
         title={translate('home.routines')}
         right={
-          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-            <IconButton icon={FolderPlus} size={18} onPress={openNewFolderSheet} haptic="selection" />
-            <IconButton
-              icon={Plus}
-              size={18}
-              variant="filled"
-              onPress={() => push('/routine/edit')}
-              haptic="selection"
-            />
-          </View>
+          <IconButton
+            icon={Plus}
+            size={18}
+            variant="filled"
+            onPress={() => push('/routine/edit')}
+            haptic="selection"
+          />
         }
       />
       {routines.length === 0 ? (
@@ -177,81 +126,14 @@ export default function HomeTab() {
           }
         />
       ) : null}
-      {folders.map((folder) => {
-        const routinesInFolder = routines.filter((routine) => routine.folderId === folder.id);
-        return (
-          <View key={folder.id} style={{ marginBottom: spacing.sm }}>
-            <Pressable
-              onPress={() => setOpenSheet({ kind: 'folderMenu', folderId: folder.id })}
-              style={styles.folderHeader}
-              haptic="selection"
-            >
-              <Icon icon={Folder} size={16} color="muted" />
-              <Text variant="caption" color="muted" style={{ flex: 1 }}>
-                {folder.name}
-              </Text>
-              <Text variant="caption" color="faint">
-                {routinesInFolder.length}
-              </Text>
-            </Pressable>
-            {routinesInFolder.map(renderRoutineCard)}
-          </View>
-        );
-      })}
-      {routinesWithoutFolder.map(renderRoutineCard)}
+      {routines.map(renderRoutineCard)}
 
       <RoutineMenuSheet
         visible={openSheet.kind === 'routineMenu'}
         routine={selectedRoutine}
-        hasFolders={folders.length > 0}
         onClose={closeSheet}
         onStartRoutine={(routineId) => void startRoutine(routineId)}
-        onOpenMoveToFolder={(routineId) => setOpenSheet({ kind: 'moveToFolder', routineId })}
-      />
-
-      <MoveToFolderSheet
-        visible={openSheet.kind === 'moveToFolder'}
-        folders={folders}
-        onClose={closeSheet}
-        onSelectFolder={(folderId) => {
-          if (selectedRoutine) moveRoutineToFolder(selectedRoutine.id, folderId);
-          closeSheet();
-        }}
-      />
-
-      <FolderNameSheet
-        visible={openSheet.kind === 'folderName'}
-        isRenaming={openSheet.kind === 'folderName' && Boolean(openSheet.folderId)}
-        folderName={folderName}
-        onChangeFolderName={setFolderName}
-        onClose={closeSheet}
-        onSave={saveFolderName}
-      />
-
-      <FolderMenuSheet
-        visible={openSheet.kind === 'folderMenu'}
-        folderName={selectedFolder?.name}
-        onClose={closeSheet}
-        onRename={() => {
-          if (openSheet.kind !== 'folderMenu') return;
-          setFolderName(selectedFolder?.name ?? '');
-          setOpenSheet({ kind: 'folderName', folderId: openSheet.folderId });
-        }}
-        onDelete={() => {
-          if (openSheet.kind === 'folderMenu') deleteFolder(openSheet.folderId);
-          closeSheet();
-        }}
       />
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  folderHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: 2,
-  },
-});
