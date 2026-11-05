@@ -1,9 +1,8 @@
 import { Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
 import type { SetType } from '@/domain/types';
-import { Icon, ListItem, Sheet, spacing, useColors } from '@/ui';
+import { Icon, ListItem, Sheet, useColors } from '@/ui';
 
 const SET_TYPES: SetType[] = ['normal', 'warmup', 'drop', 'failure'];
 
@@ -20,21 +19,19 @@ export function SetTypeSheet({ visible, onClose, onSelectSetType, onDeleteSet }:
   const { t: translate } = useTranslation();
   return (
     <Sheet visible={visible} onClose={onClose} title={translate('workout.setType')} unpadded>
-      <View style={{ paddingHorizontal: spacing.sm }}>
-        {SET_TYPES.map((setType) => (
-          <ListItem
-            key={setType}
-            title={translate(`workout.setTypes.${setType}`)}
-            onPress={() => onSelectSetType(setType)}
-          />
-        ))}
+      {SET_TYPES.map((setType) => (
         <ListItem
-          title={translate('workout.deleteSet')}
-          titleColor={colors.danger}
-          left={<Icon icon={Trash2} color="danger" />}
-          onPress={onDeleteSet}
+          key={setType}
+          title={translate(`workout.setTypes.${setType}`)}
+          onPress={() => onSelectSetType(setType)}
         />
-      </View>
+      ))}
+      <ListItem
+        title={translate('workout.deleteSet')}
+        titleColor={colors.danger}
+        left={<Icon icon={Trash2} color="danger" />}
+        onPress={onDeleteSet}
+      />
     </Sheet>
   );
 }

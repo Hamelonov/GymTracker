@@ -2,11 +2,10 @@ import { push } from '@/lib/nav';
 import { Pencil, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
 import { deleteWorkout, workoutToActiveWorkout, type WorkoutDetail } from '@/db/repo/workouts';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
-import { Icon, ListItem, Sheet, confirm, spacing, useColors } from '@/ui';
+import { Icon, ListItem, Sheet, confirm, useColors } from '@/ui';
 
 interface WorkoutActionsSheetProps {
   workout: WorkoutDetail;
@@ -64,15 +63,13 @@ export function WorkoutActionsSheet({ workout, visible, onClose, onDeleted }: Wo
 
   return (
     <Sheet visible={visible} onClose={onClose} unpadded>
-      <View style={{ paddingHorizontal: spacing.sm }}>
-        <ListItem title={translate('common.edit')} left={<Icon icon={Pencil} />} onPress={editWorkout} />
-        <ListItem
-          title={translate('common.delete')}
-          titleColor={colors.danger}
-          left={<Icon icon={Trash2} color="danger" />}
-          onPress={deleteThisWorkout}
-        />
-      </View>
+      <ListItem title={translate('common.edit')} left={<Icon icon={Pencil} />} onPress={editWorkout} />
+      <ListItem
+        title={translate('common.delete')}
+        titleColor={colors.danger}
+        left={<Icon icon={Trash2} color="danger" />}
+        onPress={deleteThisWorkout}
+      />
     </Sheet>
   );
 }

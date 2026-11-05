@@ -1,8 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
-import { Icon, ListItem, Sheet, spacing, useColors } from '@/ui';
+import { Icon, ListItem, Sheet, useColors } from '@/ui';
 
 interface FolderMenuSheetProps {
   visible: boolean;
@@ -18,20 +17,14 @@ export function FolderMenuSheet({ visible, folderName, onClose, onRename, onDele
   const { t: translate } = useTranslation();
   return (
     <Sheet visible={visible} onClose={onClose} title={folderName} unpadded>
-      <View style={styles.menu}>
-        <ListItem title={translate('common.rename')} left={<Icon icon={Pencil} />} onPress={onRename} />
-        <ListItem
-          title={translate('home.deleteFolder')}
-          subtitle={translate('home.deleteFolderHint')}
-          titleColor={colors.danger}
-          left={<Icon icon={Trash2} color="danger" />}
-          onPress={onDelete}
-        />
-      </View>
+      <ListItem title={translate('common.rename')} left={<Icon icon={Pencil} />} onPress={onRename} />
+      <ListItem
+        title={translate('home.deleteFolder')}
+        subtitle={translate('home.deleteFolderHint')}
+        titleColor={colors.danger}
+        left={<Icon icon={Trash2} color="danger" />}
+        onPress={onDelete}
+      />
     </Sheet>
   );
 }
-
-const styles = StyleSheet.create({
-  menu: { paddingHorizontal: spacing.sm },
-});

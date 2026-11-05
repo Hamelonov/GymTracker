@@ -1,9 +1,8 @@
 import { ArrowDown, ArrowUp, Link, Trash2, Unlink } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
 import { useRoutineDraft, type DraftExercise } from '@/store/routineDraft';
-import { Icon, ListItem, Sheet, spacing, useColors } from '@/ui';
+import { Icon, ListItem, Sheet, useColors } from '@/ui';
 
 interface RoutineExerciseMenuSheetProps {
   visible: boolean;
@@ -35,7 +34,7 @@ export function RoutineExerciseMenuSheet({
   return (
     <Sheet visible={visible} onClose={onClose} unpadded>
       {draftExercise ? (
-        <View style={{ paddingHorizontal: spacing.sm }}>
+        <>
           <ListItem
             title={
               isInSuperset ? translate('workout.removeFromSuperset') : translate('workout.createSuperset')
@@ -77,7 +76,7 @@ export function RoutineExerciseMenuSheet({
               onClose();
             }}
           />
-        </View>
+        </>
       ) : null}
     </Sheet>
   );

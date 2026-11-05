@@ -19,6 +19,7 @@ export * from './SearchField';
 export * from './Segmented';
 export * from './Sheet';
 export * from './Stat';
+export * from './TabBar';
 export * from './Text';
 export * from './ThemeProvider';
 export * from './Toast';

@@ -1,10 +1,9 @@
 import { Copy, FolderInput, Pencil, Play, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
 import { deleteRoutine, duplicateRoutine, type RoutineSummary } from '@/db/repo/routines';
 import { push } from '@/lib/nav';
-import { Icon, ListItem, Sheet, confirm, spacing, useColors } from '@/ui';
+import { Icon, ListItem, Sheet, confirm, useColors } from '@/ui';
 
 interface RoutineMenuSheetProps {
   visible: boolean;
@@ -30,7 +29,7 @@ export function RoutineMenuSheet({
   return (
     <Sheet visible={visible} onClose={onClose} title={routine?.name} unpadded>
       {routine ? (
-        <View style={styles.menu}>
+        <>
           <ListItem
             title={translate('home.startRoutine')}
             left={<Icon icon={Play} />}
@@ -76,12 +75,8 @@ export function RoutineMenuSheet({
               if (isConfirmed) deleteRoutine(routine.id);
             }}
           />
-        </View>
+        </>
       ) : null}
     </Sheet>
   );
 }
-
-const styles = StyleSheet.create({
-  menu: { paddingHorizontal: spacing.sm },
-});

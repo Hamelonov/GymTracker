@@ -13,15 +13,12 @@ import { useQuery } from '@/db/version';
 import { ExerciseLogTable, naturalLogTableWidth } from '@/features/log/ExerciseLogTable';
 import { ExerciseSelect } from '@/features/log/ExerciseSelect';
 import { ZoomPanCanvas } from '@/features/log/ZoomPanCanvas';
-import { useActiveWorkout } from '@/store/activeWorkout';
 import { useSettings } from '@/store/settings';
 import { EmptyState, Screen, Text, spacing } from '@/ui';
 
 /** Особый пункт фильтра: вместо одного упражнения показывает их все по порядку имени. */
 const ALL_EXERCISES_ID = 'all';
 const CANVAS_PADDING = spacing.sm;
-// Плашка свёрнутой тренировки висит над нижним краем: последние строки можно поднять над ней.
-const WORKOUT_PILL_SPACE = 88;
 
 export default function LogTab() {
   const { t: translate, i18n } = useTranslation();
@@ -84,13 +81,10 @@ export default function LogTab() {
     [isAllSelected, exercisesByName.map((row) => row.id).join(',')],
   );
   const units = useMemo(() => ({ weight: weightUnit, distance: distanceUnit }), [weightUnit, distanceUnit]);
-  const isWorkoutPillVisible = useActiveWorkout(
-    (state) => !!state.workout && state.minimized && state.session.mode !== 'edit',
-  );
 
   if (performedExercises.length === 0 || (!selectedExercise && !isAllSelected)) {
     return (
-      <Screen header={{ title: translate('log.title'), large: true }}>
+      <Screen header={{ title: translate('log.title'), large: true }} tabScreen>
         <EmptyState icon={Table2} title={translate('log.empty')} hint={translate('log.emptyHint')} />
       </Screen>
     );
@@ -119,11 +113,7 @@ export default function LogTab() {
       <View style={styles.filterBar}>
         <ExerciseSelect items={selectItems} selectedId={selectedExerciseId} onSelect={setChosenExerciseId} />
       </View>
-      <ZoomPanCanvas
-        key={selectedExerciseId ?? 'none'}
-        contentWidth={tableWidth + 2 * CANVAS_PADDING}
-        bottomInset={isWorkoutPillVisible ? WORKOUT_PILL_SPACE : 0}
-      >
+      <ZoomPanCanvas key={selectedExerciseId ?? 'none'} contentWidth={tableWidth + 2 * CANVAS_PADDING}>
         <View style={styles.canvasContent}>
           {shownTables.map((table, index) => (
             <View key={table.exercise.id} style={index > 0 ? styles.nextTable : null}>

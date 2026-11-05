@@ -2,11 +2,10 @@ import { router } from 'expo-router';
 import { Archive, ArchiveRestore, Pencil, Trash2 } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { View } from 'react-native';
 import { deleteExercise, setExerciseArchived } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import { push } from '@/lib/nav';
-import { Icon, ListItem, Sheet, confirm, spacing, useColors } from '@/ui';
+import { Icon, ListItem, Sheet, confirm, useColors } from '@/ui';
 
 interface ExerciseMenuSheetProps {
   visible: boolean;
@@ -40,33 +39,31 @@ export function ExerciseMenuSheet({
 
   return (
     <Sheet visible={visible} onClose={onClose} unpadded>
-      <View style={{ paddingHorizontal: spacing.sm }}>
+      <ListItem
+        title={translate('exercise.edit')}
+        left={<Icon icon={Pencil} />}
+        onPress={() => {
+          onClose();
+          push({ pathname: '/exercise/edit', params: { id: exercise.id } });
+        }}
+      />
+      <ListItem
+        title={exercise.archived ? translate('exercise.unarchive') : translate('exercise.archive')}
+        left={<Icon icon={exercise.archived ? ArchiveRestore : Archive} />}
+        onPress={() => {
+          setExerciseArchived(exercise.id, !exercise.archived);
+          onClose();
+        }}
+      />
+      {/* Встроенные упражнения можно только архивировать, но не удалять. */}
+      {exercise.isCustom ? (
         <ListItem
-          title={translate('exercise.edit')}
-          left={<Icon icon={Pencil} />}
-          onPress={() => {
-            onClose();
-            push({ pathname: '/exercise/edit', params: { id: exercise.id } });
-          }}
+          title={translate('common.delete')}
+          titleColor={colors.danger}
+          left={<Icon icon={Trash2} color="danger" />}
+          onPress={deleteAfterConfirm}
         />
-        <ListItem
-          title={exercise.archived ? translate('exercise.unarchive') : translate('exercise.archive')}
-          left={<Icon icon={exercise.archived ? ArchiveRestore : Archive} />}
-          onPress={() => {
-            setExerciseArchived(exercise.id, !exercise.archived);
-            onClose();
-          }}
-        />
-        {/* Встроенные упражнения можно только архивировать, но не удалять. */}
-        {exercise.isCustom ? (
-          <ListItem
-            title={translate('common.delete')}
-            titleColor={colors.danger}
-            left={<Icon icon={Trash2} color="danger" />}
-            onPress={deleteAfterConfirm}
-          />
-        ) : null}
-      </View>
+      ) : null}
     </Sheet>
   );
 }

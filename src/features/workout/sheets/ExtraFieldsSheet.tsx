@@ -48,18 +48,16 @@ export function ExtraFieldsSheet({
 
   return (
     <Sheet visible={visible} onClose={onClose} title={translate('workout.extraFieldsTitle')} unpadded>
-      <View style={styles.list}>
-        {availableExtraFields(fields).map((field) => (
-          <ListItem
-            key={field}
-            title={translate(LABEL_KEY_BY_FIELD[field], { unit: unitLabels[weightUnit] ?? weightUnit })}
-            right={<Checkbox checked={enabledFields.includes(field)} />}
-            onPress={() => {
-              if (workoutExercise) onToggleField(workoutExercise.id, field);
-            }}
-          />
-        ))}
-      </View>
+      {availableExtraFields(fields).map((field) => (
+        <ListItem
+          key={field}
+          title={translate(LABEL_KEY_BY_FIELD[field], { unit: unitLabels[weightUnit] ?? weightUnit })}
+          right={<Checkbox checked={enabledFields.includes(field)} />}
+          onPress={() => {
+            if (workoutExercise) onToggleField(workoutExercise.id, field);
+          }}
+        />
+      ))}
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
       <SettingSwitchRow
         title={translate('workout.rememberExtraFields')}
@@ -77,7 +75,6 @@ export function ExtraFieldsSheet({
 }
 
 const styles = StyleSheet.create({
-  list: { paddingHorizontal: spacing.sm },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: spacing.sm, marginHorizontal: spacing.lg },
   hint: { paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },
 });

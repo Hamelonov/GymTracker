@@ -78,6 +78,6 @@ const styles = StyleSheet.create({
   fieldLabel: { flex: 1 },
   // Список ограничен по высоте, чтобы шторка с десятками упражнений не уезжала за экран.
   list: { maxHeight: 460 },
-  listContent: { paddingHorizontal: spacing.sm, paddingBottom: spacing.lg },
+  listContent: { paddingBottom: spacing.lg },
   checkPlaceholder: { width: 18 },
 });

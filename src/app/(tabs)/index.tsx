@@ -18,7 +18,6 @@ import { useQuery } from '@/db/version';
 import { FolderMenuSheet } from '@/features/home/FolderMenuSheet';
 import { FolderNameSheet } from '@/features/home/FolderNameSheet';
 import { MoveToFolderSheet } from '@/features/home/MoveToFolderSheet';
-import { ResumeWorkoutBanner } from '@/features/home/ResumeWorkoutBanner';
 import { RoutineMenuSheet } from '@/features/home/RoutineMenuSheet';
 import { WeekSummaryCard } from '@/features/home/WeekSummaryCard';
 import { RoutineCard } from '@/features/routines/RoutineCard';
@@ -54,10 +53,6 @@ export default function HomeTab() {
   const [folderName, setFolderName] = useState('');
   const activeWorkout = useActiveWorkout((state) => state.workout);
   const session = useActiveWorkout((state) => state.session);
-  // Только после ухода с экрана тренировки, но не во время его открытия.
-  const isResumeBannerVisible = useActiveWorkout(
-    (state) => !!state.workout && state.minimized && state.session.mode === 'new',
-  );
   const routines = useQuery(() => listRoutines(), []);
   const folders = useQuery(() => listFolders(), []);
   const exerciseIds = useMemo(
@@ -133,10 +128,6 @@ export default function HomeTab() {
 
   return (
     <Screen header={{ title: translate('home.title'), large: true }} contentStyle={{ paddingBottom: 120 }}>
-      {isResumeBannerVisible ? (
-        <ResumeWorkoutBanner workoutName={activeWorkout?.name} onPress={() => push('/workout/active')} />
-      ) : null}
-
       <WeekSummaryCard now={now} />
 
       <SectionTitle title={translate('home.quickStart')} />
