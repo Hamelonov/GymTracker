@@ -42,7 +42,7 @@ export default function ActiveWorkoutScreen() {
   useEffect(() => {
     if (hasRestNotifications) void ensureNotificationPermission();
   }, [hasRestNotifications]);
-  // Плавающая панель «тренировка идёт» показывается только пока этот экран не в фокусе.
+  // Жёлтая строка над вкладками показывается только пока этот экран не в фокусе.
   useFocusEffect(
     useCallback(() => {
       getWorkoutStore().setMinimized(false);
@@ -64,7 +64,7 @@ export default function ActiveWorkoutScreen() {
 
   if (!workout) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
+      <View style={[styles.fill, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <Button title={translate('common.close')} variant="ghost" onPress={() => router.back()} />
       </View>
     );
@@ -82,7 +82,7 @@ export default function ActiveWorkoutScreen() {
   const hasNoExercises = workout.exercises.length === 0;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
+    <View style={[styles.fill, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <ActiveWorkoutHeader
         workoutName={workout.name}
         dateText={session.mode === 'edit' ? formatDateTime(workout.startedAt, i18n.language) : null}
