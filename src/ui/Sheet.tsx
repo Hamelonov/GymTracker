@@ -44,11 +44,26 @@ const DRAG_ACTIVATION_DISTANCE = 8;
  * навигацию. Сдвиг считается вручную по измеренной высоте шторки, поэтому
  * она проходит ровно свою длину, даже если содержимое меняет размер.
  */
-export function Sheet({ visible, onClose, title, children, unpadded }: SheetProps) {
-  const colors = useColors();
-  const insets = useSafeAreaInsets();
+export function Sheet({ visible, ...sheetProps }: SheetProps) {
   const [isMounted, setIsMounted] = useState(visible);
   if (visible && !isMounted) setIsMounted(true);
+  const unmount = useCallback(() => setIsMounted(false), []);
+  // Закрытая шторка не заводит анимаций и подписок: на экране тренировки их десяток,
+  // и каждая перерисовывалась бы при отметке подхода.
+  if (!isMounted) return null;
+  return <OpenSheet visible={visible} onUnmount={unmount} {...sheetProps} />;
+}
+
+function OpenSheet({
+  visible,
+  onClose,
+  onUnmount,
+  title,
+  children,
+  unpadded,
+}: SheetProps & { onUnmount: () => void }) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   // Хранить последнее показанное содержимое на время ухода вниз: родители обычно убирают
   // содержимое сразу при закрытии шторки, и она схлопнулась бы посреди анимации.
   const [displayedContent, setDisplayedContent] = useState<React.ReactNode>(children);
@@ -64,7 +79,7 @@ export function Sheet({ visible, onClose, title, children, unpadded }: SheetProp
   // клавиатуру, поэтому отслеживаем её высоту сами и добавляем отступ шторке.
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   useEffect(() => {
-    if (Platform.OS !== 'android' || !isMounted) return undefined;
+    if (Platform.OS !== 'android') return undefined;
     const keyboardShowListener = Keyboard.addListener('keyboardDidShow', (event) =>
       setKeyboardHeight(event.endCoordinates.height),
     );
@@ -73,7 +88,7 @@ export function Sheet({ visible, onClose, title, children, unpadded }: SheetProp
       keyboardShowListener.remove();
       keyboardHideListener.remove();
     };
-  }, [isMounted]);
+  }, []);
 
   const handleSheetLayout = useCallback(
     (event: LayoutChangeEvent) => {
@@ -89,23 +104,16 @@ export function Sheet({ visible, onClose, title, children, unpadded }: SheetProp
     [translateY, backdropOpacity, sheetHeight],
   );
 
-  const unmount = useCallback(() => {
-    setIsMounted(false);
-    setKeyboardHeight(0);
-    translateY.set(OFFSCREEN_POSITION);
-    backdropOpacity.set(0);
-  }, [translateY, backdropOpacity]);
-
   useEffect(() => {
-    if (visible || !isMounted) return;
+    if (visible) return;
     Keyboard.dismiss();
     backdropOpacity.set(withTiming(0, SLIDE_OUT_TIMING));
     translateY.set(
       withTiming(sheetHeight.get() || OFFSCREEN_POSITION, SLIDE_OUT_TIMING, (isFinished) => {
-        if (isFinished) scheduleOnRN(unmount);
+        if (isFinished) scheduleOnRN(onUnmount);
       }),
     );
-  }, [visible, isMounted, translateY, backdropOpacity, sheetHeight, unmount]);
+  }, [visible, translateY, backdropOpacity, sheetHeight, onUnmount]);
 
   useEffect(() => {
     if (!visible) return undefined;
@@ -118,8 +126,6 @@ export function Sheet({ visible, onClose, title, children, unpadded }: SheetProp
 
   const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
   const backdropStyle = useAnimatedStyle(() => ({ opacity: backdropOpacity.value }));
-
-  if (!isMounted) return null;
 
   const dragGesture = Gesture.Pan()
     // Во время ухода жест перебил бы анимацию, и шторка осталась бы на экране.

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import type { ExerciseRow } from '@/db/schema';
 import type { ActiveExercise } from '@/domain/types';
-import { Button, Input, Pressable, Sheet, Text, spacing } from '@/ui';
+import { Button, Input, ListItem, Sheet, Text, playHaptic, spacing } from '@/ui';
 import { exerciseDisplayName } from '../exerciseDisplayName';
 
 interface ExerciseNoteSheetProps {
@@ -44,15 +44,16 @@ export function ExerciseNoteSheet({
             multiline
           />
           {lastNote && !noteDraft ? (
-            <Pressable
-              onPress={() => onNoteDraftChange(lastNote)}
-              style={{ marginTop: spacing.md }}
-              haptic="selection"
-            >
-              <Text variant="caption" color="muted">
-                {translate('workout.copyLastNote')}: {lastNote}
-              </Text>
-            </Pressable>
+            <ListItem
+              compact
+              title={translate('workout.copyLastNote')}
+              subtitle={lastNote}
+              onPress={() => {
+                onNoteDraftChange(lastNote);
+                playHaptic('selection');
+              }}
+              style={{ paddingHorizontal: 0, marginTop: spacing.xs }}
+            />
           ) : null}
           <Button
             title={translate('common.save')}

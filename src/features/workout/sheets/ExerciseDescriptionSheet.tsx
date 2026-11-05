@@ -60,7 +60,7 @@ export function ExerciseDescriptionSheet({
           ) : (
             <>
               {description ? (
-                <Text style={{ lineHeight: 22 }}>{description}</Text>
+                <Text>{description}</Text>
               ) : (
                 <Text color="faint">{translate('workout.noDescription')}</Text>
               )}

@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import type { ExerciseRow } from '@/db/schema';
 import type { ActiveExercise } from '@/domain/types';
 import { formatDuration } from '@/domain/units';
-import { Icon, ListItem, Sheet, useColors } from '@/ui';
+import { Icon, ListItem, Sheet } from '@/ui';
 import { exerciseDisplayName } from '../exerciseDisplayName';
 
 interface ExerciseMenuSheetProps {
@@ -54,7 +54,6 @@ export function ExerciseMenuSheet({
   onMoveDownPress,
   onRemovePress,
 }: ExerciseMenuSheetProps) {
-  const colors = useColors();
   const { t: translate, i18n } = useTranslation();
   const title = workoutExercise ? exerciseDisplayName(exerciseDetails, i18n.language) : undefined;
   const isInSuperset = workoutExercise?.supersetGroup != null;
@@ -107,7 +106,7 @@ export function ExerciseMenuSheet({
           ) : null}
           <ListItem
             title={translate('workout.removeExercise')}
-            titleColor={colors.danger}
+            tone="danger"
             left={<Icon icon={Trash2} color="danger" />}
             onPress={onRemovePress}
           />
