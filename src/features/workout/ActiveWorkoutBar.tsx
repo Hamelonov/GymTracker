@@ -2,42 +2,30 @@ import { ChevronUp, Timer } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { formatDuration } from '@/domain/units';
 import { push } from '@/lib/nav';
 import { useActiveWorkout } from '@/store/activeWorkout';
-import {
-  FastPressable,
-  Icon,
-  Text,
-  layout,
-  motionDuration,
-  playHaptic,
-  radius,
-  spacing,
-  useColors,
-} from '@/ui';
+import { Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
 import { useElapsedSeconds, useRestCountdown } from './timers';
 import { WorkoutName } from './WorkoutName';
 
-/** Идёт ли свёрнутая тренировка: экран тренировки переключает `minimized` при потере и получении фокуса. */
-export function useIsWorkoutBarVisible(): boolean {
-  return useActiveWorkout(
-    (state) => Boolean(state.workout) && state.minimized && state.session.mode !== 'edit',
-  );
-}
-
-/** Жёлтая строка над вкладками, пока идёт тренировка и её экран не открыт. Верхняя часть `TabBar`. */
-export function ActiveWorkoutBar() {
+/**
+ * Плавающая «таблетка» над панелью вкладок, пока идёт тренировка и
+ * её экран не открыт (экран тренировки переключает `minimized` при потере/получении фокуса).
+ */
+export function ActiveWorkoutBar({ bottom }: { bottom: number }) {
   const workout = useActiveWorkout((state) => state.workout);
-  const isVisible = useIsWorkoutBarVisible();
-  if (!workout || !isVisible) return null;
+  const session = useActiveWorkout((state) => state.session);
+  const minimized = useActiveWorkout((state) => state.minimized);
+  if (!workout || !minimized || session.mode === 'edit') return null;
   const completedSetCount = workout.exercises.reduce(
     (count, exercise) => count + exercise.sets.filter((set) => set.completed).length,
     0,
   );
   return (
-    <MinimizedWorkoutRow
+    <MinimizedWorkoutPill
+      bottom={bottom}
       name={workout.name}
       startedAt={workout.startedAt}
       completedSetCount={completedSetCount}
@@ -45,12 +33,14 @@ export function ActiveWorkoutBar() {
   );
 }
 
-// Отдельный компонент, чтобы хуки таймера тикали только пока строка показана.
-function MinimizedWorkoutRow({
+// Отдельный компонент, чтобы хуки таймера тикали только пока «таблетка» показана.
+function MinimizedWorkoutPill({
+  bottom,
   name,
   startedAt,
   completedSetCount,
 }: {
+  bottom: number;
   name: string;
   startedAt: number;
   completedSetCount: number;
@@ -59,63 +49,63 @@ function MinimizedWorkoutRow({
   const { t: translate } = useTranslation();
   const elapsedSeconds = useElapsedSeconds(startedAt);
   const restCountdown = useRestCountdown();
-  const handlePress = () => {
-    push('/workout/active');
-    playHaptic('light');
-  };
   return (
-    <Animated.View entering={FadeIn.duration(motionDuration.fast)}>
-      <FastPressable
-        onPress={handlePress}
-        accessibilityRole="button"
-        style={({ pressed }) => [
-          styles.row,
-          { backgroundColor: pressed ? colors.accentPressed : colors.accent },
-        ]}
+    <Animated.View
+      entering={FadeInDown.duration(120)}
+      exiting={FadeOutDown.duration(100)}
+      style={[styles.wrapper, { bottom: bottom + spacing.sm }]}
+      pointerEvents="box-none"
+    >
+      <Pressable
+        onPress={() => push('/workout/active')}
+        haptic="light"
+        style={[styles.pill, { backgroundColor: colors.text }]}
       >
-        <View style={[styles.liveMark, { backgroundColor: colors.onAccent }]} />
+        <View style={[styles.liveDot, { backgroundColor: colors.accent }]} />
         <View style={styles.textColumn}>
           <WorkoutName
-            variant="bodyMedium"
-            color="onAccent"
-            signColor="onAccentMuted"
+            variant="caption"
+            color={colors.background}
+            signColor={colors.textFaint}
             numberOfLines={1}
             name={name || translate('workout.defaultName')}
           />
-          <Text variant="caption" color="onAccentMuted" numberOfLines={1} tabular>
+          <Text variant="label" color={colors.textFaint}>
             {formatDuration(elapsedSeconds)} · {completedSetCount} {translate('common.sets')}
           </Text>
         </View>
         {restCountdown.running ? (
-          <View style={[styles.restBadge, { backgroundColor: colors.onAccent }]}>
-            <Icon icon={Timer} size={16} color="accent" />
-            <Text variant="caption" color="accent" tabular>
+          <View style={[styles.restBadge, { backgroundColor: colors.accent }]}>
+            <Icon icon={Timer} size={14} color="onAccent" />
+            <Text variant="caption" color="onAccent" tabular>
               {formatDuration(restCountdown.remaining)}
             </Text>
           </View>
         ) : null}
-        <Icon icon={ChevronUp} size={20} color="onAccent" />
-      </FastPressable>
+        <Icon icon={ChevronUp} size={18} color={colors.background} />
+      </Pressable>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  wrapper: { position: 'absolute', left: spacing.lg, right: spacing.lg },
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minHeight: layout.workoutBarHeight,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
+    borderRadius: radius.lg,
   },
-  liveMark: { width: 8, height: 8, borderRadius: 2 },
+  liveDot: { width: 10, height: 10, borderRadius: 5 },
   textColumn: { flex: 1 },
   restBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 4,
     paddingHorizontal: spacing.sm,
-    height: 32,
-    borderRadius: radius.sm,
+    height: 26,
+    borderRadius: radius.pill,
   },
 });

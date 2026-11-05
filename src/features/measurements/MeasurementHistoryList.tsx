@@ -1,63 +1,65 @@
 import { Trash2 } from 'lucide-react-native';
-import React, { memo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
+import { deleteMeasurement } from '@/db/repo/measurements';
 import type { MeasurementRow } from '@/db/schema';
 import { formatDateTime } from '@/domain/dates';
 import type { MeasurementType } from '@/domain/types';
-import { IconButton, Text, spacing, useColors } from '@/ui';
+import { Card, IconButton, ListItem, confirm, spacing, useColors } from '@/ui';
 import { formatMeasurement, type MeasurementUnits } from './measurementUnits';
 
-interface MeasurementHistoryRowProps {
+interface MeasurementHistoryListProps {
   type: MeasurementType;
-  measurement: MeasurementRow;
+  measurements: MeasurementRow[];
   units: MeasurementUnits;
-  onDelete: (measurementId: string) => void;
 }
 
-/** Одно записанное значение замера: число, дата и заметка, справа удаление. */
-export const MeasurementHistoryRow = memo(function MeasurementHistoryRow({
-  type,
-  measurement,
-  units,
-  onDelete,
-}: MeasurementHistoryRowProps) {
+/** Все записанные значения одного типа замеров, от новых к старым, у каждого кнопка удаления. */
+export function MeasurementHistoryList({ type, measurements, units }: MeasurementHistoryListProps) {
   const { t: translate, i18n } = useTranslation();
   const colors = useColors();
-  const dateText = formatDateTime(measurement.measuredAt, i18n.language);
-  const noteText = measurement.note ? ` · ${measurement.note}` : '';
+
+  const confirmAndDelete = async (measurementId: string) => {
+    const isConfirmed = await confirm({
+      title: translate('measurements.deleteConfirm'),
+      destructive: true,
+      confirmLabel: translate('common.delete'),
+    });
+    if (isConfirmed) deleteMeasurement(measurementId);
+  };
 
   return (
-    <View style={[styles.row, { borderBottomColor: colors.border }]}>
-      <View style={styles.textColumn}>
-        <Text variant="bodyMedium" tabular>
-          {formatMeasurement(type, measurement.value, units)}
-        </Text>
-        <Text variant="caption" color="muted">
-          {`${dateText}${noteText}`}
-        </Text>
-      </View>
-      <IconButton
-        icon={Trash2}
-        size={18}
-        color="muted"
-        label={translate('common.delete')}
-        onPress={() => onDelete(measurement.id)}
-      />
-    </View>
+    <Card padded={false}>
+      {measurements.map((measurement, index) => {
+        const dateText = formatDateTime(measurement.measuredAt, i18n.language);
+        const noteText = measurement.note ? ` · ${measurement.note}` : '';
+        return (
+          <View
+            key={measurement.id}
+            style={index > 0 ? [styles.divider, { borderTopColor: colors.border }] : null}
+          >
+            <ListItem
+              title={formatMeasurement(type, measurement.value, units)}
+              subtitle={`${dateText}${noteText}`}
+              right={
+                <IconButton
+                  icon={Trash2}
+                  size={18}
+                  color="muted"
+                  onPress={() => void confirmAndDelete(measurement.id)}
+                />
+              }
+              style={styles.listItem}
+            />
+          </View>
+        );
+      })}
+    </Card>
   );
-});
+}
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    minHeight: 56,
-    paddingLeft: spacing.lg,
-    paddingRight: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  textColumn: { flex: 1 },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth },
+  listItem: { paddingHorizontal: spacing.lg },
 });

@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { View } from 'react-native';
 import { exerciseName } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import { NEW_SUPERSET_GROUP, useRoutineDraft, type DraftExercise } from '@/store/routineDraft';
-import { ListItem, Sheet } from '@/ui';
+import { ListItem, Sheet, spacing } from '@/ui';
 
 const UNKNOWN_EXERCISE = { nameEn: '', nameRu: '', isCustom: true };
 
@@ -30,22 +31,27 @@ export function SupersetPickerSheet({
 
   return (
     <Sheet visible={visible} onClose={onClose} title={translate('workout.createSuperset')} unpadded>
-      {otherExercises.map((otherExercise) => (
-        <ListItem
-          key={otherExercise.id}
-          title={exerciseName(exercisesById.get(otherExercise.exerciseId) ?? UNKNOWN_EXERCISE, i18n.language)}
-          onPress={() => {
-            // Присоединиться к существующему суперсету партнёра или создать новый, если его нет.
-            if (draftExercise) {
-              setSupersetGroup(
-                [draftExercise.id, otherExercise.id],
-                otherExercise.supersetGroup ?? NEW_SUPERSET_GROUP,
-              );
-            }
-            onClose();
-          }}
-        />
-      ))}
+      <View style={{ paddingHorizontal: spacing.sm }}>
+        {otherExercises.map((otherExercise) => (
+          <ListItem
+            key={otherExercise.id}
+            title={exerciseName(
+              exercisesById.get(otherExercise.exerciseId) ?? UNKNOWN_EXERCISE,
+              i18n.language,
+            )}
+            onPress={() => {
+              // Присоединиться к существующему суперсету партнёра или создать новый, если его нет.
+              if (draftExercise) {
+                setSupersetGroup(
+                  [draftExercise.id, otherExercise.id],
+                  otherExercise.supersetGroup ?? NEW_SUPERSET_GROUP,
+                );
+              }
+              onClose();
+            }}
+          />
+        ))}
+      </View>
     </Sheet>
   );
 }

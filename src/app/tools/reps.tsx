@@ -4,12 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { REPS_PERCENT_TABLE, WORK_RANGE_PERCENT, buildRepsPlan, repsAtPercentOfMax } from '@/domain/repsPlan';
 import { formatDuration, parseNumberInput } from '@/domain/units';
 import { useSettings } from '@/store/settings';
-import { ResultCard } from '@/features/tools/ResultCard';
-import { ToolTableRow } from '@/features/tools/ToolTableRow';
-import { Input, ListGroup, Screen, SectionTitle, Text, spacing } from '@/ui';
-
-const SET_LABEL_WIDTH = 110;
-const PERCENT_LABEL_WIDTH = 60;
+import { Card, Input, Screen, SectionTitle, Text, spacing, useColors } from '@/ui';
 
 /** Положительное целое число или null, пока в поле нет такого числа. */
 function parsePositiveInteger(text: string): number | null {
@@ -20,6 +15,7 @@ function parsePositiveInteger(text: string): number | null {
 
 export default function RepsCalculatorScreen() {
   const { t: translate } = useTranslation();
+  const colors = useColors();
   const defaultRestSeconds = useSettings((state) => state.defaultRestSeconds);
   const [maxRepsText, setMaxRepsText] = useState('');
   const [setCountText, setSetCountText] = useState('4');
@@ -53,8 +49,8 @@ export default function RepsCalculatorScreen() {
         keyboardType="number-pad"
         autoFocus
         placeholder="10"
-        size="lg"
         containerStyle={styles.inputContainer}
+        style={styles.input}
       />
       <View style={styles.inputsRow}>
         <Input
@@ -63,7 +59,6 @@ export default function RepsCalculatorScreen() {
           onChangeText={setSetCountText}
           keyboardType="number-pad"
           placeholder="4"
-          size="md"
           containerStyle={styles.inputHalf}
         />
         <Input
@@ -72,72 +67,110 @@ export default function RepsCalculatorScreen() {
           onChangeText={setRestSecondsText}
           keyboardType="number-pad"
           placeholder="90"
-          size="md"
           containerStyle={styles.inputHalf}
         />
       </View>
-      <ResultCard
-        label={translate('tools.workRange')}
-        value={formatWorkRange()}
-        unit={translate('common.reps')}
-        caption={translate('tools.workRangeCaption', {
-          low: WORK_RANGE_PERCENT.low,
-          high: WORK_RANGE_PERCENT.high,
-        })}
-      />
+      <Card style={[styles.result, { backgroundColor: colors.text }]}>
+        <Text variant="label" color={colors.textFaint}>
+          {translate('tools.workRange').toUpperCase()}
+        </Text>
+        <Text variant="display" color={colors.accent} tabular>
+          {formatWorkRange()}
+          <Text variant="h2" color={colors.textFaint}>
+            {' '}
+            {translate('common.reps')}
+          </Text>
+        </Text>
+        <Text variant="caption" color={colors.textFaint}>
+          {translate('tools.workRangeCaption', {
+            low: WORK_RANGE_PERCENT.low,
+            high: WORK_RANGE_PERCENT.high,
+          })}
+        </Text>
+      </Card>
 
       <SectionTitle title={translate('tools.setPlan')} />
       {plan.length > 0 ? (
-        <ListGroup>
+        <Card padded={false} style={styles.planCard}>
           {plan.map((plannedSet, index) => (
-            <ToolTableRow
+            <View
               key={index}
-              label={translate('tools.setNumber', { number: index + 1 })}
-              labelWidth={SET_LABEL_WIDTH}
-              isLabelMuted
-              value={`${plannedSet.reps} ${translate('common.reps')}`}
-              extra={`${plannedSet.percent}%`}
-            />
+              style={[
+                styles.tableRow,
+                index > 0 ? [styles.divider, { borderTopColor: colors.border }] : null,
+              ]}
+            >
+              <Text variant="bodyMedium" color="muted" style={styles.setNumberColumn}>
+                {translate('tools.setNumber', { number: index + 1 })}
+              </Text>
+              <Text variant="bodyMedium" tabular style={styles.repsColumn}>
+                {plannedSet.reps} {translate('common.reps')}
+              </Text>
+              <Text variant="caption" color="muted" tabular>
+                {plannedSet.percent}%
+              </Text>
+            </View>
           ))}
-          <ToolTableRow
-            label={translate('tools.totalReps')}
-            labelWidth={SET_LABEL_WIDTH}
-            isValueBold
-            value={`${totalReps} ${translate('common.reps')}`}
-          />
+          <View style={[styles.tableRow, styles.divider, { borderTopColor: colors.border }]}>
+            <Text variant="bodyMedium" style={styles.setNumberColumn}>
+              {translate('tools.totalReps')}
+            </Text>
+            <Text variant="bodyMedium" tabular style={styles.repsColumn}>
+              {totalReps} {translate('common.reps')}
+            </Text>
+          </View>
           {totalRestSeconds != null ? (
-            <ToolTableRow
-              label={translate('tools.totalRestTime')}
-              labelWidth={SET_LABEL_WIDTH}
-              isLabelMuted
-              isValueBold
-              value={formatDuration(totalRestSeconds)}
-            />
+            <View style={[styles.tableRow, styles.divider, { borderTopColor: colors.border }]}>
+              <Text variant="bodyMedium" color="muted" style={styles.setNumberColumn}>
+                {translate('tools.totalRestTime')}
+              </Text>
+              <Text variant="bodyMedium" tabular style={styles.repsColumn}>
+                {formatDuration(totalRestSeconds)}
+              </Text>
+            </View>
           ) : null}
-        </ListGroup>
+        </Card>
       ) : null}
       <Text variant="caption" color="muted" style={styles.planHint}>
         {translate('tools.repsPlanHint')}
       </Text>
 
       <SectionTitle title={translate('tools.percentTable')} />
-      <ListGroup>
-        {REPS_PERCENT_TABLE.map((percent) => (
-          <ToolTableRow
+      <Card padded={false}>
+        {REPS_PERCENT_TABLE.map((percent, index) => (
+          <View
             key={percent}
-            label={`${percent}%`}
-            labelWidth={PERCENT_LABEL_WIDTH}
-            value={formatRepsAtPercent(percent)}
-          />
+            style={[styles.tableRow, index > 0 ? [styles.divider, { borderTopColor: colors.border }] : null]}
+          >
+            <Text variant="bodyMedium" style={styles.percentColumn} tabular>
+              {percent}%
+            </Text>
+            <Text variant="bodyMedium" tabular style={styles.repsColumn}>
+              {formatRepsAtPercent(percent)}
+            </Text>
+          </View>
         ))}
-      </ListGroup>
+      </Card>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   inputContainer: { marginTop: spacing.sm },
+  input: { fontSize: 24, minHeight: 56 },
   inputsRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
   inputHalf: { flex: 1 },
+  result: { marginTop: spacing.lg, alignItems: 'center', gap: 4 },
+  planCard: { marginTop: spacing.md },
   planHint: { marginTop: spacing.sm, paddingHorizontal: spacing.xs },
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth },
+  setNumberColumn: { width: 110 },
+  percentColumn: { width: 60 },
+  repsColumn: { flex: 1 },
 });

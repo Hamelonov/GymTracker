@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { ArrowLeft, X } from 'lucide-react-native';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   ScrollView,
   type ScrollViewProps,
@@ -15,7 +14,7 @@ import { Icon } from './Icon';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
-import { layout, spacing } from './tokens';
+import { spacing } from './tokens';
 
 export interface HeaderProps {
   title?: string;
@@ -35,69 +34,44 @@ function goBackOrHome() {
   else router.replace('/');
 }
 
-/** Обычная шапка: заголовок слева, сразу за стрелкой, как принято на Android. */
-function HeaderBar({
-  title,
-  subtitle,
-  backButton,
-  left,
-  right,
-  onBack,
-}: Pick<HeaderProps, 'title' | 'subtitle' | 'backButton' | 'left' | 'right' | 'onBack'>) {
-  const { t: translate } = useTranslation();
-  const isCloseButton = backButton === 'close';
-  const hasLeadingControl = Boolean(backButton || left);
-  return (
-    <View style={styles.headerBar}>
-      {backButton ? (
-        <Pressable
-          onPress={onBack ?? goBackOrHome}
-          scaleTo={0.9}
-          accessibilityRole="button"
-          accessibilityLabel={translate(isCloseButton ? 'common.close' : 'common.back')}
-          style={styles.backButton}
-        >
-          <Icon icon={isCloseButton ? X : ArrowLeft} size={24} />
-        </Pressable>
-      ) : (
-        left
-      )}
-      <View style={[styles.headerTitleColumn, hasLeadingControl ? null : styles.headerTitleAtScreenEdge]}>
-        {title ? (
-          <Text variant="h3" numberOfLines={2}>
-            {title}
-          </Text>
-        ) : null}
-        {subtitle ? (
-          <Text variant="caption" color="muted" numberOfLines={1}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
-      {right ? <View style={styles.headerRight}>{right}</View> : null}
-    </View>
-  );
-}
-
 export function Header({ title, subtitle, large, backButton, right, left, largeRight, onBack }: HeaderProps) {
-  if (!large) {
-    return (
-      <HeaderBar
-        title={title}
-        subtitle={subtitle}
-        backButton={backButton}
-        left={left}
-        right={right}
-        onBack={onBack}
-      />
-    );
-  }
-  // Пустая верхняя строка над крупным заголовком съедала бы 44 dp на каждой вкладке.
-  const hasTopRow = Boolean(backButton || left || right);
+  const colors = useColors();
+  const handleBackPress = onBack ?? goBackOrHome;
+  const showsSmallTitle = !large && title;
+  const showsLargeTitle = large && title;
   return (
-    <View>
-      {hasTopRow ? <HeaderBar backButton={backButton} left={left} right={right} onBack={onBack} /> : null}
-      {title ? (
+    <View style={[styles.header, large ? styles.headerLarge : null]}>
+      <View style={styles.headerRow}>
+        <View style={styles.headerSide}>
+          {backButton ? (
+            <Pressable
+              onPress={handleBackPress}
+              hitSlop={12}
+              style={[styles.backButton, { backgroundColor: colors.surfaceAlt }]}
+            >
+              <Icon icon={backButton === 'close' ? X : ArrowLeft} size={20} />
+            </Pressable>
+          ) : (
+            left
+          )}
+        </View>
+        {showsSmallTitle ? (
+          <View style={styles.headerCenter}>
+            <Text variant="h3" numberOfLines={1}>
+              {title}
+            </Text>
+            {subtitle ? (
+              <Text variant="caption" color="muted" numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+        ) : (
+          <View style={styles.headerCenter} />
+        )}
+        <View style={[styles.headerSide, styles.headerRight]}>{right}</View>
+      </View>
+      {showsLargeTitle ? (
         <View style={styles.largeTitleRow}>
           <View style={styles.largeTitleColumn}>
             <Text variant="h1">{title}</Text>
@@ -118,8 +92,7 @@ export interface ScreenProps extends ScrollViewProps {
   header?: HeaderProps;
   scrollable?: boolean;
   padded?: boolean;
-  /** Экран вкладки: панель вкладок сама занимает своё место, системный отступ снизу не нужен. */
-  tabScreen?: boolean;
+  bottomInset?: boolean;
   children?: React.ReactNode;
   footer?: React.ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
@@ -129,7 +102,7 @@ export function Screen({
   header,
   scrollable = true,
   padded = true,
-  tabScreen,
+  bottomInset = true,
   children,
   footer,
   contentStyle,
@@ -145,7 +118,7 @@ export function Screen({
       {...rest}
       contentContainerStyle={[
         padded ? styles.padded : null,
-        { paddingBottom: (tabScreen ? 0 : insets.bottom) + spacing.xl },
+        { paddingBottom: (bottomInset ? insets.bottom : 0) + spacing.xxl },
         contentStyle,
         rest.contentContainerStyle,
       ]}
@@ -180,32 +153,21 @@ export function Screen({
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   padded: { paddingHorizontal: spacing.lg },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: layout.headerHeight,
-    // Вместе с полями кнопки это ставит стрелку ровно на линию поля экрана 16 dp.
-    paddingLeft: spacing.xs,
-    // Значок 20 в кнопке 40 отступает от её края на 10, вместе с этим получается те же 16 dp.
-    paddingRight: 6,
-  },
-  backButton: {
-    width: layout.touchTarget,
-    height: layout.touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitleColumn: { flex: 1 },
-  headerTitleAtScreenEdge: { paddingLeft: spacing.md },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginLeft: spacing.xs },
+  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
+  headerLarge: { paddingBottom: spacing.md },
+  headerRow: { flexDirection: 'row', alignItems: 'center', minHeight: 44 },
+  headerSide: { minWidth: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headerRight: { justifyContent: 'flex-end', flexShrink: 0 },
+  headerCenter: { flex: 1, alignItems: 'center' },
   largeTitleRow: {
+    marginTop: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
   },
   largeTitleColumn: { flex: 1 },
-  largeSubtitle: { marginTop: spacing.xxs },
+  largeSubtitle: { marginTop: 2 },
+  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
 });

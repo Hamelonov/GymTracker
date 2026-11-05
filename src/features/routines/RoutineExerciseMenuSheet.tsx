@@ -1,8 +1,9 @@
 import { ArrowDown, ArrowUp, Link, Trash2, Unlink } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { View } from 'react-native';
 import { useRoutineDraft, type DraftExercise } from '@/store/routineDraft';
-import { Icon, ListItem, Sheet } from '@/ui';
+import { Icon, ListItem, Sheet, spacing, useColors } from '@/ui';
 
 interface RoutineExerciseMenuSheetProps {
   visible: boolean;
@@ -23,6 +24,7 @@ export function RoutineExerciseMenuSheet({
   onClose,
   onOpenSupersetPicker,
 }: RoutineExerciseMenuSheetProps) {
+  const colors = useColors();
   const { t: translate } = useTranslation();
   const setSupersetGroup = useRoutineDraft((state) => state.setSupersetGroup);
   const moveExercise = useRoutineDraft((state) => state.moveExercise);
@@ -33,7 +35,7 @@ export function RoutineExerciseMenuSheet({
   return (
     <Sheet visible={visible} onClose={onClose} unpadded>
       {draftExercise ? (
-        <>
+        <View style={{ paddingHorizontal: spacing.sm }}>
           <ListItem
             title={
               isInSuperset ? translate('workout.removeFromSuperset') : translate('workout.createSuperset')
@@ -68,14 +70,14 @@ export function RoutineExerciseMenuSheet({
           ) : null}
           <ListItem
             title={translate('workout.removeExercise')}
-            tone="danger"
+            titleColor={colors.danger}
             left={<Icon icon={Trash2} color="danger" />}
             onPress={() => {
               removeExercise(draftExercise.id);
               onClose();
             }}
           />
-        </>
+        </View>
       ) : null}
     </Sheet>
   );

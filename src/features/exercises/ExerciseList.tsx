@@ -1,23 +1,45 @@
 import { FlashList } from '@shopify/flash-list';
-import { Plus } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import { Check, Plus, Search, X } from 'lucide-react-native';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { Pressable as NativePressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { exerciseName, getExerciseUsage, listExercises } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import { useQuery } from '@/db/version';
-import type { MuscleGroup } from '@/domain/types';
-import { EmptyState, Icon, Pressable, Text, layout, radius, spacing, useColors } from '@/ui';
-import { ExerciseFilters } from './ExerciseFilters';
-import { ExerciseRowView, type ExerciseListItem } from './ExerciseRowView';
+import { MUSCLE_GROUPS, type MuscleGroup } from '@/domain/types';
+import { MuscleThumbnail } from '@/features/muscles/MuscleThumbnail';
+import {
+  Chip,
+  EmptyState,
+  FastPressable,
+  Icon,
+  Pressable,
+  Text,
+  fonts,
+  radius,
+  spacing,
+  useColors,
+  type ThemeColors,
+} from '@/ui';
 
 export interface ExerciseListProps {
   selectedIds?: Set<string>;
   onPress: (exercise: ExerciseRow) => void;
   onCreate?: () => void;
+  header?: React.ReactNode;
   bottomPadding?: number;
   excludeIds?: Set<string>;
 }
+
+/** Упражнение с заранее вычисленными строками для отображения, чтобы строки списка были дешёвыми для рендера. */
+interface ExerciseListItem {
+  exercise: ExerciseRow;
+  name: string;
+  subtitle: string;
+}
+
+/** Стабильная пустая ссылка для мемоизированных строк списка. */
+const NO_SECONDARY_MUSCLES: MuscleGroup[] = [];
 
 // Создание Intl.Collator медленное, поэтому для каждого языка он кэшируется.
 const collatorsByLanguage = new Map<string, Intl.Collator>();
@@ -30,10 +52,67 @@ function getCollator(language: string): Intl.Collator {
   return collator;
 }
 
+interface ExerciseRowViewProps {
+  item: ExerciseListItem;
+  isSelected: boolean;
+  isSelectable: boolean;
+  colors: ThemeColors;
+  onPress: (exercise: ExerciseRow) => void;
+}
+
+/** Одна строка. Обычный RN Pressable: список рендерит много таких строк, и они должны быть дешёвыми. */
+const ExerciseRowView = memo(function ExerciseRowView({
+  item,
+  isSelected,
+  isSelectable,
+  colors,
+  onPress,
+}: ExerciseRowViewProps) {
+  return (
+    <FastPressable
+      onPress={() => onPress(item.exercise)}
+      style={({ pressed }) => [
+        styles.row,
+        isSelected ? { backgroundColor: colors.accentSoft } : null,
+        pressed ? { opacity: 0.7 } : null,
+      ]}
+    >
+      <MuscleThumbnail
+        primary={item.exercise.muscleGroup}
+        // В длинном списке превью рисует только основную мышцу: SVG-тело в каждой строке дорогое.
+        secondary={NO_SECONDARY_MUSCLES}
+        size={44}
+      />
+      <View style={styles.rowText}>
+        <Text variant="bodyMedium" numberOfLines={1}>
+          {item.name}
+        </Text>
+        <Text variant="caption" color="muted" numberOfLines={1}>
+          {item.subtitle}
+        </Text>
+      </View>
+      {isSelectable ? (
+        <View
+          style={[
+            styles.checkCircle,
+            {
+              borderColor: isSelected ? colors.text : colors.borderStrong,
+              backgroundColor: isSelected ? colors.text : 'transparent',
+            },
+          ]}
+        >
+          {isSelected ? <Icon icon={Check} size={14} color={colors.background} strokeWidth={3} /> : null}
+        </View>
+      ) : null}
+    </FastPressable>
+  );
+});
+
 export function ExerciseList({
   selectedIds,
   onPress,
   onCreate,
+  header,
   bottomPadding = 0,
   excludeIds,
 }: ExerciseListProps) {
@@ -107,53 +186,105 @@ export function ExerciseList({
   );
 
   return (
-    <View style={styles.container}>
-      <ExerciseFilters
-        searchText={searchText}
-        onChangeSearchText={setSearchText}
-        muscleFilter={muscleFilter}
-        onChangeMuscleFilter={setMuscleFilter}
-      />
-      <View style={[styles.listDivider, { backgroundColor: colors.border }]} />
-      <FlashList
-        data={visibleItems}
-        // Запас отрисовки вперёд больше стандартного, чтобы быстрая прокрутка не показывала пустые строки.
-        drawDistance={600}
-        keyExtractor={(item) => item.exercise.id}
-        keyboardShouldPersistTaps="handled"
-        extraData={selectedIds}
-        contentContainerStyle={{ paddingBottom: bottomPadding + spacing.xxl }}
-        ListHeaderComponent={
-          onCreate ? (
+    <FlashList
+      data={visibleItems}
+      // Запас отрисовки вперёд больше стандартного, чтобы быстрая прокрутка не показывала пустые строки.
+      drawDistance={600}
+      keyExtractor={(item) => item.exercise.id}
+      keyboardShouldPersistTaps="handled"
+      extraData={selectedIds}
+      contentContainerStyle={{ paddingBottom: bottomPadding + spacing.xxl }}
+      ListHeaderComponent={
+        <View>
+          {header}
+          <View style={[styles.searchBox, { backgroundColor: colors.inputBackground }]}>
+            <Icon icon={Search} size={18} color="faint" />
+            <TextInput
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder={translate('exercise.searchPlaceholder')}
+              placeholderTextColor={colors.textFaint}
+              selectionColor={colors.accent}
+              style={[styles.searchInput, { color: colors.text }]}
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+            {searchText ? (
+              <NativePressable onPress={() => setSearchText('')} hitSlop={10}>
+                <Icon icon={X} size={18} color="muted" />
+              </NativePressable>
+            ) : null}
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.muscleChips}
+            keyboardShouldPersistTaps="handled"
+          >
+            <Chip
+              label={translate('common.all')}
+              selected={muscleFilter == null}
+              onPress={() => setMuscleFilter(null)}
+            />
+            {MUSCLE_GROUPS.map((muscle) => (
+              <Chip
+                key={muscle}
+                label={translate(`muscles.${muscle}`)}
+                selected={muscleFilter === muscle}
+                onPress={() => setMuscleFilter(muscleFilter === muscle ? null : muscle)}
+              />
+            ))}
+          </ScrollView>
+          {onCreate ? (
             <Pressable onPress={onCreate} style={styles.createRow} haptic="light">
-              <View style={[styles.createIcon, { backgroundColor: colors.surfaceAlt }]}>
-                <Icon icon={Plus} size={20} />
+              <View style={[styles.createIcon, { backgroundColor: colors.accent }]}>
+                <Icon icon={Plus} size={18} color="onAccent" strokeWidth={2.5} />
               </View>
               <Text variant="bodyMedium">{translate('exercise.create')}</Text>
             </Pressable>
-          ) : null
-        }
-        ListEmptyComponent={<EmptyState title={translate('common.noResults')} />}
-        renderItem={renderItem}
-      />
-    </View>
+          ) : null}
+        </View>
+      }
+      ListEmptyComponent={<EmptyState icon={Search} title={translate('common.noResults')} />}
+      renderItem={renderItem}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  listDivider: { height: StyleSheet.hairlineWidth },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    height: 46,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    marginHorizontal: spacing.lg,
+  },
+  searchInput: { flex: 1, fontFamily: fonts.medium, fontSize: 16, paddingVertical: 0 },
+  muscleChips: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   createRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minHeight: layout.rowMinHeight,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  createIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.lg,
   },
-  createIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.sm,
+  rowText: { flex: 1 },
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },

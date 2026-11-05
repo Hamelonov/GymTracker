@@ -56,7 +56,7 @@ export default function PlatesScreen() {
         keyboardType="decimal-pad"
         autoFocus
         placeholder="100"
-        size="xl"
+        style={styles.targetInput}
         containerStyle={styles.targetInputContainer}
       />
       <SectionTitle title={translate('tools.barWeight')} />
@@ -77,7 +77,7 @@ export default function PlatesScreen() {
         {hasPlates ? (
           <BarbellDiagram plates={result.plates} heaviestPlate={heaviestPlate} />
         ) : (
-          <Text color="muted" align="center" style={styles.noPlatesMessage}>
+          <Text color="faint" align="center" style={styles.noPlatesMessage}>
             {getNoPlatesMessage()}
           </Text>
         )}
@@ -94,7 +94,7 @@ export default function PlatesScreen() {
           </View>
         ) : null}
       </Card>
-      <Text variant="caption" color="muted" style={styles.availablePlates}>
+      <Text variant="caption" color="faint" style={styles.availablePlates}>
         {translate('tools.availablePlates')}:{' '}
         {availablePlates.map((plate) => formatNumberWithoutTrailingZeros(plate)).join(', ')} {weightUnit}
       </Text>
@@ -103,9 +103,10 @@ export default function PlatesScreen() {
 }
 
 const styles = StyleSheet.create({
+  targetInput: { fontSize: 32, minHeight: 64 },
   targetInputContainer: { marginTop: spacing.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   noPlatesMessage: { paddingVertical: spacing.lg },
-  summary: { marginTop: spacing.md, gap: spacing.xs },
+  summary: { marginTop: spacing.md, gap: 4 },
   availablePlates: { marginTop: spacing.md },
 });

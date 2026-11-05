@@ -3,7 +3,6 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Icon } from './Icon';
 import { useColors } from './ThemeProvider';
-import { radius } from './tokens';
 
 interface CheckboxProps {
   checked: boolean;
@@ -16,12 +15,13 @@ export function Checkbox({ checked }: CheckboxProps) {
     <View
       style={[
         styles.box,
-        checked
-          ? { backgroundColor: colors.accent }
-          : [styles.emptyBox, { borderColor: colors.borderStrong }],
+        {
+          backgroundColor: checked ? colors.text : 'transparent',
+          borderColor: checked ? colors.text : colors.borderStrong,
+        },
       ]}
     >
-      {checked ? <Icon icon={Check} size={16} color="onAccent" strokeWidth={3} /> : null}
+      {checked ? <Icon icon={Check} size={16} color={colors.accent} strokeWidth={3} /> : null}
     </View>
   );
 }
@@ -30,9 +30,9 @@ const styles = StyleSheet.create({
   box: {
     width: 24,
     height: 24,
-    borderRadius: radius.xs,
+    borderRadius: 4,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyBox: { borderWidth: 2 },
 });

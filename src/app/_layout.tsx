@@ -22,7 +22,7 @@ import { configureNotifications } from '@/lib/notifications';
 import { syncRestTimerOnAppActive } from '@/store/restTimer';
 import { useSettings } from '@/store/settings';
 import { ProfileSetupScreen } from '@/features/profile/ProfileSetupScreen';
-import { DialogHost, Text, ThemeProvider, ToastHost, spacing, useTheme } from '@/ui';
+import { DialogHost, Text, ThemeProvider, ToastHost, useTheme } from '@/ui';
 
 void SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ fade: true, duration: 150 });
@@ -155,6 +155,6 @@ function Navigation() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  migrationError: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  migrationErrorMessage: { marginTop: spacing.sm },
+  migrationError: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  migrationErrorMessage: { marginTop: 8 },
 });

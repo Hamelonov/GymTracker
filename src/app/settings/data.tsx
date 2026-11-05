@@ -10,7 +10,7 @@ import {
   type DataFormat,
 } from '@/features/settings/useDataTransfer';
 import { TransferProgressModal } from '@/features/settings/TransferProgressModal';
-import { Button, Icon, Screen, SectionTitle, Sheet, Text, spacing } from '@/ui';
+import { Button, Card, Screen, SectionTitle, Sheet, Text, spacing } from '@/ui';
 
 // У каждого формата пара кнопок: «Экспорт в …» в своей секции и «Импорт из …» в своей.
 const FORMATS: DataFormat[] = ['json', 'csv', 'xlsx'];
@@ -30,7 +30,7 @@ export default function DataScreen() {
   return (
     <Screen header={{ backButton: true, title: translate('profile.data') }}>
       <SectionTitle title={translate('settings.exportSection')} first />
-      <View style={styles.buttons}>
+      <Card style={styles.buttonsCard}>
         {FORMATS.map((format) => (
           <Button
             key={format}
@@ -39,32 +39,32 @@ export default function DataScreen() {
             fullWidth
             contentAlign="start"
             // Стрелка из лотка — файл уходит из приложения.
-            icon={<Icon icon={Upload} size={20} />}
+            icon={<Upload size={18} />}
             disabled={busyAction != null}
             onPress={() => setSelectedExportFormat(format)}
           />
         ))}
-      </View>
+      </Card>
 
       <SectionTitle title={translate('settings.importSection')} />
-      <View style={styles.buttons}>
+      <Card style={styles.buttonsCard}>
         {FORMATS.map((format) => (
           <Button
             key={format}
             title={translate(IMPORT_TITLE_KEYS[format])}
-            variant="secondary"
+            variant="outline"
             fullWidth
             contentAlign="start"
             // Стрелка в лоток — файл приходит в приложение.
-            icon={<Icon icon={Download} size={20} />}
+            icon={<Download size={18} />}
             disabled={busyAction != null}
             onPress={() => importData(format)}
           />
         ))}
-        <Text variant="caption" color="muted">
+        <Text variant="caption" color="faint">
           {translate('settings.importHint')}
         </Text>
-      </View>
+      </Card>
 
       <SectionTitle title={translate('settings.clearSection')} />
       <Button
@@ -72,7 +72,7 @@ export default function DataScreen() {
         variant="danger"
         fullWidth
         contentAlign="start"
-        icon={<Icon icon={Trash2} size={20} color="danger" />}
+        icon={<Trash2 size={18} color="#E5484D" />}
         onPress={deleteAllData}
       />
 
@@ -90,15 +90,15 @@ export default function DataScreen() {
             variant="secondary"
             fullWidth
             contentAlign="start"
-            icon={<Icon icon={Share} size={20} />}
+            icon={<Share size={18} />}
             onPress={() => startExport('share')}
           />
           <Button
             title={translate('settings.exportToDevice')}
-            variant="secondary"
+            variant="outline"
             fullWidth
             contentAlign="start"
-            icon={<Icon icon={FolderDown} size={20} />}
+            icon={<FolderDown size={18} />}
             onPress={() => startExport('device')}
           />
           <Button
@@ -116,7 +116,7 @@ export default function DataScreen() {
 }
 
 const styles = StyleSheet.create({
-  buttons: { gap: spacing.sm },
+  buttonsCard: { gap: spacing.sm },
   destinationDescription: { marginBottom: spacing.md },
   destinationActions: { gap: spacing.sm },
 });

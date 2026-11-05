@@ -20,14 +20,13 @@ import { Button, Chip, IconButton, Input, Screen, SectionTitle, Text, spacing } 
 export default function LogMeasurementScreen() {
   const params = useLocalSearchParams<{ type?: MeasurementType }>();
   const { t: translate, i18n } = useTranslation();
-  const weightUnit = useSettings((state) => state.weightUnit);
-  const measurementUnit = useSettings((state) => state.measurementUnit);
+  const settings = useSettings();
   const [type, setType] = useState<MeasurementType>(params.type ?? 'weight');
   const [valueText, setValueText] = useState('');
   const [note, setNote] = useState('');
   const now = useNow();
   const [measuredAt, setMeasuredAt] = useState(() => Date.now());
-  const units: MeasurementUnits = { weight: weightUnit, length: measurementUnit };
+  const units: MeasurementUnits = { weight: settings.weightUnit, length: settings.measurementUnit };
   const unitLabel = getMeasurementUnitLabel(type, units);
   const parsedValue = parseNumberInput(valueText);
   const isNextDayInFuture = addDays(measuredAt, 1).getTime() > now;
@@ -77,30 +76,21 @@ export default function LogMeasurementScreen() {
         keyboardType="decimal-pad"
         autoFocus
         placeholder="0"
-        size="xl"
         containerStyle={styles.fieldSpacing}
+        style={styles.valueInput}
       />
       <SectionTitle title={translate('measurements.date')} />
       <View style={styles.dateRow}>
-        <IconButton
-          icon={ChevronLeft}
-          variant="plain"
-          label={translate('measurements.date')}
-          onPress={goToPreviousDay}
-          haptic="selection"
-          debounceMs={0}
-        />
+        <IconButton icon={ChevronLeft} variant="filled" onPress={goToPreviousDay} haptic="selection" />
         <Text variant="h3" style={styles.dateText} align="center">
           {formatRelativeDay(measuredAt, i18n.language, translate)}
         </Text>
         <IconButton
           icon={ChevronRight}
-          variant="plain"
-          label={translate('measurements.date')}
+          variant="filled"
           disabled={isNextDayInFuture}
           onPress={goToNextDay}
           haptic="selection"
-          debounceMs={0}
         />
       </View>
       <Input
@@ -119,6 +109,7 @@ const styles = StyleSheet.create({
   chipsScroller: { marginHorizontal: -spacing.lg },
   chips: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   fieldSpacing: { marginTop: spacing.lg },
+  valueInput: { fontSize: 28, minHeight: 60 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   dateText: { flex: 1 },
 });

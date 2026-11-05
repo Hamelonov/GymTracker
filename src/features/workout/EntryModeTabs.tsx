@@ -9,12 +9,11 @@ interface EntryModeTabsProps {
   onChange: (mode: EntryMode) => void;
 }
 
-/** Значки «Стандарт» / «Ручка» справа в полосе статистики тренировки. */
+/** Вкладки «Стандарт» / «Ручка» под статистикой тренировки. */
 export function EntryModeTabs({ value, onChange }: EntryModeTabsProps) {
   const { t: translate } = useTranslation();
   return (
     <Segmented<EntryMode>
-      compact
       value={value}
       onChange={onChange}
       options={[

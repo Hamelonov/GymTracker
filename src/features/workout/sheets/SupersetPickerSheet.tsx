@@ -1,8 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 import type { ExerciseRow } from '@/db/schema';
 import type { ActiveExercise } from '@/domain/types';
-import { ListItem, Sheet } from '@/ui';
+import { ListItem, Sheet, spacing } from '@/ui';
 import { exerciseDisplayName } from '../exerciseDisplayName';
 
 interface SupersetPickerSheetProps {
@@ -26,18 +27,24 @@ export function SupersetPickerSheet({
 
   return (
     <Sheet visible={visible} onClose={onClose} title={translate('workout.createSuperset')} unpadded>
-      {partnerCandidates.map((partner) => (
-        <ListItem
-          key={partner.id}
-          title={exerciseDisplayName(exercisesById.get(partner.exerciseId), i18n.language)}
-          subtitle={
-            partner.supersetGroup != null
-              ? `${translate('workout.superset')} ${partner.supersetGroup}`
-              : undefined
-          }
-          onPress={() => onPartnerPress(partner)}
-        />
-      ))}
+      <View style={styles.menuList}>
+        {partnerCandidates.map((partner) => (
+          <ListItem
+            key={partner.id}
+            title={exerciseDisplayName(exercisesById.get(partner.exerciseId), i18n.language)}
+            subtitle={
+              partner.supersetGroup != null
+                ? `${translate('workout.superset')} ${partner.supersetGroup}`
+                : undefined
+            }
+            onPress={() => onPartnerPress(partner)}
+          />
+        ))}
+      </View>
     </Sheet>
   );
 }
+
+const styles = StyleSheet.create({
+  menuList: { paddingHorizontal: spacing.sm },
+});

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 import {
   REST_VIBRATION_STRENGTHS,
   type RestVibrationStrength,
@@ -7,8 +8,7 @@ import {
   vibrateWithPattern,
 } from '@/lib/restAlert';
 import { useSettings } from '@/store/settings';
-import { Segmented } from '@/ui';
-import { SettingRow } from './SettingRow';
+import { Segmented, Text, spacing } from '@/ui';
 
 const STRENGTH_LABEL_KEYS: Record<RestVibrationStrength, string> = {
   off: 'settings.restVibrationOff',
@@ -29,11 +29,10 @@ export function RestVibrationSetting() {
   };
 
   return (
-    <SettingRow
-      label={translate('settings.restVibration')}
-      layout="stacked"
-      hint={translate('settings.restVibrationHint')}
-    >
+    <View style={styles.section}>
+      <Text variant="caption" color="muted">
+        {translate('settings.restVibration')}
+      </Text>
       <Segmented
         options={REST_VIBRATION_STRENGTHS.map((strength) => ({
           value: strength,
@@ -41,9 +40,14 @@ export function RestVibrationSetting() {
         }))}
         value={restVibration}
         onChange={handleStrengthChange}
-        // Выбор сам даёт почувствовать вибрацию, вторая поверх неё только мешает.
-        hasHaptic={false}
       />
-    </SettingRow>
+      <Text variant="caption" color="faint">
+        {translate('settings.restVibrationHint')}
+      </Text>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  section: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.sm },
+});

@@ -1,13 +1,14 @@
 import { addDays, format } from 'date-fns';
+import { Dumbbell } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { countWorkoutsByDay } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import { dateLocale, toDayKey, getWeekStart } from '@/domain/dates';
-import { Text, fonts, radius, spacing, useColors } from '@/ui';
+import { Card, Icon, Text, spacing, useColors } from '@/ui';
 
-/** Неделя на главном экране: семь дней, день с тренировкой закрашен маркером, как в календаре истории. */
+/** Карточка на главном экране с семью днями текущей недели и числом тренировок за неделю. */
 export function WeekSummaryCard({ now }: { now: number }) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
@@ -19,7 +20,7 @@ export function WeekSummaryCard({ now }: { now: number }) {
   const weekWorkoutCount = [...workoutCountByDay.values()].reduce((sum, count) => sum + count, 0);
 
   return (
-    <View>
+    <Card style={styles.card}>
       <View style={styles.header}>
         <Text variant="label" color="muted">
           {translate('home.weekSummary').toUpperCase()}
@@ -32,7 +33,7 @@ export function WeekSummaryCard({ now }: { now: number }) {
         {Array.from({ length: 7 }, (_, dayIndex) => {
           const day = addDays(currentWeekStart, dayIndex);
           const key = toDayKey(day);
-          const hasWorkout = (workoutCountByDay.get(key) ?? 0) > 0;
+          const workoutCount = workoutCountByDay.get(key) ?? 0;
           const isToday = key === toDayKey(now);
           return (
             <View key={key} style={styles.dayColumn}>
@@ -41,46 +42,43 @@ export function WeekSummaryCard({ now }: { now: number }) {
               </Text>
               <View
                 style={[
-                  styles.dayCell,
+                  styles.dayCircle,
                   {
-                    backgroundColor: hasWorkout ? colors.accent : 'transparent',
+                    backgroundColor: workoutCount > 0 ? colors.accent : colors.surfaceAlt,
                     borderColor: isToday ? colors.text : 'transparent',
                   },
                 ]}
               >
-                <Text
-                  variant="caption"
-                  tabular
-                  color={hasWorkout ? 'onAccent' : 'muted'}
-                  style={hasWorkout ? styles.workoutDayNumber : null}
-                >
-                  {day.getDate()}
-                </Text>
+                {workoutCount > 0 ? (
+                  <Icon icon={Dumbbell} size={14} color={colors.black} strokeWidth={2.5} />
+                ) : null}
               </View>
             </View>
           );
         })}
       </View>
-    </View>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
+  card: { marginBottom: spacing.sm },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    flexWrap: 'wrap',
+    gap: 4,
   },
-  daysRow: { flexDirection: 'row' },
-  dayColumn: { flex: 1, alignItems: 'center', gap: spacing.xs },
-  dayCell: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.sm,
+  daysRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  dayColumn: { alignItems: 'center', gap: 6 },
+  dayCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1.5,
+    borderWidth: 2,
   },
-  workoutDayNumber: { fontFamily: fonts.semibold },
 });

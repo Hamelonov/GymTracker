@@ -8,11 +8,11 @@ import { getExercisesByIds } from '@/db/repo/exercises';
 import { createRoutine, getRoutine, listFolders, updateRoutine, type RoutineInput } from '@/db/repo/routines';
 import { useQuery } from '@/db/version';
 import { newId } from '@/domain/ids';
+import { RestTimeSheet } from '@/features/routines/RestTimeSheet';
 import { RoutineExerciseEditor } from '@/features/routines/RoutineExerciseEditor';
 import { RoutineExerciseMenuSheet } from '@/features/routines/RoutineExerciseMenuSheet';
+import { SetTypeSheet } from '@/features/routines/SetTypeSheet';
 import { SupersetPickerSheet } from '@/features/routines/SupersetPickerSheet';
-import { RestTimerPickerSheet } from '@/features/workout/sheets/RestTimerPickerSheet';
-import { SetTypePickerSheet } from '@/features/workout/sheets/SetTypePickerSheet';
 import { usePickerResult } from '@/store/picker';
 import { useRoutineDraft } from '@/store/routineDraft';
 import { useSettings } from '@/store/settings';
@@ -29,9 +29,7 @@ type OpenSheet =
 export default function RoutineEditScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { t: translate } = useTranslation();
-  const weightUnit = useSettings((state) => state.weightUnit);
-  const distanceUnit = useSettings((state) => state.distanceUnit);
-  const defaultRestSeconds = useSettings((state) => state.defaultRestSeconds);
+  const settings = useSettings();
   const draft = useRoutineDraft();
   // Ленивый инициализатор состояния: сбрасывает черновик один раз при монтировании экрана и создаёт токен выбора.
   const [pickerToken] = useState(() => {
@@ -55,7 +53,10 @@ export default function RoutineEditScreen() {
     [draft.exercises],
   );
   const exercisesById = useQuery(() => getExercisesByIds(exerciseIds), [exerciseIds.join(',')]);
-  const units = useMemo(() => ({ weight: weightUnit, distance: distanceUnit }), [weightUnit, distanceUnit]);
+  const units = useMemo(
+    () => ({ weight: settings.weightUnit, distance: settings.distanceUnit }),
+    [settings.weightUnit, settings.distanceUnit],
+  );
   const selectedExercise =
     'draftExerciseId' in openSheet
       ? draft.exercises.find((draftExercise) => draftExercise.id === openSheet.draftExerciseId)
@@ -145,7 +146,7 @@ export default function RoutineEditScreen() {
           draftExercise={draftExercise}
           exercise={exercisesById.get(draftExercise.exerciseId)}
           units={units}
-          defaultRestSeconds={defaultRestSeconds}
+          defaultRestSeconds={settings.defaultRestSeconds}
           onOpenRestSheet={(draftExerciseId) => setOpenSheet({ kind: 'restTime', draftExerciseId })}
           onOpenMenuSheet={(draftExerciseId) => setOpenSheet({ kind: 'exerciseMenu', draftExerciseId })}
           onOpenSetTypeSheet={(draftExerciseId, setId) =>
@@ -181,27 +182,27 @@ export default function RoutineEditScreen() {
         onClose={closeSheet}
       />
 
-      <RestTimerPickerSheet
+      <RestTimeSheet
         visible={openSheet.kind === 'restTime'}
-        selectedSeconds={selectedExercise?.restSeconds ?? null}
-        defaultRestSeconds={defaultRestSeconds}
+        selectedRestSeconds={selectedExercise?.restSeconds}
+        defaultRestSeconds={settings.defaultRestSeconds}
         onClose={closeSheet}
-        onRestSelect={(restSeconds) => {
+        onSelectRestSeconds={(restSeconds) => {
           if (selectedExercise) draft.setRestSeconds(selectedExercise.id, restSeconds);
           closeSheet();
         }}
       />
 
-      <SetTypePickerSheet
+      <SetTypeSheet
         visible={openSheet.kind === 'setType'}
         onClose={closeSheet}
-        onSetTypeSelect={(setType) => {
+        onSelectSetType={(setType) => {
           if (openSheet.kind === 'setType') {
             draft.updateSet(openSheet.draftExerciseId, openSheet.setId, { type: setType });
           }
           closeSheet();
         }}
-        onDeleteSetPress={() => {
+        onDeleteSet={() => {
           if (openSheet.kind === 'setType') draft.removeSet(openSheet.draftExerciseId, openSheet.setId);
           closeSheet();
         }}

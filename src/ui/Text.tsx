@@ -13,27 +13,16 @@ export interface TextProps extends NativeTextProps {
 
 const tabularNumbersStyle: TextStyle = { fontVariant: ['tabular-nums'] };
 
-// Цифры Inter по умолчанию разной ширины: без этого числа прыгают при смене значения и в колонках.
-const NUMERIC_VARIANTS = new Set<TextVariant>([
-  'numberHero',
-  'timer',
-  'stat',
-  'statCompact',
-  'setValue',
-  'setValueDense',
-]);
-
 export function Text({ variant = 'body', color = 'text', align, tabular, style, ...rest }: TextProps) {
   const colors = useColors();
   const textColor = resolveThemeColor(color, colors);
-  const hasTabularNumbers = tabular || NUMERIC_VARIANTS.has(variant);
   return (
     <NativeText
       {...rest}
       style={[
         typeScale[variant],
         { color: textColor, textAlign: align },
-        hasTabularNumbers ? tabularNumbersStyle : null,
+        tabular ? tabularNumbersStyle : null,
         style,
       ]}
     />

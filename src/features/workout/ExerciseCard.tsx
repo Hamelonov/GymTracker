@@ -2,23 +2,22 @@ import { Ellipsis, Link, Plus, StickyNote } from 'lucide-react-native';
 import React, { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import { exerciseName } from '@/db/repo/exercises';
 import { MuscleThumbnail } from '@/features/muscles/MuscleThumbnail';
 import type { ExerciseRow } from '@/db/schema';
 import type { ActiveExercise, SetType, SetValues, DistanceUnit, WeightUnit } from '@/domain/types';
 import { getSetFieldsForExerciseType } from '@/domain/types';
-import { Button, Icon, IconButton, Text, layout, spacing, useColors } from '@/ui';
+import { Button, Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
 import { unitLabels } from '@/domain/units';
-import { SetColumnHeaders } from './SetColumnHeaders';
-import { SetRow } from './SetRow';
+import { NARROW_COLUMN_FLEX, SET_COLUMN_WIDTHS, SetRow } from './SetRow';
 
 export interface ExerciseCardProps {
   workoutExercise: ActiveExercise;
   exerciseDetails: ExerciseRow | undefined;
   units: { weight: WeightUnit; distance: DistanceUnit };
   readOnly?: boolean;
-  /** У первого блока на странице нет линии и воздуха сверху. */
-  isFirst: boolean;
+  supersetColor?: string | null;
   /** Все обработчики получают id активного упражнения; передавайте стабильные ссылки. */
   onMenu: (workoutExerciseId: string) => void;
   onNotePress: (workoutExerciseId: string) => void;
@@ -29,10 +28,6 @@ export interface ExerciseCardProps {
   onSetTypePress: (workoutExerciseId: string, setId: string) => void;
 }
 
-const MUSCLE_THUMBNAIL_SIZE = 40;
-// Значок 20 в кнопке 40 отступает от её края на 10: со сдвигом он стоит на линии поля экрана.
-const HEADER_ACTIONS_EDGE_OFFSET = -10;
-
 /** «−» у упражнений с помощью, «+» у дополнительного веса там, где своего поля веса нет. */
 function getWeightSign(type: ExerciseRow['type'] | undefined, hasWeightField: boolean): string {
   if (type === 'assisted_bodyweight') return '−';
@@ -40,13 +35,12 @@ function getWeightSign(type: ExerciseRow['type'] | undefined, hasWeightField: bo
   return '';
 }
 
-/** Блок упражнения на всю ширину экрана: без карточки, чтобы полоса маркера шла от края до края. */
 export const ExerciseCard = memo(function ExerciseCard({
   workoutExercise,
   exerciseDetails,
   units,
   readOnly,
-  isFirst,
+  supersetColor,
   onMenu,
   onNotePress,
   onAddSet,
@@ -65,71 +59,106 @@ export const ExerciseCard = memo(function ExerciseCard({
   );
   const hasNote = workoutExercise.note.trim().length > 0;
   const extraFields = workoutExercise.extraFields;
-  const isDense = extraFields.length > 0;
-  const isInSuperset = workoutExercise.supersetGroup != null;
-  const completedSetCount = workoutExercise.sets.filter((set) => set.completed).length;
-  // Считается здесь: при отметке меняется булев флаг только у двух строк, остальные не перерисовываются.
-  const nextSetId = workoutExercise.sets.find((set) => !set.completed)?.id;
+  const showsWeightColumn = fields.weight || extraFields.includes('weight');
   // Упражнения с помощью вычитают введённый вес из веса тела, отсюда знак минус.
   const weightSign = getWeightSign(exerciseDetails?.type, fields.weight);
   const weightColumnLabel = weightSign + (unitLabels[units.weight] ?? units.weight).toUpperCase();
   const distanceColumnLabel = (unitLabels[units.distance] ?? units.distance).toUpperCase();
 
   return (
-    <View style={isFirst ? null : [styles.blockAfterFirst, { borderTopColor: colors.border }]}>
+    <Animated.View
+      layout={LinearTransition.duration(110)}
+      style={[styles.card, { backgroundColor: colors.surface }]}
+    >
+      {supersetColor ? <View style={[styles.supersetBar, { backgroundColor: supersetColor }]} /> : null}
       <View style={styles.header}>
         {exerciseDetails ? (
           <MuscleThumbnail
             primary={exerciseDetails.muscleGroup}
             secondary={exerciseDetails.secondaryMuscles}
-            size={MUSCLE_THUMBNAIL_SIZE}
+            size={36}
           />
         ) : null}
-        <View style={styles.titleColumn}>
+        <View style={styles.titleWrapper}>
           <Text variant="h3" numberOfLines={2}>
             {name}
           </Text>
-          <View style={styles.metaRow}>
-            <Text variant="caption" color="muted" tabular>
-              {completedSetCount}/{workoutExercise.sets.length}
-            </Text>
-            {isInSuperset ? (
-              <View style={styles.supersetTag}>
-                <Icon icon={Link} size={12} color="muted" />
-                <Text variant="label" color="muted">
-                  {translate('workout.superset').toUpperCase()} {workoutExercise.supersetGroup}
-                </Text>
-              </View>
-            ) : null}
-          </View>
+          {workoutExercise.supersetGroup != null ? (
+            <View style={styles.supersetTag}>
+              <Icon icon={Link} size={12} color={supersetColor ?? 'muted'} />
+              <Text variant="label" color={supersetColor ?? 'muted'}>
+                {translate('workout.superset').toUpperCase()} {workoutExercise.supersetGroup}
+              </Text>
+            </View>
+          ) : null}
         </View>
-        {!readOnly ? (
-          <View style={styles.headerActions}>
-            <IconButton
-              icon={StickyNote}
-              variant={hasNote ? 'accent' : 'plain'}
-              label={translate('workout.exerciseNote')}
+        <View style={styles.headerActions}>
+          {!readOnly ? (
+            <Pressable
               onPress={() => onNotePress(workoutExercise.id)}
               haptic="selection"
-            />
-            <IconButton
-              icon={Ellipsis}
-              label={translate('common.menu')}
+              hitSlop={6}
+              style={[styles.iconButton, { backgroundColor: hasNote ? colors.accent : colors.surfaceAlt }]}
+            >
+              <Icon icon={StickyNote} size={17} color={hasNote ? 'onAccent' : 'text'} />
+            </Pressable>
+          ) : null}
+          {!readOnly ? (
+            <Pressable
               onPress={() => onMenu(workoutExercise.id)}
               haptic="selection"
-            />
-          </View>
-        ) : null}
+              hitSlop={6}
+              style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}
+            >
+              <Icon icon={Ellipsis} size={18} />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
-      <SetColumnHeaders
-        fields={fields}
-        extraFields={extraFields}
-        weightColumnLabel={weightColumnLabel}
-        distanceColumnLabel={distanceColumnLabel}
-        isDense={isDense}
-        hasCheckColumn={!readOnly}
-      />
+      <View style={styles.columnHeader}>
+        <Text
+          variant="label"
+          color="faint"
+          style={{ width: SET_COLUMN_WIDTHS.setNumber, textAlign: 'center' }}
+        >
+          {translate('workout.setShort').toUpperCase()}
+        </Text>
+        <Text variant="label" color="faint" style={{ flex: 1.1, textAlign: 'center' }}>
+          {translate('workout.previous').toUpperCase()}
+        </Text>
+        {showsWeightColumn ? (
+          <Text variant="label" color="faint" style={styles.column}>
+            {weightColumnLabel}
+          </Text>
+        ) : null}
+        {fields.reps ? (
+          <Text variant="label" color="faint" style={styles.column}>
+            {translate('workout.reps').toUpperCase()}
+          </Text>
+        ) : null}
+        {fields.distance ? (
+          <Text variant="label" color="faint" style={styles.column}>
+            {distanceColumnLabel}
+          </Text>
+        ) : null}
+        {fields.duration ? (
+          <Text variant="label" color="faint" style={styles.column}>
+            {translate('workout.time').toUpperCase()}
+          </Text>
+        ) : null}
+        {extraFields.includes('rir') ? (
+          <Text variant="label" color="faint" style={styles.narrowColumn}>
+            {translate('workout.rir')}
+          </Text>
+        ) : null}
+        {extraFields.includes('rpe') ? (
+          <Text variant="label" color="faint" style={styles.narrowColumn}>
+            {translate('workout.rpe')}
+          </Text>
+        ) : null}
+        {!readOnly ? <View style={{ width: SET_COLUMN_WIDTHS.checkButton }} /> : null}
+      </View>
 
       {workoutExercise.sets.map((set, index) => (
         <SetRow
@@ -140,9 +169,6 @@ export const ExerciseCard = memo(function ExerciseCard({
           units={units}
           extraFields={extraFields}
           readOnly={readOnly}
-          isNextSet={set.id === nextSetId}
-          isDense={isDense}
-          completeSetLabel={translate('workout.completeSet')}
           formatSetTypeLabel={shortSetTypeLabel}
           workoutExerciseId={workoutExercise.id}
           onChange={onSetChange}
@@ -157,45 +183,41 @@ export const ExerciseCard = memo(function ExerciseCard({
           <Button
             title={translate('workout.addSet')}
             variant="secondary"
+            size="sm"
             fullWidth
-            icon={<Icon icon={Plus} size={20} />}
+            icon={<Icon icon={Plus} size={16} />}
             onPress={() => onAddSet(workoutExercise.id)}
             haptic="selection"
-            debounceMs={0}
           />
         </View>
       ) : null}
-
-      {/* Последним: строки подходов непрозрачные и иначе закрыли бы полосу. */}
-      {isInSuperset ? (
-        <View pointerEvents="none" style={[styles.supersetBar, { backgroundColor: colors.text }]} />
-      ) : null}
-    </View>
+    </Animated.View>
   );
 });
 
 const styles = StyleSheet.create({
-  blockAfterFirst: {
-    marginTop: spacing.xl,
-    paddingTop: spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
+  card: {
+    borderRadius: radius.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    marginBottom: spacing.md,
+    overflow: 'hidden',
   },
-  supersetBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: layout.rowMinHeight,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-  },
-  titleColumn: { flex: 1 },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  supersetTag: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  headerActions: {
+  supersetBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
+  header: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: spacing.lg, gap: spacing.sm },
+  titleWrapper: { flex: 1, paddingTop: 4 },
+  supersetTag: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  iconButton: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  columnHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginRight: HEADER_ACTIONS_EDGE_OFFSET,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    marginBottom: 2,
   },
+  column: { flex: 1, textAlign: 'center' },
+  narrowColumn: { flex: NARROW_COLUMN_FLEX, textAlign: 'center' },
   addSetWrapper: { paddingHorizontal: spacing.lg, marginTop: spacing.sm },
 });

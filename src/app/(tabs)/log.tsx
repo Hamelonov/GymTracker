@@ -1,3 +1,4 @@
+import { Table2 } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -12,16 +13,17 @@ import { useQuery } from '@/db/version';
 import { ExerciseLogTable, naturalLogTableWidth } from '@/features/log/ExerciseLogTable';
 import { ExerciseSelect } from '@/features/log/ExerciseSelect';
 import { ZoomPanCanvas } from '@/features/log/ZoomPanCanvas';
+import { useActiveWorkout } from '@/store/activeWorkout';
 import { useSettings } from '@/store/settings';
-import { EmptyState, Screen, Text, spacing, useColors } from '@/ui';
+import { EmptyState, Screen, Text, spacing } from '@/ui';
 
 /** Особый пункт фильтра: вместо одного упражнения показывает их все по порядку имени. */
 const ALL_EXERCISES_ID = 'all';
-// Поля даёт сама таблица, холст упирается в края экрана.
-const CANVAS_PADDING = 0;
+const CANVAS_PADDING = spacing.sm;
+// Плашка свёрнутой тренировки висит над нижним краем: последние строки можно поднять над ней.
+const WORKOUT_PILL_SPACE = 88;
 
 export default function LogTab() {
-  const colors = useColors();
   const { t: translate, i18n } = useTranslation();
   const weightUnit = useSettings((state) => state.weightUnit);
   const distanceUnit = useSettings((state) => state.distanceUnit);
@@ -82,11 +84,14 @@ export default function LogTab() {
     [isAllSelected, exercisesByName.map((row) => row.id).join(',')],
   );
   const units = useMemo(() => ({ weight: weightUnit, distance: distanceUnit }), [weightUnit, distanceUnit]);
+  const isWorkoutPillVisible = useActiveWorkout(
+    (state) => !!state.workout && state.minimized && state.session.mode !== 'edit',
+  );
 
   if (performedExercises.length === 0 || (!selectedExercise && !isAllSelected)) {
     return (
-      <Screen header={{ title: translate('log.title'), large: true }} tabScreen>
-        <EmptyState title={translate('log.empty')} hint={translate('log.emptyHint')} />
+      <Screen header={{ title: translate('log.title'), large: true }}>
+        <EmptyState icon={Table2} title={translate('log.empty')} hint={translate('log.emptyHint')} />
       </Screen>
     );
   }
@@ -111,10 +116,14 @@ export default function LogTab() {
   return (
     // Страница не прокручивается: внутри ScrollView жесты холста отменялись бы прокруткой.
     <Screen header={{ title: translate('log.title'), large: true }} scrollable={false} padded={false}>
-      <View style={[styles.filterBar, { borderBottomColor: colors.border }]}>
+      <View style={styles.filterBar}>
         <ExerciseSelect items={selectItems} selectedId={selectedExerciseId} onSelect={setChosenExerciseId} />
       </View>
-      <ZoomPanCanvas key={selectedExerciseId ?? 'none'} contentWidth={tableWidth + 2 * CANVAS_PADDING}>
+      <ZoomPanCanvas
+        key={selectedExerciseId ?? 'none'}
+        contentWidth={tableWidth + 2 * CANVAS_PADDING}
+        bottomInset={isWorkoutPillVisible ? WORKOUT_PILL_SPACE : 0}
+      >
         <View style={styles.canvasContent}>
           {shownTables.map((table, index) => (
             <View key={table.exercise.id} style={index > 0 ? styles.nextTable : null}>
@@ -138,12 +147,8 @@ export default function LogTab() {
 }
 
 const styles = StyleSheet.create({
-  filterBar: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
+  filterBar: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   canvasContent: { padding: CANVAS_PADDING },
-  nextTable: { marginTop: spacing.xxl },
-  exerciseTitle: { marginBottom: spacing.sm, paddingHorizontal: spacing.lg },
+  nextTable: { marginTop: spacing.xl },
+  exerciseTitle: { marginBottom: spacing.sm },
 });

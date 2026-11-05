@@ -1,15 +1,15 @@
 import { ListChecks } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { exerciseName } from '@/db/repo/exercises';
 import type { WorkoutDetail } from '@/db/repo/workouts';
 import { buildPenGroups, penTimesSign } from '@/domain/pen/serializeWorkout';
 import { useSettings } from '@/store/settings';
-import { PenLine, PenTableHeader, PenTableRow } from '@/features/pen/PenTable';
-import { radius, spacing, useColors } from '@/ui';
-import { SummaryBlockHeader } from './SummaryBlockHeader';
+import { Card, Text, spacing, useColors } from '@/ui';
+import { SUMMARY_MUTED_TEXT_COLOR, SummaryBlockHeader, summaryStyles } from './SummaryBlockHeader';
+import { SummaryTableHeader, summaryTableStyles } from './SummaryTable';
 
 interface TodayDoneBlockProps {
   workoutDetail: WorkoutDetail | undefined;
@@ -69,38 +69,57 @@ export function TodayDoneBlock({ workoutDetail }: TodayDoneBlockProps) {
 
   if (exerciseRows.length === 0) return null;
 
-  const timesSign = penTimesSign(i18n.language);
-
   return (
-    <Animated.View entering={FadeInDown.delay(120).duration(160)} style={styles.block}>
+    <Animated.View entering={FadeInDown.delay(120).duration(160)} style={{ marginTop: spacing.xl }}>
       <SummaryBlockHeader icon={ListChecks} title={translate('workout.todayDone')} />
-      <View style={[styles.paperCard, { backgroundColor: colors.paper }]}>
-        <PenTableHeader
-          tone="paper"
-          nameTitle={translate('workout.exerciseColumn')}
+      <Card raised style={{ backgroundColor: colors.white, borderColor: 'transparent' }}>
+        <SummaryTableHeader
+          exerciseTitle={translate('workout.exerciseColumn')}
           weightTitle={anyExerciseHasWeight ? translate('workout.weight') : null}
           valuesTitle={translate('workout.setsAndReps')}
         />
+
         {exerciseRows.map((row) => (
-          <PenTableRow key={row.id} name={row.name} tone="paper">
-            {row.lines.map((line, lineIndex) => (
-              <PenLine
-                key={lineIndex}
-                tone="paper"
-                weight={line.weight}
-                values={line.setsAndReps}
-                timesSign={timesSign}
-                hasWeightColumn={anyExerciseHasWeight}
-              />
-            ))}
-          </PenTableRow>
+          <View key={row.id} style={[summaryTableStyles.exerciseRow, summaryStyles.divider]}>
+            <Text variant="bodyMedium" color={colors.black} style={summaryTableStyles.nameColumn}>
+              {row.name}
+            </Text>
+            <View style={summaryTableStyles.valuesColumn}>
+              {row.lines.map((line, lineIndex) => (
+                <View key={lineIndex} style={summaryTableStyles.valueLine}>
+                  {anyExerciseHasWeight ? (
+                    <>
+                      <Text
+                        variant="bodyMedium"
+                        color={colors.black}
+                        tabular
+                        style={summaryTableStyles.weightColumn}
+                      >
+                        {line.weight ?? ''}
+                      </Text>
+                      <Text
+                        variant="bodyMedium"
+                        color={SUMMARY_MUTED_TEXT_COLOR}
+                        style={summaryTableStyles.timesSignColumn}
+                      >
+                        {line.weight != null ? penTimesSign(i18n.language) : ''}
+                      </Text>
+                    </>
+                  ) : null}
+                  <Text
+                    variant="bodyMedium"
+                    color={colors.black}
+                    tabular
+                    style={summaryTableStyles.repsColumn}
+                  >
+                    {line.setsAndReps}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
         ))}
-      </View>
+      </Card>
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  block: { marginTop: spacing.xl },
-  paperCard: { borderRadius: radius.lg, padding: spacing.lg },
-});

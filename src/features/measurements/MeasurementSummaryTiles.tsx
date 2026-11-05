@@ -2,8 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import type { MeasurementType } from '@/domain/types';
-import { Stat, Text, spacing } from '@/ui';
-import type { ThemeColorName } from '@/ui/themeColor';
+import { Text, spacing, useColors } from '@/ui';
 import { formatMeasurement, type MeasurementUnits } from './measurementUnits';
 
 interface MeasurementSummaryTilesProps {
@@ -14,7 +13,7 @@ interface MeasurementSummaryTilesProps {
   units: MeasurementUnits;
 }
 
-function getChangeColor(change: number | null): ThemeColorName {
+function getChangeColor(change: number | null): string {
   if (change == null) return 'faint';
   if (change > 0) return 'success';
   if (change < 0) return 'danger';
@@ -27,26 +26,33 @@ function formatChange(type: MeasurementType, change: number | null, units: Measu
   return `${sign}${formatMeasurement(type, change, units)}`;
 }
 
-/** Два числа вверху экрана замера: последнее значение и изменение с первой записи. */
+/** Две плитки вверху экрана замера: последнее значение и изменение с первой записи. */
 export function MeasurementSummaryTiles({ type, latestValue, change, units }: MeasurementSummaryTilesProps) {
   const { t: translate } = useTranslation();
+  const colors = useColors();
   return (
-    <View style={styles.stats}>
-      <Stat
-        style={styles.stat}
-        label={translate('measurements.latest')}
-        value={latestValue != null ? formatMeasurement(type, latestValue, units) : '—'}
-      />
-      <Stat style={styles.stat} label={translate('measurements.change')}>
-        <Text variant="stat" tabular color={getChangeColor(change)}>
+    <View style={styles.tiles}>
+      <View style={[styles.tile, { backgroundColor: colors.surface }]}>
+        <Text variant="label" color="muted">
+          {translate('measurements.latest').toUpperCase()}
+        </Text>
+        <Text variant="h2" tabular>
+          {latestValue != null ? formatMeasurement(type, latestValue, units) : '—'}
+        </Text>
+      </View>
+      <View style={[styles.tile, { backgroundColor: colors.surface }]}>
+        <Text variant="label" color="muted">
+          {translate('measurements.change').toUpperCase()}
+        </Text>
+        <Text variant="h2" tabular color={getChangeColor(change)}>
           {formatChange(type, change, units)}
         </Text>
-      </Stat>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  stats: { flexDirection: 'row', gap: spacing.lg, marginBottom: spacing.lg },
-  stat: { flex: 1 },
+  tiles: { flexDirection: 'row', gap: spacing.sm, marginVertical: spacing.md },
+  tile: { flex: 1, padding: spacing.lg, borderRadius: 16, gap: 4 },
 });

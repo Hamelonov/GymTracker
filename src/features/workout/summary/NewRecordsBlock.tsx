@@ -9,9 +9,9 @@ import { pickRecordMetric, recordGain, type ValueFormatters, type RecordMetric }
 import { formatPenSetValue, formatPenWeight, penTimesSign } from '@/domain/pen/serializeWorkout';
 import { getSetFieldsForExerciseType, type SetValues } from '@/domain/types';
 import { useSettings } from '@/store/settings';
-import { PenLine, PenTableHeader, PenTableRow } from '@/features/pen/PenTable';
-import { Marker, Text, radius, spacing, useColors } from '@/ui';
-import { SummaryBlockHeader } from './SummaryBlockHeader';
+import { Card, Text, spacing, useColors } from '@/ui';
+import { SUMMARY_MUTED_TEXT_COLOR, SummaryBlockHeader, summaryStyles } from './SummaryBlockHeader';
+import { SummaryTableHeader, summaryTableStyles } from './SummaryTable';
 
 // Неразрывный пробел: «80 кг» не должно разрываться на две строки в узкой колонке.
 const NON_BREAKING_SPACE = ' ';
@@ -189,64 +189,81 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
   const anyExerciseHasWeight = recordRows.some((row) => row.weight != null);
   // Колонка называется «Повт.», пока в ней есть хоть одно упражнение с весом; у одного кардио — «Результат».
   const resultTitle = anyExerciseHasWeight ? translate('workout.reps') : translate('workout.result');
-  const timesSign = penTimesSign(i18n.language);
 
   return (
-    <Animated.View entering={FadeInDown.delay(80).duration(160)} style={styles.block}>
+    <Animated.View entering={FadeInDown.delay(80).duration(160)} style={{ marginTop: spacing.xl }}>
       <SummaryBlockHeader icon={Trophy} title={translate('workout.newRecords')} />
-      <View style={[styles.paperCard, { backgroundColor: colors.paper }]}>
-        <PenTableHeader
-          tone="paper"
-          nameTitle={translate('workout.exerciseColumn')}
+      <Card raised style={{ backgroundColor: colors.white, borderColor: 'transparent' }}>
+        <SummaryTableHeader
+          exerciseTitle={translate('workout.exerciseColumn')}
           weightTitle={anyExerciseHasWeight ? translate('workout.weight') : null}
           valuesTitle={resultTitle}
         />
+
         {recordRows.map((row) => (
-          <PenTableRow key={row.id} name={row.name} tone="paper">
-            <PenLine
-              tone="paper"
-              weight={row.weight ? row.weight.value : null}
-              values={row.result.value}
-              timesSign={timesSign}
-              hasWeightColumn={anyExerciseHasWeight}
-              weightExtra={row.weight ? <RecordChangeNote change={row.weight.change} alignRight /> : null}
-              valuesExtra={<RecordChangeNote change={row.result.change} />}
-            />
-          </PenTableRow>
+          <View key={row.id} style={[summaryTableStyles.exerciseRow, summaryStyles.divider]}>
+            <Text variant="bodyMedium" color={colors.black} style={summaryTableStyles.nameColumn}>
+              {row.name}
+            </Text>
+            <View style={summaryTableStyles.valuesColumn}>
+              <View style={[summaryTableStyles.valueLine, styles.recordLine]}>
+                {anyExerciseHasWeight ? (
+                  <>
+                    <View style={[summaryTableStyles.weightColumn, styles.weightCell]}>
+                      {row.weight ? <RecordCellContent cell={row.weight} alignRight /> : null}
+                    </View>
+                    <Text
+                      variant="bodyMedium"
+                      color={SUMMARY_MUTED_TEXT_COLOR}
+                      style={summaryTableStyles.timesSignColumn}
+                    >
+                      {row.weight ? penTimesSign(i18n.language) : ''}
+                    </Text>
+                  </>
+                ) : null}
+                <View style={summaryTableStyles.repsColumn}>
+                  <RecordCellContent cell={row.result} />
+                </View>
+              </View>
+            </View>
+          </View>
         ))}
-      </View>
+      </Card>
     </Animated.View>
   );
 }
 
-interface RecordChangeNoteProps {
-  change: RecordChange | null;
-  alignRight?: boolean;
-}
-
-/** Мелко под значением: прошлый рекорд и штрих маркера с прибавкой или «впервые». */
-function RecordChangeNote({ change, alignRight = false }: RecordChangeNoteProps) {
+/** Значение ячейки и под ним мелко прошлый рекорд с прибавкой или «впервые». */
+function RecordCellContent({ cell, alignRight = false }: { cell: RecordCell; alignRight?: boolean }) {
+  const colors = useColors();
   const { t: translate } = useTranslation();
-  if (!change) return null;
+  const textAlignStyle = alignRight ? styles.alignRight : null;
 
-  const alignmentStyle = alignRight ? styles.alignEnd : null;
-  if (change.kind === 'firstTime') {
-    return <Marker style={[styles.markerGap, alignmentStyle]}>{translate('workout.firstTime')}</Marker>;
-  }
   return (
-    <View style={[styles.gainRow, alignmentStyle]}>
-      <Text variant="caption" color="paperMuted" tabular>
-        {change.previousValue}
+    <>
+      <Text variant="bodyMedium" color={colors.black} tabular style={textAlignStyle}>
+        {cell.value}
       </Text>
-      <Marker>{change.gainText}</Marker>
-    </View>
+      {cell.change?.kind === 'gain' ? (
+        <Text variant="caption" color={SUMMARY_MUTED_TEXT_COLOR} tabular style={textAlignStyle}>
+          {cell.change.previousValue}{' '}
+          <Text variant="caption" color={colors.success} tabular>
+            {cell.change.gainText}
+          </Text>
+        </Text>
+      ) : null}
+      {cell.change?.kind === 'firstTime' ? (
+        <Text variant="caption" color={colors.success} style={textAlignStyle}>
+          {translate('workout.firstTime')}
+        </Text>
+      ) : null}
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  block: { marginTop: spacing.xl },
-  paperCard: { borderRadius: radius.lg, padding: spacing.lg },
-  gainRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs },
-  markerGap: { marginTop: spacing.xs },
-  alignEnd: { alignSelf: 'flex-end' },
+  // В ячейках по две строки текста, поэтому выравниваем по верху, а не по базовой линии.
+  recordLine: { alignItems: 'flex-start' },
+  weightCell: { alignItems: 'flex-end' },
+  alignRight: { textAlign: 'right' },
 });

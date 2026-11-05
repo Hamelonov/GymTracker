@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import type { ExerciseRow } from '@/db/schema';
-import { Chip, Text, spacing } from '@/ui';
+import { Card, Chip, Text, spacing } from '@/ui';
 import { MuscleMap } from './MuscleMap';
 
 const FIGURE_HEIGHT = 220;
@@ -11,7 +11,7 @@ const FIGURE_HEIGHT = 220;
 export function MuscleMapCard({ exercise }: { exercise: ExerciseRow }) {
   const { t: translate } = useTranslation();
   return (
-    <View>
+    <Card>
       <View style={styles.figures}>
         <View style={styles.figure}>
           <MuscleMap
@@ -42,7 +42,7 @@ export function MuscleMapCard({ exercise }: { exercise: ExerciseRow }) {
           <Chip key={muscle} label={translate(`muscles.${muscle}`)} small />
         ))}
       </View>
-    </View>
+    </Card>
   );
 }
 

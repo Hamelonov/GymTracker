@@ -13,14 +13,13 @@ import { formatSetValues } from '@/features/workout/format';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
 import { useSettings } from '@/store/settings';
-import { Button, FastPressable, Icon, IconButton, Screen, Text, confirm, spacing, useColors } from '@/ui';
+import { Button, Card, Icon, IconButton, Pressable, Screen, Text, confirm, spacing, useColors } from '@/ui';
 
 export default function RoutineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t: translate, i18n } = useTranslation();
   const colors = useColors();
-  const weightUnit = useSettings((state) => state.weightUnit);
-  const distanceUnit = useSettings((state) => state.distanceUnit);
+  const settings = useSettings();
   const routine = useQuery(() => (id ? getRoutine(id) : undefined), [id]);
   const exerciseIds = useMemo(
     () => routine?.exercises.map((routineExercise) => routineExercise.exerciseId) ?? [],
@@ -28,7 +27,7 @@ export default function RoutineDetailScreen() {
   );
   const exercisesById = useQuery(() => getExercisesByIds(exerciseIds), [exerciseIds.join(',')]);
   const activeWorkout = useActiveWorkout((state) => state.workout);
-  const units = { weight: weightUnit, distance: distanceUnit } as const;
+  const units = { weight: settings.weightUnit, distance: settings.distanceUnit } as const;
 
   if (!routine) return <Screen header={{ backButton: true }} />;
 
@@ -63,7 +62,7 @@ export default function RoutineDetailScreen() {
         right: (
           <IconButton
             icon={Pencil}
-            label={translate('common.edit')}
+            variant="filled"
             onPress={() => push({ pathname: '/routine/edit', params: { id: routine.id } })}
           />
         ),
@@ -79,24 +78,20 @@ export default function RoutineDetailScreen() {
       }
     >
       {routine.notes ? (
-        <Text color="muted" style={styles.notes}>
+        <Text color="muted" style={{ marginBottom: spacing.lg }}>
           {routine.notes}
         </Text>
       ) : null}
-      {routine.exercises.map((routineExercise, exerciseIndex) => {
+      {routine.exercises.map((routineExercise) => {
         const exercise = exercisesById.get(routineExercise.exerciseId);
         const fields = getSetFieldsForExerciseType(exercise?.type ?? 'weight_reps');
         return (
-          <FastPressable
+          <Pressable
             key={routineExercise.id}
             onPress={() => push({ pathname: '/exercise/[id]', params: { id: routineExercise.exerciseId } })}
-            style={[
-              styles.exerciseBlock,
-              exerciseIndex > 0 ? styles.blockDivider : null,
-              exerciseIndex > 0 ? { borderTopColor: colors.border } : null,
-            ]}
+            scaleTo={0.985}
           >
-            <View>
+            <Card raised style={{ marginBottom: spacing.md }}>
               <Text variant="h3">{exercise ? exerciseName(exercise, i18n.language) : '…'}</Text>
               {routineExercise.supersetGroup != null ? (
                 <Text variant="label" color="muted">
@@ -104,14 +99,14 @@ export default function RoutineDetailScreen() {
                 </Text>
               ) : null}
               {routineExercise.note ? (
-                <Text variant="caption" color="muted" style={styles.exerciseNote}>
+                <Text variant="caption" color="muted" style={{ marginTop: 4 }}>
                   {routineExercise.note}
                 </Text>
               ) : null}
-              <View style={styles.setsColumn}>
+              <View style={{ marginTop: spacing.sm, gap: 4 }}>
                 {routineExercise.sets.map((routineSet, index) => (
                   <View key={routineSet.id} style={styles.setRow}>
-                    <Text variant="caption" color="faint" style={styles.setNumber} tabular>
+                    <Text variant="caption" color="faint" style={{ width: 20 }} tabular>
                       {routineSet.type === 'normal'
                         ? index + 1
                         : translate(`workout.setTypeShort.${routineSet.type}`)}
@@ -122,20 +117,15 @@ export default function RoutineDetailScreen() {
                   </View>
                 ))}
               </View>
-            </View>
-          </FastPressable>
+            </Card>
+          </Pressable>
         );
       })}
+      <View style={{ height: 1, backgroundColor: colors.background }} />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  notes: { marginBottom: spacing.lg },
-  exerciseBlock: { paddingVertical: spacing.lg },
-  blockDivider: { borderTopWidth: StyleSheet.hairlineWidth },
-  exerciseNote: { marginTop: spacing.xs },
-  setsColumn: { marginTop: spacing.sm, gap: spacing.xs },
-  setNumber: { width: 20 },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
 });

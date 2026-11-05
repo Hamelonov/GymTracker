@@ -4,18 +4,14 @@ import { type StyleProp, StyleSheet, type ViewStyle } from 'react-native';
 import { Icon, type IconProps } from './Icon';
 import { Pressable, type AnimatedPressableProps } from './Pressable';
 import { useColors } from './ThemeProvider';
-import { radius } from './tokens';
 
 type IconButtonVariant = 'plain' | 'filled' | 'accent';
 
 export interface IconButtonProps extends Omit<AnimatedPressableProps, 'children' | 'style'> {
   icon: LucideIcon;
-  /** Размер значка, а не кнопки: рисунок всегда 40×40. */
   size?: number;
   color?: IconProps['color'];
   variant?: IconButtonVariant;
-  /** Подпись для экранного диктора: текста на кнопке нет. */
-  label: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -24,7 +20,6 @@ export function IconButton({
   size = 20,
   color = 'text',
   variant = 'plain',
-  label,
   style,
   ...rest
 }: IconButtonProps) {
@@ -36,11 +31,8 @@ export function IconButton({
   };
   return (
     <Pressable
-      // Вместе с рисунком 40×40 это даёт цель нажатия 48×48.
-      hitSlop={4}
+      hitSlop={8}
       scaleTo={0.9}
-      accessibilityRole="button"
-      accessibilityLabel={label}
       {...rest}
       style={[styles.button, { backgroundColor: backgroundColorByVariant[variant] }, style]}
     >
@@ -50,11 +42,5 @@ export function IconButton({
 }
 
 const styles = StyleSheet.create({
-  button: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  button: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 });

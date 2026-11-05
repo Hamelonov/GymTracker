@@ -4,11 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { PERCENT_TABLE, estimateOneRm, repsAtPercent } from '@/domain/oneRm';
 import { parseNumberInput, roundForDisplay, formatNumberWithoutTrailingZeros } from '@/domain/units';
 import { useSettings } from '@/store/settings';
-import { ResultCard } from '@/features/tools/ResultCard';
-import { ToolTableRow } from '@/features/tools/ToolTableRow';
-import { Input, ListGroup, Screen, SectionTitle, spacing } from '@/ui';
-
-const PERCENT_LABEL_WIDTH = 60;
+import { Card, Input, Screen, SectionTitle, Text, spacing, useColors } from '@/ui';
 
 /** Расчётный одноповторный максимум или null, пока в обоих полях нет положительных чисел. */
 function estimateOneRmFromInput(weightText: string, repsText: string): number | null {
@@ -21,6 +17,7 @@ function estimateOneRmFromInput(weightText: string, repsText: string): number | 
 
 export default function OneRmScreen() {
   const { t: translate } = useTranslation();
+  const colors = useColors();
   const weightUnit = useSettings((state) => state.weightUnit);
   const [weightText, setWeightText] = useState('');
   const [repsText, setRepsText] = useState('');
@@ -42,7 +39,7 @@ export default function OneRmScreen() {
           autoFocus
           placeholder="100"
           containerStyle={styles.inputContainer}
-          size="lg"
+          style={styles.input}
         />
         <Input
           label={translate('tools.repsDone')}
@@ -51,26 +48,43 @@ export default function OneRmScreen() {
           keyboardType="number-pad"
           placeholder="5"
           containerStyle={styles.inputContainer}
-          size="lg"
+          style={styles.input}
         />
       </View>
-      <ResultCard
-        label={translate('tools.estimated')}
-        value={oneRm != null ? formatNumberWithoutTrailingZeros(roundForDisplay(oneRm, 1)) : '—'}
-        unit={weightUnit}
-      />
+      <Card style={[styles.result, { backgroundColor: colors.text }]}>
+        <Text variant="label" color={colors.textFaint}>
+          {translate('tools.estimated').toUpperCase()}
+        </Text>
+        <Text variant="display" color={colors.accent} tabular>
+          {oneRm != null ? `${formatNumberWithoutTrailingZeros(roundForDisplay(oneRm, 1))}` : '—'}
+          <Text variant="h2" color={colors.textFaint}>
+            {' '}
+            {weightUnit}
+          </Text>
+        </Text>
+      </Card>
       <SectionTitle title={translate('tools.percentTable')} />
-      <ListGroup>
-        {PERCENT_TABLE.map((percent) => (
-          <ToolTableRow
+      <Card padded={false}>
+        {PERCENT_TABLE.map((percent, index) => (
+          <View
             key={percent}
-            label={`${percent}%`}
-            labelWidth={PERCENT_LABEL_WIDTH}
-            value={formatPercentOfOneRm(percent)}
-            extra={`~${repsAtPercent(percent)} ${translate('common.reps')}`}
-          />
+            style={[
+              styles.percentRow,
+              index > 0 ? [styles.divider, { borderTopColor: colors.border }] : null,
+            ]}
+          >
+            <Text variant="bodyMedium" style={styles.percentColumn} tabular>
+              {percent}%
+            </Text>
+            <Text variant="bodyMedium" tabular style={styles.weightColumn}>
+              {formatPercentOfOneRm(percent)}
+            </Text>
+            <Text variant="caption" color="muted" tabular>
+              ~{repsAtPercent(percent)} {translate('common.reps')}
+            </Text>
+          </View>
         ))}
-      </ListGroup>
+      </Card>
     </Screen>
   );
 }
@@ -78,4 +92,15 @@ export default function OneRmScreen() {
 const styles = StyleSheet.create({
   inputsRow: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   inputContainer: { flex: 1 },
+  input: { fontSize: 24, minHeight: 56 },
+  result: { marginTop: spacing.lg, alignItems: 'center', gap: 4 },
+  percentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth },
+  percentColumn: { width: 60 },
+  weightColumn: { flex: 1 },
 });

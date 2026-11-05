@@ -1,22 +1,19 @@
-import { FlashList } from '@shopify/flash-list';
 import { useLocalSearchParams } from 'expo-router';
-import { Plus } from 'lucide-react-native';
-import React, { useCallback, useMemo } from 'react';
+import { push } from '@/lib/nav';
+import { Plus, Ruler } from 'lucide-react-native';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
-import { deleteMeasurement, listMeasurements } from '@/db/repo/measurements';
-import type { MeasurementRow } from '@/db/schema';
+import { listMeasurements } from '@/db/repo/measurements';
 import { useQuery } from '@/db/version';
 import { formatShortDate } from '@/domain/dates';
 import type { MeasurementType } from '@/domain/types';
 import { roundForDisplay } from '@/domain/units';
 import { type ChartPoint, EmptyChart, LineChart } from '@/features/charts/LineChart';
-import { MeasurementHistoryRow } from '@/features/measurements/MeasurementHistoryList';
+import { MeasurementHistoryList } from '@/features/measurements/MeasurementHistoryList';
 import { MeasurementSummaryTiles } from '@/features/measurements/MeasurementSummaryTiles';
 import { convertToDisplayUnit, type MeasurementUnits } from '@/features/measurements/measurementUnits';
-import { push } from '@/lib/nav';
 import { useSettings } from '@/store/settings';
-import { EmptyState, IconButton, Screen, SectionTitle, confirm, spacing } from '@/ui';
+import { EmptyState, IconButton, Screen, SectionTitle } from '@/ui';
 
 /** Примерно сколько подписей дат помещается под графиком. */
 const CHART_LABEL_COUNT = 5;
@@ -24,12 +21,11 @@ const CHART_LABEL_COUNT = 5;
 export default function MeasurementTypeScreen() {
   const { type } = useLocalSearchParams<{ type: MeasurementType }>();
   const { t: translate, i18n } = useTranslation();
-  const weightUnit = useSettings((state) => state.weightUnit);
-  const measurementUnit = useSettings((state) => state.measurementUnit);
+  const settings = useSettings();
   const measurements = useQuery(() => (type ? listMeasurements(type) : []), [type]);
   const units = useMemo<MeasurementUnits>(
-    () => ({ weight: weightUnit, length: measurementUnit }),
-    [weightUnit, measurementUnit],
+    () => ({ weight: settings.weightUnit, length: settings.measurementUnit }),
+    [settings.weightUnit, settings.measurementUnit],
   );
 
   const chartPoints = useMemo<ChartPoint[]>(() => {
@@ -43,18 +39,6 @@ export default function MeasurementTypeScreen() {
       label: index % labelEvery === 0 ? formatShortDate(measurement.measuredAt, i18n.language) : '',
     }));
   }, [type, measurements, units, i18n.language]);
-
-  const confirmAndDelete = useCallback(
-    async (measurementId: string) => {
-      const isConfirmed = await confirm({
-        title: translate('measurements.deleteConfirm'),
-        destructive: true,
-        confirmLabel: translate('common.delete'),
-      });
-      if (isConfirmed) deleteMeasurement(measurementId);
-    },
-    [translate],
-  );
 
   if (!type) return <Screen header={{ backButton: true }} />;
 
@@ -72,48 +56,31 @@ export default function MeasurementTypeScreen() {
           <IconButton
             icon={Plus}
             variant="accent"
-            label={translate('common.add')}
             onPress={() => push({ pathname: '/measurements/log', params: { type } })}
             haptic="light"
           />
         ),
       }}
-      scrollable={false}
-      padded={false}
     >
       {measurements.length === 0 ? (
-        <EmptyState title={translate('measurements.noData')} />
+        <EmptyState icon={Ruler} title={translate('measurements.noData')} />
       ) : (
-        <FlashList
-          data={measurements}
-          keyExtractor={(measurement) => measurement.id}
-          renderItem={({ item }: { item: MeasurementRow }) => (
-            <MeasurementHistoryRow type={type} measurement={item} units={units} onDelete={confirmAndDelete} />
+        <>
+          <MeasurementSummaryTiles
+            type={type}
+            latestValue={latest ? latest.value : null}
+            change={change}
+            units={units}
+          />
+          {chartPoints.length > 0 ? (
+            <LineChart data={chartPoints} formatY={(value) => String(roundForDisplay(value, 1))} />
+          ) : (
+            <EmptyChart text={translate('measurements.noData')} />
           )}
-          contentContainerStyle={styles.listContent}
-          ListHeaderComponent={
-            <View style={styles.listHeader}>
-              <MeasurementSummaryTiles
-                type={type}
-                latestValue={latest ? latest.value : null}
-                change={change}
-                units={units}
-              />
-              {chartPoints.length > 0 ? (
-                <LineChart data={chartPoints} formatY={(value) => String(roundForDisplay(value, 1))} />
-              ) : (
-                <EmptyChart text={translate('measurements.noData')} />
-              )}
-              <SectionTitle title={translate('exercise.history')} />
-            </View>
-          }
-        />
+          <SectionTitle title={translate('exercise.history')} />
+          <MeasurementHistoryList type={type} measurements={measurements} units={units} />
+        </>
       )}
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  listHeader: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
-  listContent: { paddingBottom: spacing.xxl },
-});

@@ -19,12 +19,13 @@ export default function SummaryScreen() {
   const { t: translate, i18n } = useTranslation();
   const insets = useSafeAreaInsets();
   const saveResult = useLastSave((state) => state.result);
+  const settings = useSettings();
   const workoutDetail = useQuery(
     () => (saveResult ? getWorkout(saveResult.workoutId) : undefined),
     [saveResult?.workoutId],
   );
-  const weightUnit = useSettings((state) => state.weightUnit);
-  const distanceUnit = useSettings((state) => state.distanceUnit);
+  const weightUnit = settings.weightUnit;
+  const distanceUnit = settings.distanceUnit;
 
   const usesDecimalComma = i18n.language.startsWith('ru');
   const formatters = useMemo(
@@ -67,7 +68,7 @@ export default function SummaryScreen() {
           <Text variant="display" color="onAccent">
             {translate('workout.summaryTitle')}
           </Text>
-          <Text variant="body" color="onAccentMuted" style={styles.subtitle}>
+          <Text variant="body" color="onAccent" style={{ marginTop: spacing.sm, opacity: 0.75 }}>
             {translate('workout.summarySubtitle')}
           </Text>
         </Animated.View>
@@ -89,8 +90,10 @@ export default function SummaryScreen() {
           title={translate('common.done')}
           size="lg"
           fullWidth
-          variant="ink"
+          variant="secondary"
           onPress={closeSummary}
+          style={{ backgroundColor: colors.black }}
+          textColor={colors.accent}
           haptic="light"
         />
       </View>
@@ -99,6 +102,5 @@ export default function SummaryScreen() {
 }
 
 const styles = StyleSheet.create({
-  subtitle: { marginTop: spacing.sm },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
 });

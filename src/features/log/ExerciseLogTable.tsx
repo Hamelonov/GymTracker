@@ -7,8 +7,7 @@ import { dateLocale } from '@/domain/dates';
 import { penTimesSign } from '@/domain/pen/serializeWorkout';
 import type { DistanceUnit, ExerciseType, WeightUnit } from '@/domain/types';
 import { buildWeightLines, describeLogColumns, formatPerSet } from './logLines';
-import { PenLine } from '@/features/pen/PenTable';
-import { Text, spacing, useColors } from '@/ui';
+import { Card, Text, spacing, useColors } from '@/ui';
 
 type Units = { weight: WeightUnit; distance: DistanceUnit };
 
@@ -18,10 +17,7 @@ const COLUMN_WIDTHS = { day: 100, weight: 64, timesSign: 14, sets: 110, rir: 80,
 const COLUMN_GAP = spacing.lg;
 const INNER_GAP = spacing.sm;
 const DIVIDER_WIDTH = StyleSheet.hairlineWidth;
-// Поля таблицы равны полям экрана: её края стоят на одной линии с заголовком.
-const TABLE_HORIZONTAL_PADDING = spacing.lg;
-const WEIGHT_GROUP_WIDTH =
-  COLUMN_WIDTHS.weight + COLUMN_WIDTHS.timesSign + COLUMN_WIDTHS.sets + 2 * INNER_GAP;
+const CARD_HORIZONTAL_PADDING = spacing.md;
 
 /** Дата цифрами в формате языка: «28.03.2026». */
 function formatDay(timestamp: number, language: string): string {
@@ -29,13 +25,15 @@ function formatDay(timestamp: number, language: string): string {
 }
 
 /**
- * Ширина таблицы без растяжения: сумма видимых колонок, промежутков и полей таблицы.
+ * Ширина таблицы без растяжения: сумма видимых колонок, промежутков и полей карточки.
  * Нужна холсту заранее — измерить её нельзя, вёрстка упирает ширину в ширину экрана.
  */
 export function naturalLogTableWidth(entries: ExerciseHistoryEntry[], exerciseType: ExerciseType): number {
   const { hasWeight, hasRir, hasRpe } = describeLogColumns(entries);
   // День, «вес х подходы» (или один «подходы») и примечание есть всегда; RIR и RPE — не всегда.
-  const groupWidth = hasWeight ? WEIGHT_GROUP_WIDTH : COLUMN_WIDTHS.sets;
+  const groupWidth = hasWeight
+    ? COLUMN_WIDTHS.weight + COLUMN_WIDTHS.timesSign + COLUMN_WIDTHS.sets + 2 * INNER_GAP
+    : COLUMN_WIDTHS.sets;
   const columnCount = 3 + (hasRir ? 1 : 0) + (hasRpe ? 1 : 0);
   const dividersWidth = (columnCount - 1) * (2 * COLUMN_GAP + DIVIDER_WIDTH);
   const cellsWidth =
@@ -45,7 +43,7 @@ export function naturalLogTableWidth(entries: ExerciseHistoryEntry[], exerciseTy
     (hasRpe ? COLUMN_WIDTHS.rpe : 0) +
     COLUMN_WIDTHS.note +
     dividersWidth;
-  return cellsWidth + 2 * TABLE_HORIZONTAL_PADDING;
+  return cellsWidth + 2 * CARD_HORIZONTAL_PADDING;
 }
 
 interface ExerciseLogTableProps {
@@ -77,7 +75,6 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
   const penOptions = { weightUnit: units.weight, distanceUnit: units.distance, language: i18n.language };
   const timesSign = penTimesSign(i18n.language);
   const { hasWeight, hasRir, hasRpe } = describeLogColumns(entries);
-  const weightGroupWidth = hasWeight ? WEIGHT_GROUP_WIDTH : COLUMN_WIDTHS.sets;
   const dividerStyle = { borderTopColor: colors.border };
 
   const headerCells = [
@@ -101,7 +98,7 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
   ];
 
   return (
-    <View style={[styles.table, { backgroundColor: colors.background, width }]}>
+    <Card raised style={[styles.card, { width }]}>
       <View style={[styles.outerRow, styles.headerRow]}>{joinWithDividers(headerCells, 'header')}</View>
 
       {entries.map((entry) => {
@@ -109,16 +106,23 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
           <Text key="day" variant="bodyMedium" tabular style={{ width: COLUMN_WIDTHS.day }}>
             {formatDay(entry.startedAt, i18n.language)}
           </Text>,
-          <View key="weight-group" style={[styles.weightLines, { width: weightGroupWidth }]}>
+          <View key="weight-group" style={styles.weightLines}>
             {buildWeightLines(entry.sets, exerciseType, penOptions).map((line, lineIndex) => (
-              <PenLine
-                key={lineIndex}
-                weight={line.weight}
-                values={line.sets}
-                timesSign={timesSign}
-                hasWeightColumn={hasWeight}
-                weightWidth={COLUMN_WIDTHS.weight}
-              />
+              <View key={lineIndex} style={styles.innerRow}>
+                {hasWeight ? (
+                  <>
+                    <Text variant="bodyMedium" tabular style={styles.weightColumn}>
+                      {line.weight ?? ''}
+                    </Text>
+                    <Text variant="bodyMedium" color="muted" style={styles.timesSignColumn}>
+                      {line.weight != null ? timesSign : ''}
+                    </Text>
+                  </>
+                ) : null}
+                <Text variant="bodyMedium" tabular style={{ width: COLUMN_WIDTHS.sets }}>
+                  {line.sets}
+                </Text>
+              </View>
             ))}
           </View>,
           hasRir ? (
@@ -146,7 +150,7 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
           </View>
         );
       })}
-    </View>
+    </Card>
   );
 }
 
@@ -159,7 +163,7 @@ function HeaderCell({ title, style }: { title: string; style: StyleProp<TextStyl
 }
 
 const styles = StyleSheet.create({
-  table: { paddingHorizontal: TABLE_HORIZONTAL_PADDING, paddingTop: spacing.md },
+  card: { paddingHorizontal: CARD_HORIZONTAL_PADDING, paddingTop: spacing.lg, paddingBottom: 0 },
   headerRow: { paddingBottom: spacing.md },
   // Между столбцами таблицы — широкий зазор с линией-разделителем между ними.
   outerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: COLUMN_GAP },
@@ -170,5 +174,6 @@ const styles = StyleSheet.create({
   columnDivider: { width: DIVIDER_WIDTH, alignSelf: 'stretch' },
   // Подпись и значения веса прижаты вправо, ближе к знаку «х».
   weightColumn: { width: COLUMN_WIDTHS.weight, textAlign: 'right' },
+  timesSignColumn: { width: COLUMN_WIDTHS.timesSign, textAlign: 'center' },
   noteColumn: { flex: 1, minWidth: COLUMN_WIDTHS.note },
 });

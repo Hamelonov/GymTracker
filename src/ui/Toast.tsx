@@ -3,11 +3,10 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { create } from 'zustand';
-import { motionDuration } from './motion';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
-import { fonts, layout, radius, shadows, spacing } from './tokens';
+import { radius, spacing } from './tokens';
 
 interface ToastItem {
   id: number;
@@ -25,27 +24,18 @@ interface ToastOptions {
 
 interface ToastState {
   current: ToastItem | null;
-  /** Высота панели вкладок с системным отступом и плашкой тренировки. 0, когда вкладок нет на экране. */
-  tabBarOffset: number;
-  /** Высота плашки отдыха, пока она показана. */
-  dockOffset: number;
   show: (message: string, options?: ToastOptions) => void;
   dismiss: () => void;
-  setTabBarOffset: (offset: number) => void;
-  setDockOffset: (offset: number) => void;
 }
 
 // Тост с кнопкой висит дольше, чтобы успеть нажать.
 const DURATION_WITH_ACTION_MS = 5000;
 const DURATION_PLAIN_MS = 2500;
-const EXIT_DURATION_MS = 100;
 
 let toastCounter = 0;
 
 export const useToastStore = create<ToastState>((set) => ({
   current: null,
-  tabBarOffset: 0,
-  dockOffset: 0,
   show: (message, options) =>
     set({
       current: {
@@ -58,21 +48,17 @@ export const useToastStore = create<ToastState>((set) => ({
       },
     }),
   dismiss: () => set({ current: null }),
-  setTabBarOffset: (offset) => set({ tabBarOffset: offset }),
-  setDockOffset: (offset) => set({ dockOffset: offset }),
 }));
 
 export function toast(message: string, options?: ToastOptions) {
   useToastStore.getState().show(message, options);
 }
 
-export function ToastHost() {
+export function ToastHost({ bottomOffset = 0 }: { bottomOffset?: number }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const current = useToastStore((state) => state.current);
   const dismiss = useToastStore((state) => state.dismiss);
-  const tabBarOffset = useToastStore((state) => state.tabBarOffset);
-  const dockOffset = useToastStore((state) => state.dockOffset);
 
   useEffect(() => {
     if (!current) return undefined;
@@ -87,23 +73,23 @@ export function ToastHost() {
     dismiss();
   };
 
-  // Без нижней панели тост всё равно должен стоять над системной навигацией.
-  const occupiedBottomHeight = Math.max(tabBarOffset + dockOffset, insets.bottom);
-
   return (
-    <View pointerEvents="box-none" style={[styles.host, { bottom: occupiedBottomHeight + spacing.md }]}>
+    <View
+      pointerEvents="box-none"
+      style={[styles.host, { bottom: insets.bottom + bottomOffset + spacing.lg }]}
+    >
       <Animated.View
         key={current.id}
-        entering={FadeInDown.duration(motionDuration.fast)}
-        exiting={FadeOutDown.duration(EXIT_DURATION_MS)}
-        style={[styles.toast, { backgroundColor: colors.inverseSurface }]}
+        entering={FadeInDown.duration(120)}
+        exiting={FadeOutDown.duration(100)}
+        style={[styles.toast, { backgroundColor: colors.text }]}
       >
-        <Text variant="bodyMedium" color="inverseText" style={styles.message} numberOfLines={2}>
+        <Text variant="bodyMedium" color={colors.background} style={styles.message} numberOfLines={2}>
           {current.message}
         </Text>
         {current.actionLabel ? (
-          <Pressable onPress={handleActionPress} style={styles.actionButton}>
-            <Text variant="caption" color="accent" style={styles.actionLabel}>
+          <Pressable onPress={handleActionPress} hitSlop={8}>
+            <Text variant="h3" color={colors.accent}>
               {current.actionLabel}
             </Text>
           </Pressable>
@@ -120,14 +106,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.lg,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
-    minHeight: 52,
+    paddingVertical: spacing.md,
     borderRadius: radius.md,
-    boxShadow: shadows.toast,
     maxWidth: 480,
     width: '100%',
   },
   message: { flex: 1 },
-  actionButton: { minHeight: layout.touchTarget, justifyContent: 'center' },
-  actionLabel: { fontFamily: fonts.semibold },
 });

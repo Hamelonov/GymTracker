@@ -5,7 +5,6 @@ import { formatDuration } from '@/domain/units';
 import { Button, Pressable, Sheet, Text, radius, spacing, useColors } from '@/ui';
 
 const REST_OPTIONS_IN_SECONDS = [0, 30, 45, 60, 90, 120, 150, 180, 240, 300];
-const REST_OPTION_HEIGHT = 52;
 
 interface RestTimerPickerSheetProps {
   visible: boolean;
@@ -59,16 +58,11 @@ export function RestTimerPickerSheet({
 }
 
 const styles = StyleSheet.create({
-  // Три ячейки в ряд: остаток ширины и есть зазор, а одинокая последняя не растягивается на всю строку.
-  restOptionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: spacing.sm,
-  },
+  restOptionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   restOption: {
-    width: '32%',
-    height: REST_OPTION_HEIGHT,
+    width: '30%',
+    flexGrow: 1,
+    height: 48,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',

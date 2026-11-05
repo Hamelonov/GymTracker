@@ -27,9 +27,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: spacing.xxl,
+    marginTop: spacing.xl,
     marginBottom: spacing.sm,
-    minHeight: 24,
+    paddingHorizontal: 2,
   },
   first: { marginTop: spacing.sm },
 });

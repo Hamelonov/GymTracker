@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { formatDuration } from '@/domain/units';
-import { Stat, radius, spacing, useColors } from '@/ui';
+import { Text, radius, spacing, useColors } from '@/ui';
 import { ElapsedTimer } from './ElapsedTimer';
 
 export interface WorkoutStatsProps {
@@ -12,19 +12,10 @@ export interface WorkoutStatsProps {
   durationSec?: number;
   exerciseCount: number;
   setCount: number;
-  /**
-   * `surface` — плитка с тремя равными колонками, `inverse` — чёрная карточка на жёлтом
-   * экране итогов, `strip` — полоса под шапкой активной тренировки.
-   */
-  variant?: 'surface' | 'inverse' | 'strip';
-  /** Правая часть полосы `strip`: переключатель режима записи. */
-  trailing?: React.ReactNode;
+  /** `inverse` — чёрная карточка, используемая на жёлтом экране итогов. */
+  variant?: 'surface' | 'inverse';
   style?: StyleProp<ViewStyle>;
 }
-
-// Полоса статистики задана по ширине: без предела системный шрифт её разорвёт.
-const STRIP_MAX_FONT_SCALE = 1.2;
-const STRIP_HEIGHT = 56;
 
 /**
  * Единый блок «тренировка с первого взгляда»: Время · Упражнения · Подходы.
@@ -39,67 +30,64 @@ export function WorkoutStats({
   exerciseCount,
   setCount,
   variant = 'surface',
-  trailing,
   style,
 }: WorkoutStatsProps) {
   const colors = useColors();
   const { t: translate } = useTranslation();
-  const isStrip = variant === 'strip';
   const isInverse = variant === 'inverse';
-  const statSize = isStrip ? 'compact' : 'regular';
-  const statTone = isInverse ? 'inverse' : 'theme';
-  const columnStyle = isStrip ? null : styles.equalColumn;
+  const labelColor = isInverse ? colors.textFaint : colors.textMuted;
+  const valueColor = isInverse ? colors.white : colors.text;
+  const valueVariant = isInverse ? 'h2' : 'h3';
   const hasFixedDuration = durationSec != null || startedAt == null;
-  const statsBackground = isInverse ? colors.onAccent : colors.surface;
 
-  const stats = (
-    <>
-      {hasFixedDuration ? (
-        <Stat
-          label={translate('workout.duration')}
-          value={formatDuration(durationSec ?? 0)}
-          size={statSize}
-          tone={statTone}
-          style={columnStyle}
-        />
-      ) : (
-        // Живой таймер обновляет только себя, поэтому экран не перерисовывается каждую секунду.
-        <Stat label={translate('workout.duration')} size={statSize} tone={statTone} style={columnStyle}>
-          <ElapsedTimer
-            startedAt={startedAt}
-            variant={isStrip ? 'statCompact' : 'stat'}
-            color={isInverse ? 'inverseText' : 'text'}
-            maxFontSizeMultiplier={isStrip ? STRIP_MAX_FONT_SCALE : undefined}
-          />
-        </Stat>
-      )}
-      <Stat
-        label={translate('history.exercisesDone')}
-        value={String(exerciseCount)}
-        size={statSize}
-        tone={statTone}
-        style={columnStyle}
-      />
-      <Stat
-        label={translate('workout.setsDone')}
-        value={String(setCount)}
-        size={statSize}
-        tone={statTone}
-        style={columnStyle}
-      />
-    </>
+  const durationValue = hasFixedDuration ? (
+    <Text variant={valueVariant} color={valueColor} tabular numberOfLines={1}>
+      {formatDuration(durationSec ?? 0)}
+    </Text>
+  ) : (
+    <ElapsedTimer startedAt={startedAt} variant={valueVariant} color={valueColor} numberOfLines={1} />
   );
 
-  if (isStrip) {
-    return (
-      <View style={[styles.strip, { borderBottomColor: colors.border }, style]}>
-        <View style={styles.stripStats}>{stats}</View>
-        {trailing}
-      </View>
-    );
-  }
+  return (
+    <View style={[styles.card, { backgroundColor: isInverse ? colors.black : colors.surface }, style]}>
+      <StatCell label={translate('workout.duration')} labelColor={labelColor}>
+        {durationValue}
+      </StatCell>
+      <StatCell label={translate('history.exercisesDone')} labelColor={labelColor}>
+        <StatValue value={exerciseCount} color={valueColor} variant={valueVariant} />
+      </StatCell>
+      <StatCell label={translate('workout.setsDone')} labelColor={labelColor}>
+        <StatValue value={setCount} color={valueColor} variant={valueVariant} />
+      </StatCell>
+    </View>
+  );
+}
 
-  return <View style={[styles.card, { backgroundColor: statsBackground }, style]}>{stats}</View>;
+function StatCell({
+  label,
+  labelColor,
+  children,
+}: {
+  label: string;
+  labelColor: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.cell}>
+      <Text variant="label" color={labelColor} numberOfLines={1}>
+        {label.toUpperCase()}
+      </Text>
+      {children}
+    </View>
+  );
+}
+
+function StatValue({ value, color, variant }: { value: number; color: string; variant: 'h2' | 'h3' }) {
+  return (
+    <Text variant={variant} color={color} tabular numberOfLines={1}>
+      {value}
+    </Text>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -108,14 +96,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.lg,
   },
-  equalColumn: { flex: 1 },
-  strip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: STRIP_HEIGHT,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  stripStats: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
+  cell: { width: '33.333%', gap: 4, paddingRight: spacing.sm },
 });

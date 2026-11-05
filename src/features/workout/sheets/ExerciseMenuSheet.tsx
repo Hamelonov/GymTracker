@@ -11,10 +11,11 @@ import {
 } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { StyleSheet, View } from 'react-native';
 import type { ExerciseRow } from '@/db/schema';
 import type { ActiveExercise } from '@/domain/types';
 import { formatDuration } from '@/domain/units';
-import { Icon, ListItem, Sheet } from '@/ui';
+import { Icon, ListItem, Sheet, spacing, useColors } from '@/ui';
 import { exerciseDisplayName } from '../exerciseDisplayName';
 
 interface ExerciseMenuSheetProps {
@@ -54,6 +55,7 @@ export function ExerciseMenuSheet({
   onMoveDownPress,
   onRemovePress,
 }: ExerciseMenuSheetProps) {
+  const colors = useColors();
   const { t: translate, i18n } = useTranslation();
   const title = workoutExercise ? exerciseDisplayName(exerciseDetails, i18n.language) : undefined;
   const isInSuperset = workoutExercise?.supersetGroup != null;
@@ -61,7 +63,7 @@ export function ExerciseMenuSheet({
   return (
     <Sheet visible={visible} onClose={onClose} title={title} unpadded>
       {workoutExercise ? (
-        <>
+        <View style={styles.menuList}>
           <ListItem
             title={translate('workout.description')}
             left={<Icon icon={BookOpen} />}
@@ -106,12 +108,16 @@ export function ExerciseMenuSheet({
           ) : null}
           <ListItem
             title={translate('workout.removeExercise')}
-            tone="danger"
+            titleColor={colors.danger}
             left={<Icon icon={Trash2} color="danger" />}
             onPress={onRemovePress}
           />
-        </>
+        </View>
       ) : null}
     </Sheet>
   );
 }
+
+const styles = StyleSheet.create({
+  menuList: { paddingHorizontal: spacing.sm },
+});

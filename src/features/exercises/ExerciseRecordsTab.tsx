@@ -1,7 +1,7 @@
 import { Trophy } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { RecordDetail } from '@/db/repo/exercises';
 import { formatRelativeDay } from '@/domain/dates';
 import type { DistanceUnit, RecordType, WeightUnit } from '@/domain/types';
@@ -31,11 +31,17 @@ export function ExerciseRecordsTab({ records, units }: ExerciseRecordsTabProps) 
   const { t: translate, i18n } = useTranslation();
 
   if (records.length === 0) {
-    return <EmptyState title={translate('exercise.noHistory')} hint={translate('exercise.noHistoryHint')} />;
+    return (
+      <EmptyState
+        icon={Trophy}
+        title={translate('exercise.noHistory')}
+        hint={translate('exercise.noHistoryHint')}
+      />
+    );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.recordGrid} showsVerticalScrollIndicator={false}>
+    <View style={styles.recordGrid}>
       {records.map((record) => (
         <Pressable
           key={record.type}
@@ -46,31 +52,25 @@ export function ExerciseRecordsTab({ records, units }: ExerciseRecordsTabProps) 
           scaleTo={0.97}
         >
           <View style={styles.recordTitleRow}>
-            <Icon icon={Trophy} size={16} />
+            <Icon icon={Trophy} size={14} color="accent" />
             <Text variant="label" color="muted">
               {translate(`pr.${record.type}`).toUpperCase()}
             </Text>
           </View>
-          <Text variant="stat" tabular>
+          <Text variant="h2" tabular>
             {formatRecordValue(record.type, record.value, units)}
           </Text>
-          <Text variant="caption" color="muted">
+          <Text variant="caption" color="faint">
             {formatRelativeDay(record.achievedAt, i18n.language, translate)}
           </Text>
         </Pressable>
       ))}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  recordGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  recordTile: { width: '47%', flexGrow: 1, padding: spacing.lg, borderRadius: radius.lg, gap: spacing.xs },
-  recordTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  recordGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  recordTile: { width: '47%', flexGrow: 1, padding: spacing.lg, borderRadius: radius.lg, gap: 4 },
+  recordTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

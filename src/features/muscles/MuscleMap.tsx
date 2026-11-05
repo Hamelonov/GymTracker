@@ -18,12 +18,12 @@ interface MuscleMapProps {
   height: number;
 }
 
-/** Схема мышц: рисованное тело, основная группа жёлтым, вспомогательные приглушённым цветом. */
+/** Схема мышц: рисованное тело, основная группа жёлтым, вспомогательные — бледно-жёлтым. */
 export const MuscleMap = memo(function MuscleMap({ primary, secondary, side, height }: MuscleMapProps) {
   const colors = useColors();
   const parts = useMemo(() => buildHighlightedParts(primary, secondary), [primary, secondary]);
   const scale = height / BASE_BODY_HEIGHT;
-  const highlightColors = [colors.accent, colors.muscleSecondary];
+  const highlightColors = [colors.accent, colors.accentSoft];
 
   if (side !== 'both') {
     return (
@@ -33,8 +33,7 @@ export const MuscleMap = memo(function MuscleMap({ primary, secondary, side, hei
         gender="male"
         scale={scale}
         colors={highlightColors}
-        border="none"
-        defaultFill={colors.muscleBase}
+        border={colors.borderStrong}
       />
     );
   }
@@ -46,8 +45,7 @@ export const MuscleMap = memo(function MuscleMap({ primary, secondary, side, hei
         gender="male"
         scale={scale}
         colors={highlightColors}
-        border="none"
-        defaultFill={colors.muscleBase}
+        border={colors.borderStrong}
       />
       <Body
         data={parts}
@@ -55,8 +53,7 @@ export const MuscleMap = memo(function MuscleMap({ primary, secondary, side, hei
         gender="male"
         scale={scale}
         colors={highlightColors}
-        border="none"
-        defaultFill={colors.muscleBase}
+        border={colors.borderStrong}
       />
     </View>
   );

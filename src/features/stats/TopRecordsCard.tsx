@@ -1,13 +1,13 @@
 import { Trophy } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { exerciseName } from '@/db/repo/exercises';
 import type { listTopOneRepMaxRecords } from '@/db/repo/workouts';
 import type { WeightUnit } from '@/domain/types';
 import { formatWeight } from '@/domain/units';
 import { push } from '@/lib/nav';
-import { Icon, ListGroup, ListItem, SectionTitle, Text, spacing } from '@/ui';
+import { Card, Icon, Pressable, SectionTitle, Text, spacing } from '@/ui';
 
 type RankedRecord = ReturnType<typeof listTopOneRepMaxRecords>[number];
 
@@ -22,34 +22,44 @@ export function TopRecordsCard({ records, weightUnit }: TopRecordsCardProps) {
   return (
     <>
       <SectionTitle title={translate('stats.recordsTitle')} />
-      {records.length === 0 ? (
-        <Text color="muted">{translate('stats.noData')}</Text>
-      ) : (
-        <ListGroup dividerInset={48}>
-          {records.map((record) => (
-            <ListItem
+      <Card padded={false}>
+        {records.length === 0 ? (
+          <Text color="faint" style={styles.emptyText}>
+            {translate('stats.noData')}
+          </Text>
+        ) : (
+          records.map((record) => (
+            <Pressable
               key={record.exerciseId}
-              title={exerciseName(record, i18n.language)}
-              left={<Icon icon={Trophy} size={16} />}
-              right={
-                <View style={styles.valueColumn}>
-                  <Text variant="bodyMedium" tabular>
-                    {formatWeight(Math.round(record.value * 10) / 10, weightUnit)}
-                  </Text>
-                  <Text variant="label" color="muted">
-                    {translate('pr.one_rm')}
-                  </Text>
-                </View>
-              }
               onPress={() => push({ pathname: '/exercise/[id]', params: { id: record.exerciseId } })}
-            />
-          ))}
-        </ListGroup>
-      )}
+              style={styles.recordRow}
+            >
+              <Icon icon={Trophy} size={16} color="accent" />
+              <Text variant="bodyMedium" style={styles.exerciseName} numberOfLines={1}>
+                {exerciseName(record, i18n.language)}
+              </Text>
+              <Text variant="bodyMedium" tabular>
+                {formatWeight(Math.round(record.value * 10) / 10, weightUnit)}
+              </Text>
+              <Text variant="label" color="faint">
+                {translate('pr.one_rm')}
+              </Text>
+            </Pressable>
+          ))
+        )}
+      </Card>
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  valueColumn: { alignItems: 'flex-end', gap: spacing.xxs },
+  emptyText: { padding: spacing.lg },
+  recordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  exerciseName: { flex: 1 },
 });

@@ -1,6 +1,6 @@
 import { push } from '@/lib/nav';
-import { Ellipsis, Folder, FolderPlus, Play, Plus } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState } from 'react';
+import { Dumbbell, Folder, FolderPlus, Play, Plus } from 'lucide-react-native';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { getExercisesByIds } from '@/db/repo/exercises';
@@ -18,6 +18,7 @@ import { useQuery } from '@/db/version';
 import { FolderMenuSheet } from '@/features/home/FolderMenuSheet';
 import { FolderNameSheet } from '@/features/home/FolderNameSheet';
 import { MoveToFolderSheet } from '@/features/home/MoveToFolderSheet';
+import { ResumeWorkoutBanner } from '@/features/home/ResumeWorkoutBanner';
 import { RoutineMenuSheet } from '@/features/home/RoutineMenuSheet';
 import { WeekSummaryCard } from '@/features/home/WeekSummaryCard';
 import { RoutineCard } from '@/features/routines/RoutineCard';
@@ -30,8 +31,7 @@ import {
   EmptyState,
   Icon,
   IconButton,
-  FastPressable,
-  ListGroup,
+  Pressable,
   Screen,
   SectionTitle,
   Text,
@@ -52,6 +52,12 @@ export default function HomeTab() {
   const now = useNow();
   const [openSheet, setOpenSheet] = useState<OpenSheet>({ kind: 'none' });
   const [folderName, setFolderName] = useState('');
+  const activeWorkout = useActiveWorkout((state) => state.workout);
+  const session = useActiveWorkout((state) => state.session);
+  // Только после ухода с экрана тренировки, но не во время его открытия.
+  const isResumeBannerVisible = useActiveWorkout(
+    (state) => !!state.workout && state.minimized && state.session.mode === 'new',
+  );
   const routines = useQuery(() => listRoutines(), []);
   const folders = useQuery(() => listFolders(), []);
   const exerciseIds = useMemo(
@@ -63,9 +69,7 @@ export default function HomeTab() {
   const closeSheet = () => setOpenSheet({ kind: 'none' });
 
   /** Спрашивает, отбросить ли незавершённую тренировку перед началом новой. Возвращает false, если пользователь отменил. */
-  const discardActiveWorkoutIfConfirmed = useCallback(async () => {
-    // Состояние читаем в момент нажатия: так колбэки остаются стабильными и строки шаблонов не перерисовываются.
-    const { workout: activeWorkout, session } = useActiveWorkout.getState();
+  const discardActiveWorkoutIfConfirmed = async () => {
     if (!activeWorkout || session.mode === 'edit') return true;
     const isConfirmed = await confirm({
       title: translate('home.inProgress'),
@@ -78,7 +82,7 @@ export default function HomeTab() {
       useActiveWorkout.getState().clear();
     }
     return isConfirmed;
-  }, [translate]);
+  };
 
   const startEmptyWorkout = async () => {
     if (!(await discardActiveWorkoutIfConfirmed())) return;
@@ -86,25 +90,13 @@ export default function HomeTab() {
     push('/workout/active');
   };
 
-  const startRoutine = useCallback(
-    async (routineId: string) => {
-      if (!(await discardActiveWorkoutIfConfirmed())) return;
-      const routine = getRoutine(routineId);
-      if (!routine) return;
-      useActiveWorkout.getState().startFromRoutine(routine);
-      push('/workout/active');
-    },
-    [discardActiveWorkoutIfConfirmed],
-  );
-
-  const openRoutineMenu = useCallback(
-    (routineId: string) => setOpenSheet({ kind: 'routineMenu', routineId }),
-    [],
-  );
-  const openRoutine = useCallback(
-    (routineId: string) => push({ pathname: '/routine/[id]', params: { id: routineId } }),
-    [],
-  );
+  const startRoutine = async (routineId: string) => {
+    if (!(await discardActiveWorkoutIfConfirmed())) return;
+    const routine = getRoutine(routineId);
+    if (!routine) return;
+    useActiveWorkout.getState().startFromRoutine(routine);
+    push('/workout/active');
+  };
 
   const openNewFolderSheet = () => {
     setFolderName('');
@@ -133,41 +125,38 @@ export default function HomeTab() {
       key={routine.id}
       routine={routine}
       exercises={exercisesById}
-      onStart={startRoutine}
-      onMenu={openRoutineMenu}
-      onPress={openRoutine}
+      onStart={() => startRoutine(routine.id)}
+      onMenu={() => setOpenSheet({ kind: 'routineMenu', routineId: routine.id })}
+      onPress={() => push({ pathname: '/routine/[id]', params: { id: routine.id } })}
     />
   );
 
   return (
-    <Screen header={{ title: translate('home.title'), large: true }} tabScreen>
+    <Screen header={{ title: translate('home.title'), large: true }} contentStyle={{ paddingBottom: 120 }}>
+      {isResumeBannerVisible ? (
+        <ResumeWorkoutBanner workoutName={activeWorkout?.name} onPress={() => push('/workout/active')} />
+      ) : null}
+
       <WeekSummaryCard now={now} />
 
+      <SectionTitle title={translate('home.quickStart')} />
       <Button
         title={translate('home.startEmpty')}
         size="lg"
         fullWidth
         icon={<Icon icon={Play} size={20} color="onAccent" strokeWidth={2.5} />}
         onPress={startEmptyWorkout}
-        style={styles.startEmptyButton}
       />
 
       <SectionTitle
         title={translate('home.routines')}
         right={
-          <View style={styles.sectionActions}>
-            <IconButton
-              icon={FolderPlus}
-              size={18}
-              label={translate('home.newFolder')}
-              onPress={openNewFolderSheet}
-              haptic="selection"
-            />
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            <IconButton icon={FolderPlus} size={18} onPress={openNewFolderSheet} haptic="selection" />
             <IconButton
               icon={Plus}
               size={18}
               variant="filled"
-              label={translate('home.newRoutine')}
               onPress={() => push('/routine/edit')}
               haptic="selection"
             />
@@ -176,6 +165,7 @@ export default function HomeTab() {
       />
       {routines.length === 0 ? (
         <EmptyState
+          icon={Dumbbell}
           title={translate('home.noRoutines')}
           hint={translate('home.noRoutinesHint')}
           action={
@@ -190,29 +180,25 @@ export default function HomeTab() {
       {folders.map((folder) => {
         const routinesInFolder = routines.filter((routine) => routine.folderId === folder.id);
         return (
-          <View key={folder.id} style={styles.folderBlock}>
-            <FastPressable
+          <View key={folder.id} style={{ marginBottom: spacing.sm }}>
+            <Pressable
               onPress={() => setOpenSheet({ kind: 'folderMenu', folderId: folder.id })}
               style={styles.folderHeader}
+              haptic="selection"
             >
               <Icon icon={Folder} size={16} color="muted" />
-              <Text variant="caption" color="muted" style={styles.folderName}>
+              <Text variant="caption" color="muted" style={{ flex: 1 }}>
                 {folder.name}
               </Text>
-              <Text variant="caption" color="muted" tabular>
+              <Text variant="caption" color="faint">
                 {routinesInFolder.length}
               </Text>
-              <Icon icon={Ellipsis} size={20} color="muted" />
-            </FastPressable>
-            {routinesInFolder.length > 0 ? (
-              <ListGroup>{routinesInFolder.map(renderRoutineCard)}</ListGroup>
-            ) : null}
+            </Pressable>
+            {routinesInFolder.map(renderRoutineCard)}
           </View>
         );
       })}
-      {routinesWithoutFolder.length > 0 ? (
-        <ListGroup>{routinesWithoutFolder.map(renderRoutineCard)}</ListGroup>
-      ) : null}
+      {routinesWithoutFolder.map(renderRoutineCard)}
 
       <RoutineMenuSheet
         visible={openSheet.kind === 'routineMenu'}
@@ -261,15 +247,11 @@ export default function HomeTab() {
 }
 
 const styles = StyleSheet.create({
-  startEmptyButton: { marginTop: spacing.lg },
-  sectionActions: { flexDirection: 'row', gap: spacing.xs },
-  folderBlock: { marginBottom: spacing.sm },
   folderHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    minHeight: 48,
+    paddingVertical: spacing.sm,
     paddingHorizontal: 2,
   },
-  folderName: { flex: 1 },
 });
