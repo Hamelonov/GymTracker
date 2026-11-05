@@ -457,7 +457,6 @@ export default function ActiveWorkoutScreen() {
                   onAddSet={addSet}
                   onSetChange={changeSet}
                   onSetToggle={toggleSet}
-                  onSetDelete={deleteSetWithUndo}
                   onSetTypePress={openSetTypePicker}
                 />
               );
@@ -480,6 +479,7 @@ export default function ActiveWorkoutScreen() {
             <Button
               title={translate('workout.discard')}
               variant="ghost"
+              textColor={colors.danger}
               fullWidth
               onPress={discardWorkout}
               style={{ marginTop: spacing.sm }}

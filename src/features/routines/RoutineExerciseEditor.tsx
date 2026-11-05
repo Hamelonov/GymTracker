@@ -41,7 +41,6 @@ export function RoutineExerciseEditor({
   const { t: translate, i18n } = useTranslation();
   const setExerciseNote = useRoutineDraft((state) => state.setExerciseNote);
   const updateSet = useRoutineDraft((state) => state.updateSet);
-  const removeSet = useRoutineDraft((state) => state.removeSet);
   const addSetToExercise = useRoutineDraft((state) => state.addSetToExercise);
   const fields = getSetFieldsForExerciseType(exercise?.type ?? 'weight_reps');
   const restSeconds = draftExercise.restSeconds;
@@ -138,7 +137,6 @@ export function RoutineExerciseEditor({
             workoutExerciseId={draftExercise.id}
             onChange={(draftExerciseId, setId, patch) => updateSet(draftExerciseId, setId, patch)}
             onToggle={() => {}}
-            onDelete={(draftExerciseId, setId) => removeSet(draftExerciseId, setId)}
             onSetTypePress={onOpenSetTypeSheet}
           />
         );

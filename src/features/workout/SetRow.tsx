@@ -1,13 +1,7 @@
-import { Check, Trash2 } from 'lucide-react-native';
+import { Check } from 'lucide-react-native';
 import React, { memo, useState } from 'react';
 import { Pressable as RNPressable, StyleSheet, TextInput, View } from 'react-native';
-import ReanimatedSwipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Animated, {
-  interpolate,
-  LinearTransition,
-  type SharedValue,
-  useAnimatedStyle,
-} from 'react-native-reanimated';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useSettings } from '@/store/settings';
 import type {
@@ -47,7 +41,7 @@ export interface SetRowProps {
   workoutExerciseId: string;
   onChange: (workoutExerciseId: string, setId: string, patch: Partial<SetValues>) => void;
   onToggle: (workoutExerciseId: string, setId: string) => void;
-  onDelete: (workoutExerciseId: string, setId: string) => void;
+  /** Нажатие на номер подхода: там выбирают тип подхода и удаляют его. */
   onSetTypePress: (workoutExerciseId: string, setId: string) => void;
   formatSetTypeLabel: (type: SetType) => string;
 }
@@ -110,24 +104,6 @@ function NumberField({
   );
 }
 
-function DeleteAction({ progress, onPress }: { progress: SharedValue<number>; onPress: () => void }) {
-  const colors = useColors();
-  const fadeInStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 0.15], [0, 1], 'clamp'),
-  }));
-  return (
-    <Animated.View style={fadeInStyle}>
-      <Pressable
-        onPress={onPress}
-        style={[styles.deleteButton, { backgroundColor: colors.danger }]}
-        haptic="medium"
-      >
-        <Icon icon={Trash2} size={20} color={colors.background} />
-      </Pressable>
-    </Animated.View>
-  );
-}
-
 /** Форматирует значение с прошлого раза как плейсхолдер или пустую строку, если его не было. */
 function placeholderFromPrevious(
   previousValue: number | null | undefined,
@@ -147,13 +123,11 @@ export const SetRow = memo(function SetRow({
   workoutExerciseId,
   onChange: onChangeById,
   onToggle: onToggleById,
-  onDelete: onDeleteById,
   onSetTypePress: onTypePressById,
   formatSetTypeLabel,
 }: SetRowProps) {
   const updateValues = (patch: Partial<SetValues>) => onChangeById(workoutExerciseId, set.id, patch);
   const toggleCompleted = () => onToggleById(workoutExerciseId, set.id);
-  const deleteSet = () => onDeleteById(workoutExerciseId, set.id);
   const openSetTypePicker = () => onTypePressById(workoutExerciseId, set.id);
   // Пустой подход (ничего не введено или одни нули) нельзя отметить выполненным. Пустые
   // поля при завершении заполняются значениями с прошлого раза, поэтому они тоже считаются.
@@ -168,7 +142,8 @@ export const SetRow = memo(function SetRow({
   const canComplete = set.completed || isSetFilled(valuesOnCompletion, fields);
   const colors = useColors();
   const hapticsEnabled = useSettings((state) => state.haptics);
-  const rowBackgroundStyle = { backgroundColor: set.completed ? colors.accentSoft : colors.surface };
+  // Фон светлее жёлтого квадрата с галочкой, иначе квадрат сливается со строкой.
+  const rowBackgroundStyle = { backgroundColor: set.completed ? colors.accentFaint : colors.surface };
   const previousSetText = set.previous
     ? formatSetValues(set.previous, fields, units, { unitLabel: false })
     : '—';
@@ -180,21 +155,7 @@ export const SetRow = memo(function SetRow({
   const formatDistanceForInput = (meters: number) =>
     formatNumberWithoutTrailingZeros(roundForDisplay(metersToUnit(meters, units.distance)));
 
-  const renderDeleteAction = (
-    progress: SharedValue<number>,
-    _dragOffset: SharedValue<number>,
-    swipeableMethods: SwipeableMethods,
-  ) => (
-    <DeleteAction
-      progress={progress}
-      onPress={() => {
-        swipeableMethods.close();
-        deleteSet();
-      }}
-    />
-  );
-
-  const rowContent = (
+  return (
     <Animated.View style={[styles.row, rowBackgroundStyle]} layout={LinearTransition.duration(110)}>
       <Pressable
         onPress={openSetTypePicker}
@@ -301,7 +262,7 @@ export const SetRow = memo(function SetRow({
           style={[
             styles.checkButton,
             {
-              backgroundColor: set.completed ? colors.text : colors.surfaceAlt,
+              backgroundColor: set.completed ? colors.accent : colors.surfaceAlt,
               opacity: canComplete ? 1 : 0.35,
             },
           ]}
@@ -309,24 +270,12 @@ export const SetRow = memo(function SetRow({
           <Icon
             icon={Check}
             size={18}
-            color={set.completed ? colors.accent : colors.textFaint}
+            color={set.completed ? colors.onAccent : colors.textFaint}
             strokeWidth={3}
           />
         </RNPressable>
       ) : null}
     </Animated.View>
-  );
-
-  if (readOnly) return rowContent;
-  return (
-    <ReanimatedSwipeable
-      renderRightActions={renderDeleteAction}
-      friction={1.6}
-      rightThreshold={48}
-      overshootRight={false}
-    >
-      {rowContent}
-    </ReanimatedSwipeable>
   );
 });
 
@@ -376,14 +325,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  deleteButton: {
-    width: 72,
-    height: 38,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: 5,
-    marginRight: spacing.lg,
-    borderRadius: radius.sm,
   },
 });

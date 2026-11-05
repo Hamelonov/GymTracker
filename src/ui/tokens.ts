@@ -4,6 +4,7 @@ export const palette = {
   yellow: '#FFD400',
   yellowDeep: '#F5C400',
   yellowSoft: '#FFF4B8',
+  yellowFaint: '#FFF9D6',
   black: '#0A0A0A',
   white: '#FFFFFF',
   red: '#E5484D',
@@ -23,6 +24,8 @@ export interface ThemeColors {
   borderStrong: string;
   accent: string;
   accentSoft: string;
+  /** Фон отмеченного подхода: светлее accentSoft, чтобы жёлтый квадрат с галочкой не сливался. */
+  accentFaint: string;
   onAccent: string;
   danger: string;
   dangerSoft: string;
@@ -49,6 +52,7 @@ export const lightColors: ThemeColors = {
   borderStrong: '#CFCFCA',
   accent: palette.yellow,
   accentSoft: palette.yellowSoft,
+  accentFaint: palette.yellowFaint,
   onAccent: palette.black,
   danger: palette.red,
   dangerSoft: '#FDECEC',
@@ -74,6 +78,7 @@ export const darkColors: ThemeColors = {
   borderStrong: '#3A3A3A',
   accent: palette.yellow,
   accentSoft: '#3A3410',
+  accentFaint: '#2A260E',
   onAccent: palette.black,
   danger: '#F2555A',
   dangerSoft: '#3A1C1E',

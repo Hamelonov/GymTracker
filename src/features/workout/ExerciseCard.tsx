@@ -24,7 +24,6 @@ export interface ExerciseCardProps {
   onAddSet: (workoutExerciseId: string) => void;
   onSetChange: (workoutExerciseId: string, setId: string, patch: Partial<SetValues>) => void;
   onSetToggle: (workoutExerciseId: string, setId: string) => void;
-  onSetDelete: (workoutExerciseId: string, setId: string) => void;
   onSetTypePress: (workoutExerciseId: string, setId: string) => void;
 }
 
@@ -46,7 +45,6 @@ export const ExerciseCard = memo(function ExerciseCard({
   onAddSet,
   onSetChange,
   onSetToggle,
-  onSetDelete,
   onSetTypePress,
 }: ExerciseCardProps) {
   const colors = useColors();
@@ -173,7 +171,6 @@ export const ExerciseCard = memo(function ExerciseCard({
           workoutExerciseId={workoutExercise.id}
           onChange={onSetChange}
           onToggle={onSetToggle}
-          onDelete={onSetDelete}
           onSetTypePress={onSetTypePress}
         />
       ))}
