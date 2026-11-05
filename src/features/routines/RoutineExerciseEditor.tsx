@@ -15,7 +15,7 @@ import { formatDuration, unitLabels } from '@/domain/units';
 import { SetRow } from '@/features/workout/SetRow';
 import { NO_EXTRA_FIELDS, SET_COLUMN_WIDTHS } from '@/features/workout/setRowLayout';
 import { useRoutineDraft, type DraftExercise } from '@/store/routineDraft';
-import { Button, Icon, Pressable, Text, fonts, radius, spacing, useColors } from '@/ui';
+import { Button, Icon, Pressable, Text, radius, spacing, typeScale, useColors } from '@/ui';
 
 interface RoutineExerciseEditorProps {
   draftExercise: DraftExercise;
@@ -28,7 +28,7 @@ interface RoutineExerciseEditorProps {
   onOpenSetTypeSheet: (draftExerciseId: string, setId: string) => void;
 }
 
-/** Одна карточка упражнения в редакторе шаблона: название, время отдыха, заметка и запланированные подходы. */
+/** Один блок упражнения в редакторе шаблона: название, время отдыха, заметка и запланированные подходы. */
 export function RoutineExerciseEditor({
   draftExercise,
   exercise,
@@ -55,7 +55,7 @@ export function RoutineExerciseEditor({
   };
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface }]}>
+    <View style={[styles.block, { borderTopColor: colors.border }]}>
       <View style={styles.cardHeader}>
         <View style={{ flex: 1 }}>
           <Text variant="h3" numberOfLines={2}>
@@ -72,8 +72,8 @@ export function RoutineExerciseEditor({
           haptic="selection"
           style={[styles.restButton, { backgroundColor: colors.surfaceAlt }]}
         >
-          <Icon icon={Timer} size={14} color={restSeconds == null || restSeconds > 0 ? 'text' : 'faint'} />
-          <Text variant="label" tabular>
+          <Icon icon={Timer} size={16} color={restSeconds == null || restSeconds > 0 ? 'text' : 'faint'} />
+          <Text variant="caption" tabular>
             {getRestLabel()}
           </Text>
         </Pressable>
@@ -82,7 +82,7 @@ export function RoutineExerciseEditor({
           haptic="selection"
           style={[styles.menuButton, { backgroundColor: colors.surfaceAlt }]}
         >
-          <Icon icon={Ellipsis} size={18} />
+          <Icon icon={Ellipsis} size={20} />
         </Pressable>
       </View>
       <TextInput
@@ -135,8 +135,6 @@ export function RoutineExerciseEditor({
             extraFields={NO_EXTRA_FIELDS}
             hideCheck
             hidePrevious
-            // Шаблон пока лежит в карточке: новая строка по умолчанию рассчитана на белую страницу.
-            restingRowColor={colors.surface}
             formatSetTypeLabel={(type: SetType) => translate(`workout.setTypeShort.${type}`)}
             workoutExerciseId={draftExercise.id}
             onChange={(draftExerciseId, setId, patch) => updateSet(draftExerciseId, setId, patch)}
@@ -163,18 +161,30 @@ export function RoutineExerciseEditor({
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.lg, paddingVertical: spacing.md, marginBottom: spacing.md },
+  // Блок идёт от края до края страницы, как упражнение в активной тренировке: компенсируем поля экрана.
+  block: {
+    marginHorizontal: -spacing.lg,
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg },
   restButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    height: 32,
-    paddingHorizontal: spacing.sm + 2,
+    gap: spacing.xs,
+    height: 40,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.pill,
   },
-  menuButton: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  noteInput: { fontFamily: fonts.regular, fontSize: 14, paddingHorizontal: spacing.lg, paddingVertical: 6 },
+  menuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noteInput: { ...typeScale.caption, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   columnHeaders: {
     flexDirection: 'row',
     alignItems: 'center',

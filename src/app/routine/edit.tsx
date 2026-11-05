@@ -8,11 +8,11 @@ import { getExercisesByIds } from '@/db/repo/exercises';
 import { createRoutine, getRoutine, listFolders, updateRoutine, type RoutineInput } from '@/db/repo/routines';
 import { useQuery } from '@/db/version';
 import { newId } from '@/domain/ids';
-import { RestTimeSheet } from '@/features/routines/RestTimeSheet';
 import { RoutineExerciseEditor } from '@/features/routines/RoutineExerciseEditor';
 import { RoutineExerciseMenuSheet } from '@/features/routines/RoutineExerciseMenuSheet';
-import { SetTypeSheet } from '@/features/routines/SetTypeSheet';
 import { SupersetPickerSheet } from '@/features/routines/SupersetPickerSheet';
+import { RestTimerPickerSheet } from '@/features/workout/sheets/RestTimerPickerSheet';
+import { SetTypePickerSheet } from '@/features/workout/sheets/SetTypePickerSheet';
 import { usePickerResult } from '@/store/picker';
 import { useRoutineDraft } from '@/store/routineDraft';
 import { useSettings } from '@/store/settings';
@@ -182,27 +182,27 @@ export default function RoutineEditScreen() {
         onClose={closeSheet}
       />
 
-      <RestTimeSheet
+      <RestTimerPickerSheet
         visible={openSheet.kind === 'restTime'}
-        selectedRestSeconds={selectedExercise?.restSeconds}
+        selectedSeconds={selectedExercise?.restSeconds ?? null}
         defaultRestSeconds={settings.defaultRestSeconds}
         onClose={closeSheet}
-        onSelectRestSeconds={(restSeconds) => {
+        onRestSelect={(restSeconds) => {
           if (selectedExercise) draft.setRestSeconds(selectedExercise.id, restSeconds);
           closeSheet();
         }}
       />
 
-      <SetTypeSheet
+      <SetTypePickerSheet
         visible={openSheet.kind === 'setType'}
         onClose={closeSheet}
-        onSelectSetType={(setType) => {
+        onSetTypeSelect={(setType) => {
           if (openSheet.kind === 'setType') {
             draft.updateSet(openSheet.draftExerciseId, openSheet.setId, { type: setType });
           }
           closeSheet();
         }}
-        onDeleteSet={() => {
+        onDeleteSetPress={() => {
           if (openSheet.kind === 'setType') draft.removeSet(openSheet.draftExerciseId, openSheet.setId);
           closeSheet();
         }}

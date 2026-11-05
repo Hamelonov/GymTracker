@@ -37,8 +37,6 @@ export interface SetRowProps {
   isDense?: boolean;
   /** Подпись отметки для экранного диктора. Приходит строкой, чтобы строка не подписывалась на перевод. */
   completeSetLabel?: string;
-  /** Фон строки без маркера. Непрозрачный: при свайпе строка должна закрывать кнопку удаления. */
-  restingRowColor?: string;
   /** Id упражнения-владельца; передаётся обратно в каждый обработчик. */
   workoutExerciseId: string;
   onChange: (workoutExerciseId: string, setId: string, patch: Partial<SetValues>) => void;
@@ -60,7 +58,6 @@ export const SetRow = memo(function SetRow({
   isNextSet,
   isDense,
   completeSetLabel,
-  restingRowColor,
   workoutExerciseId,
   onChange: onChangeById,
   onToggle: onToggleById,
@@ -116,7 +113,7 @@ export const SetRow = memo(function SetRow({
         styles.row,
         {
           gap: getSetColumnGap(isDense),
-          backgroundColor: set.completed ? colors.accentSoft : (restingRowColor ?? colors.background),
+          backgroundColor: set.completed ? colors.accentSoft : colors.background,
         },
       ]}
     >
