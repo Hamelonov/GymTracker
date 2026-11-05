@@ -20,13 +20,14 @@ import { Button, Chip, IconButton, Input, Screen, SectionTitle, Text, spacing } 
 export default function LogMeasurementScreen() {
   const params = useLocalSearchParams<{ type?: MeasurementType }>();
   const { t: translate, i18n } = useTranslation();
-  const settings = useSettings();
+  const weightUnit = useSettings((state) => state.weightUnit);
+  const measurementUnit = useSettings((state) => state.measurementUnit);
   const [type, setType] = useState<MeasurementType>(params.type ?? 'weight');
   const [valueText, setValueText] = useState('');
   const [note, setNote] = useState('');
   const now = useNow();
   const [measuredAt, setMeasuredAt] = useState(() => Date.now());
-  const units: MeasurementUnits = { weight: settings.weightUnit, length: settings.measurementUnit };
+  const units: MeasurementUnits = { weight: weightUnit, length: measurementUnit };
   const unitLabel = getMeasurementUnitLabel(type, units);
   const parsedValue = parseNumberInput(valueText);
   const isNextDayInFuture = addDays(measuredAt, 1).getTime() > now;
@@ -76,14 +77,15 @@ export default function LogMeasurementScreen() {
         keyboardType="decimal-pad"
         autoFocus
         placeholder="0"
+        size="xl"
         containerStyle={styles.fieldSpacing}
-        style={styles.valueInput}
       />
       <SectionTitle title={translate('measurements.date')} />
       <View style={styles.dateRow}>
         <IconButton
           icon={ChevronLeft}
-          variant="filled"
+          variant="plain"
+          label={translate('measurements.date')}
           onPress={goToPreviousDay}
           haptic="selection"
           debounceMs={0}
@@ -93,7 +95,8 @@ export default function LogMeasurementScreen() {
         </Text>
         <IconButton
           icon={ChevronRight}
-          variant="filled"
+          variant="plain"
+          label={translate('measurements.date')}
           disabled={isNextDayInFuture}
           onPress={goToNextDay}
           haptic="selection"
@@ -116,7 +119,6 @@ const styles = StyleSheet.create({
   chipsScroller: { marginHorizontal: -spacing.lg },
   chips: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   fieldSpacing: { marginTop: spacing.lg },
-  valueInput: { fontSize: 28, minHeight: 60 },
   dateRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   dateText: { flex: 1 },
 });

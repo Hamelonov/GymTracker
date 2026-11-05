@@ -26,6 +26,9 @@ export function LineChart({ data, height = 220, formatY, kind = 'line' }: LineCh
   const font = useFont(Inter_500Medium, 11);
   if (data.length === 0) return null;
   const labelsByX = new Map(data.map((point) => [point.x, point.label]));
+  // Точки рисуются только для настоящих значений, у соседних служебных точек подписи нет.
+  const labeledPoints = <Point extends { xValue: unknown }>(allPoints: Point[]) =>
+    allPoints.filter((point) => labelsByX.get(Math.round(Number(point.xValue))));
   const firstPoint = data[0]!;
   // Одна точка не рисует линию, поэтому по бокам от неё добавляются соседние точки без подписей.
   const chartData =
@@ -71,7 +74,7 @@ export function LineChart({ data, height = 220, formatY, kind = 'line' }: LineCh
         }}
         xAxis={{
           font,
-          labelColor: colors.textFaint,
+          labelColor: colors.textMuted,
           lineColor: 'transparent',
           tickCount: Math.min(6, data.length),
           formatXLabel: (value) => labelsByX.get(Math.round(Number(value))) ?? '',
@@ -79,7 +82,7 @@ export function LineChart({ data, height = 220, formatY, kind = 'line' }: LineCh
         yAxis={[
           {
             font,
-            labelColor: colors.textFaint,
+            labelColor: colors.textMuted,
             lineColor: colors.border,
             tickCount: 4,
             tickValues,
@@ -89,13 +92,23 @@ export function LineChart({ data, height = 220, formatY, kind = 'line' }: LineCh
       >
         {({ points, chartBounds }) =>
           kind === 'bar' ? (
-            <Bar
-              points={points.y}
-              chartBounds={chartBounds}
-              color={colors.accent}
-              roundedCorners={{ topLeft: 6, topRight: 6 }}
-              animate={{ type: 'timing', duration: 180 }}
-            />
+            <>
+              <Bar
+                points={points.y}
+                chartBounds={chartBounds}
+                color={colors.text}
+                roundedCorners={{ topLeft: radius.xs, topRight: radius.xs }}
+                animate={{ type: 'timing', duration: 180 }}
+              />
+              {/* Последний столбец закрашен маркером поверх чернил; barCount держит ширину равной остальным. */}
+              <Bar
+                points={points.y.slice(-1)}
+                chartBounds={chartBounds}
+                barCount={points.y.length}
+                color={colors.accent}
+                roundedCorners={{ topLeft: radius.xs, topRight: radius.xs }}
+              />
+            </>
           ) : (
             <>
               <Area
@@ -115,12 +128,10 @@ export function LineChart({ data, height = 220, formatY, kind = 'line' }: LineCh
               />
               {/* Точки только для настоящих (подписанных) значений и только пока их не слишком много. */}
               {data.length <= 40 ? (
-                <Scatter
-                  points={points.y.filter((point) => labelsByX.get(Math.round(Number(point.xValue))))}
-                  radius={4}
-                  color={colors.accent}
-                  style="fill"
-                />
+                <>
+                  <Scatter points={labeledPoints(points.y)} radius={6} color={colors.text} style="fill" />
+                  <Scatter points={labeledPoints(points.y)} radius={4} color={colors.accent} style="fill" />
+                </>
               ) : null}
             </>
           )
@@ -134,7 +145,7 @@ export function EmptyChart({ text }: { text: string }) {
   const colors = useColors();
   return (
     <View style={[styles.empty, { backgroundColor: colors.surface }]}>
-      <Text color="faint">{text}</Text>
+      <Text color="muted">{text}</Text>
     </View>
   );
 }

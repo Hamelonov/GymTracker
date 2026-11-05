@@ -20,7 +20,7 @@ import { WeeklyChart } from '@/features/stats/WeeklyChart';
 import { calculateWeekStreak } from '@/features/stats/weekStreak';
 import { useNow } from '@/lib/useNow';
 import { useSettings } from '@/store/settings';
-import { Card, Screen, Segmented, Text, spacing } from '@/ui';
+import { Screen, Segmented, Stat, radius, spacing, useColors } from '@/ui';
 
 type Period = '3m' | '6m' | '1y' | 'all';
 
@@ -36,6 +36,7 @@ const TOP_RECORDS_COUNT = 8;
 
 export default function StatsScreen() {
   const { t: translate } = useTranslation();
+  const colors = useColors();
   const weightUnit = useSettings((state) => state.weightUnit);
   const now = useNow();
   const [period, setPeriod] = useState<Period>('3m');
@@ -59,13 +60,22 @@ export default function StatsScreen() {
 
   return (
     <Screen header={{ backButton: true, title: translate('stats.title') }}>
-      <Card style={styles.allTimeCard}>
-        <AllTimeTile label={translate('stats.workouts')} value={String(allTimeTotals.workouts)} />
-        <AllTimeTile
+      <View style={[styles.allTimeCard, { backgroundColor: colors.inverseSurface }]}>
+        <Stat
+          size="hero"
+          tone="inverse"
+          style={styles.allTimeStat}
+          label={translate('stats.workouts')}
+          value={String(allTimeTotals.workouts)}
+        />
+        <Stat
+          size="hero"
+          tone="inverse"
+          style={styles.allTimeStat}
           label={translate('stats.time')}
           value={formatDuration(allTimeTotals.durationSec, { compact: true })}
         />
-      </Card>
+      </View>
       <Segmented
         options={[
           { value: '3m', label: translate('stats.period3m') },
@@ -85,21 +95,13 @@ export default function StatsScreen() {
   );
 }
 
-/** Число за всё время, не зависит от выбранного периода: тренировки и время. */
-function AllTimeTile({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.allTimeTile}>
-      <Text variant="label" color="muted">
-        {label.toUpperCase()}
-      </Text>
-      <Text variant="h3" tabular>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  allTimeCard: { flexDirection: 'row', marginBottom: spacing.lg },
-  allTimeTile: { flex: 1, gap: 4 },
+  // Обложка тетради: единственный тёмный блок на экране.
+  allTimeCard: {
+    flexDirection: 'row',
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderRadius: radius.lg,
+  },
+  allTimeStat: { flex: 1 },
 });

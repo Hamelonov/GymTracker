@@ -1,10 +1,9 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet } from 'react-native';
 import { exerciseName } from '@/db/repo/exercises';
 import type { topExercises } from '@/db/repo/workouts';
 import { push } from '@/lib/nav';
-import { Card, ListItem, SectionTitle, Text, spacing } from '@/ui';
+import { ListGroup, ListItem, SectionTitle, Text } from '@/ui';
 
 type TopExercise = ReturnType<typeof topExercises>[number];
 
@@ -14,33 +13,25 @@ export function TopExercisesCard({ exercises }: { exercises: TopExercise[] }) {
   return (
     <>
       <SectionTitle title={translate('stats.topExercises')} />
-      <Card padded={false}>
-        {exercises.length === 0 ? (
-          <Text color="faint" style={styles.emptyText}>
-            {translate('stats.noData')}
-          </Text>
-        ) : (
-          exercises.map((exercise) => (
+      {exercises.length === 0 ? (
+        <Text color="muted">{translate('stats.noData')}</Text>
+      ) : (
+        <ListGroup>
+          {exercises.map((exercise) => (
             <ListItem
               key={exercise.exerciseId}
               title={exerciseName(exercise, i18n.language)}
               right={
-                <Text variant="caption" color="muted">
+                <Text variant="caption" color="muted" tabular>
                   {exercise.count}×
                 </Text>
               }
               chevron
               onPress={() => push({ pathname: '/exercise/[id]', params: { id: exercise.exerciseId } })}
-              style={styles.listItem}
             />
-          ))
-        )}
-      </Card>
+          ))}
+        </ListGroup>
+      )}
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  emptyText: { padding: spacing.lg },
-  listItem: { paddingHorizontal: spacing.lg },
-});
