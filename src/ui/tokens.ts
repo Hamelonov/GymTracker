@@ -117,10 +117,10 @@ export const spacing = {
 } as const;
 
 export const radius = {
-  sm: 12,
-  md: 16,
-  lg: 22,
-  xl: 32,
+  sm: 10,
+  md: 14,
+  lg: 20,
+  xl: 28,
   pill: 999,
 } as const;
 
@@ -153,6 +153,7 @@ export const typeScale = {
   h3: { fontSize: 17, lineHeight: 22, fontFamily: fonts.semibold, letterSpacing: -0.2 },
   body: { fontSize: 15, lineHeight: 21, fontFamily: fonts.regular, letterSpacing: 0 },
   bodyMedium: { fontSize: 15, lineHeight: 21, fontFamily: fonts.medium, letterSpacing: 0 },
+  button: { fontSize: 15, lineHeight: 20, fontFamily: fonts.semibold, letterSpacing: -0.1 },
   caption: { fontSize: 13, lineHeight: 17, fontFamily: fonts.medium, letterSpacing: 0 },
   label: { fontSize: 11, lineHeight: 14, fontFamily: fonts.semibold, letterSpacing: 0.6 },
   mono: { fontSize: 17, lineHeight: 22, fontFamily: fonts.semibold, letterSpacing: -0.2 },

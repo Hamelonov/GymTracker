@@ -79,7 +79,7 @@ function TabLabel({ title, isFocused }: { title: string; isFocused: boolean }) {
         styles.label,
         {
           color: isFocused ? colors.text : colors.textMuted,
-          fontFamily: isFocused ? fonts.bold : fonts.semibold,
+          fontFamily: fonts.semibold,
         },
       ]}
     >
@@ -130,7 +130,7 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  iconSlot: { width: 56, height: 32, alignItems: 'center', justifyContent: 'center' },
-  capsule: { ...StyleSheet.absoluteFill, borderRadius: radius.pill },
+  iconSlot: { width: 46, height: 30, alignItems: 'center', justifyContent: 'center' },
+  capsule: { ...StyleSheet.absoluteFill, borderRadius: radius.sm },
   label: { fontSize: 11, marginTop: 2, maxWidth: 72 },
 });

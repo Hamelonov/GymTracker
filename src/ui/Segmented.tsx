@@ -74,7 +74,7 @@ export function Segmented<T extends string>({ options, value, onChange }: Segmen
 const styles = StyleSheet.create({
   track: {
     flexDirection: 'row',
-    borderRadius: radius.pill,
+    borderRadius: radius.md,
     padding: TRACK_PADDING,
     height: 40,
     position: 'relative',
@@ -84,7 +84,8 @@ const styles = StyleSheet.create({
     top: TRACK_PADDING,
     bottom: TRACK_PADDING,
     left: TRACK_PADDING,
-    borderRadius: radius.pill,
+    // Внутренний радиус меньше внешнего на отступ, иначе углы бегунка и дорожки расходятся.
+    borderRadius: radius.md - TRACK_PADDING,
   },
   segment: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
 });
