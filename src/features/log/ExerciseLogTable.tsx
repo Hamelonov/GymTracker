@@ -12,7 +12,7 @@ import { Card, Text, spacing, useColors } from '@/ui';
 type Units = { weight: WeightUnit; distance: DistanceUnit };
 
 /** Ширины колонок фиксированы: таблица шире экрана, её двигают и масштабируют на холсте. */
-const COLUMN_WIDTHS = { day: 100, weight: 64, timesSign: 14, sets: 110, rir: 80, rpe: 80, note: 180 };
+const COLUMN_WIDTHS = { day: 100, weight: 64, timesSign: 14, sets: 110, rir: 80, rpe: 80, note: 320 };
 // Между столбцами зазор шире, чтобы их было легче различать; внутри «вес х подходы» — уже, это одна фраза.
 const COLUMN_GAP = spacing.lg;
 const INNER_GAP = spacing.sm;
