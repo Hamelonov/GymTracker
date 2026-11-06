@@ -1,7 +1,7 @@
 import React from 'react';
 import { type StyleProp, StyleSheet, View, type ViewProps, type ViewStyle } from 'react-native';
-import { useColors, useTheme } from './ThemeProvider';
-import { radius, shadows, spacing } from './tokens';
+import { useColors } from './ThemeProvider';
+import { radius, spacing } from './tokens';
 
 export interface CardProps extends ViewProps {
   padded?: boolean;
@@ -11,15 +11,13 @@ export interface CardProps extends ViewProps {
 
 export function Card({ padded = true, raised, style, ...rest }: CardProps) {
   const colors = useColors();
-  // В тёмной теме тени нет: глубину даёт surface на background.
-  const { isDark } = useTheme();
   return (
     <View
       {...rest}
       style={[
         styles.card,
-        { backgroundColor: raised ? colors.surfaceRaised : colors.surface },
-        isDark ? null : shadows.card,
+        { backgroundColor: raised ? colors.surfaceRaised : colors.surface, borderColor: colors.border },
+        raised ? styles.raised : null,
         padded ? styles.padded : null,
         style,
       ]}
@@ -28,6 +26,7 @@ export function Card({ padded = true, raised, style, ...rest }: CardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: radius.lg },
+  card: { borderRadius: radius.lg, overflow: 'hidden' },
+  raised: { borderWidth: StyleSheet.hairlineWidth },
   padded: { padding: spacing.lg },
 });

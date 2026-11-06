@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   field: {
     borderRadius: radius.md,
     borderWidth: 1.5,
-    minHeight: 48,
+    minHeight: 50,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',

@@ -3,7 +3,7 @@ import { ActivityIndicator, type StyleProp, StyleSheet, View, type ViewStyle } f
 import { Pressable, type AnimatedPressableProps } from './Pressable';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
-import { spacing, type ThemeColors } from './tokens';
+import { radius, spacing, type ThemeColors } from './tokens';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
 type Size = 'sm' | 'md' | 'lg';
@@ -24,9 +24,7 @@ export interface ButtonProps extends Omit<AnimatedPressableProps, 'children' | '
   contentAlign?: 'center' | 'start';
 }
 
-const buttonHeightBySize: Record<Size, number> = { sm: 36, md: 46, lg: 52 };
-// Радиус около трети высоты: форма мягкая и круглая, но не капсула, на всю ширину капсула тяжелит экран.
-const buttonRadiusBySize: Record<Size, number> = { sm: 12, md: 16, lg: 18 };
+const buttonHeightBySize: Record<Size, number> = { sm: 36, md: 48, lg: 56 };
 
 function getBackgroundColor(variant: Variant, colors: ThemeColors): string {
   const backgroundColorByVariant: Record<Variant, string> = {
@@ -77,12 +75,12 @@ export function Button({
         {
           backgroundColor,
           height: buttonHeightBySize[size],
-          borderRadius: buttonRadiusBySize[size],
+          borderRadius: size === 'lg' ? radius.lg : radius.md,
           opacity: disabled ? 0.45 : 1,
           borderWidth: variant === 'outline' ? 1.5 : 0,
           borderColor: colors.borderStrong,
           alignSelf: fullWidth ? 'stretch' : 'auto',
-          paddingHorizontal: size === 'sm' || contentAlign === 'start' ? spacing.md : spacing.lg,
+          paddingHorizontal: size === 'sm' || contentAlign === 'start' ? spacing.md : spacing.xl,
           // Кнопка раскладывает содержимое столбиком, поэтому к левому краю его прижимает alignItems.
           alignItems: contentAlign === 'start' ? 'flex-start' : 'center',
         },
@@ -95,7 +93,7 @@ export function Button({
         <View style={styles.content}>
           {icon ? <View style={styles.icon}>{icon}</View> : null}
           {title ? (
-            <Text variant={size === 'sm' ? 'caption' : 'button'} color={labelColor}>
+            <Text variant={size === 'sm' ? 'caption' : 'h3'} color={labelColor}>
               {title}
             </Text>
           ) : null}

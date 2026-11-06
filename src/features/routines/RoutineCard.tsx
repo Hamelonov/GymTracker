@@ -1,4 +1,4 @@
-import { Dumbbell, Ellipsis, Play } from 'lucide-react-native';
+import { Ellipsis, Play } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -6,7 +6,7 @@ import { exerciseName } from '@/db/repo/exercises';
 import type { RoutineSummary } from '@/db/repo/routines';
 import type { ExerciseRow } from '@/db/schema';
 import { formatRelativeDay } from '@/domain/dates';
-import { Button, Card, Icon, IconCircle, Pressable, Text, pickTintById, spacing, useColors } from '@/ui';
+import { Button, Card, Icon, Pressable, Text, spacing, useColors } from '@/ui';
 
 interface RoutineCardProps {
   routine: RoutineSummary;
@@ -34,7 +34,6 @@ export function RoutineCard({ routine, exercises, onStart, onMenu, onPress }: Ro
     <Pressable onPress={onPress} scaleTo={0.985}>
       <Card raised style={styles.card}>
         <View style={styles.headerRow}>
-          <IconCircle icon={Dumbbell} tint={pickTintById(routine.id)} />
           <View style={{ flex: 1 }}>
             <Text variant="h3" numberOfLines={1}>
               {routine.name}
@@ -77,8 +76,8 @@ export function RoutineCard({ routine, exercises, onStart, onMenu, onPress }: Ro
 
 const styles = StyleSheet.create({
   card: { marginBottom: spacing.md },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  menuButton: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  menuButton: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   exerciseNames: { marginTop: spacing.md },
   startButton: { marginTop: spacing.md, alignSelf: 'flex-start' },
 });

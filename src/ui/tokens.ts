@@ -32,11 +32,6 @@ export interface ThemeColors {
   success: string;
   successSoft: string;
   info: string;
-  infoSoft: string;
-  coral: string;
-  coralSoft: string;
-  violet: string;
-  violetSoft: string;
   overlay: string;
   tabBar: string;
   inputBackground: string;
@@ -46,63 +41,53 @@ export interface ThemeColors {
 }
 
 export const lightColors: ThemeColors = {
-  background: '#FBF9F4',
-  surface: '#FFFFFF',
-  surfaceAlt: '#F2EFE7',
+  background: '#FFFFFF',
+  surface: '#F6F6F4',
+  surfaceAlt: '#ECECE9',
   surfaceRaised: '#FFFFFF',
-  text: '#17150F',
-  textMuted: '#6E695C',
-  textFaint: '#A9A394',
-  border: '#ECE8DD',
-  borderStrong: '#D6D1C3',
+  text: '#0A0A0A',
+  textMuted: '#6A6A66',
+  textFaint: '#A3A39E',
+  border: '#E6E6E2',
+  borderStrong: '#CFCFCA',
   accent: palette.yellow,
-  accentSoft: '#FFF0B0',
-  accentFaint: '#FFF8DB',
-  onAccent: '#17150F',
-  danger: '#E5484D',
-  dangerSoft: '#FDEBEA',
-  success: '#16A673',
-  successSoft: '#DFF5EC',
-  info: '#4F6BED',
-  infoSoft: '#E7EBFF',
-  coral: '#FF6B45',
-  coralSoft: '#FFE8E1',
-  violet: '#8B5CF6',
-  violetSoft: '#EFE9FF',
-  overlay: 'rgba(23,21,15,0.42)',
-  tabBar: '#FFFFFF',
-  inputBackground: '#F2EFE7',
+  accentSoft: palette.yellowSoft,
+  accentFaint: palette.yellowFaint,
+  onAccent: palette.black,
+  danger: palette.red,
+  dangerSoft: '#FDECEC',
+  success: palette.green,
+  successSoft: '#E6F6EE',
+  info: palette.blue,
+  overlay: 'rgba(10,10,10,0.45)',
+  tabBar: 'rgba(255,255,255,0.96)',
+  inputBackground: '#F0F0ED',
   black: palette.black,
   white: palette.white,
 };
 
 export const darkColors: ThemeColors = {
-  background: '#0F0E0B',
-  surface: '#1A1815',
-  surfaceAlt: '#26231E',
-  surfaceRaised: '#211F1A',
-  text: '#F7F4EC',
-  textMuted: '#A39E90',
-  textFaint: '#6B675B',
-  border: '#2B2822',
-  borderStrong: '#3E3A31',
+  background: '#0A0A0A',
+  surface: '#161616',
+  surfaceAlt: '#212121',
+  surfaceRaised: '#1C1C1C',
+  text: '#F7F7F5',
+  textMuted: '#9C9C97',
+  textFaint: '#5E5E5A',
+  border: '#262626',
+  borderStrong: '#3A3A3A',
   accent: palette.yellow,
-  accentSoft: '#3D3410',
-  accentFaint: '#2A2510',
-  onAccent: '#17150F',
+  accentSoft: '#3A3410',
+  accentFaint: '#2A260E',
+  onAccent: palette.black,
   danger: '#F2555A',
-  dangerSoft: '#3B1D1E',
-  success: '#34D399',
-  successSoft: '#12332A',
-  info: '#7C93FF',
-  infoSoft: '#1E2547',
-  coral: '#FF8A66',
-  coralSoft: '#3C2119',
-  violet: '#A78BFA',
-  violetSoft: '#2A2145',
+  dangerSoft: '#3A1C1E',
+  success: '#3DD68C',
+  successSoft: '#153226',
+  info: '#6E8CFF',
   overlay: 'rgba(0,0,0,0.6)',
-  tabBar: '#1A1815',
-  inputBackground: '#26231E',
+  tabBar: 'rgba(10,10,10,0.96)',
+  inputBackground: '#1F1F1F',
   black: palette.black,
   white: palette.white,
 };
@@ -124,20 +109,6 @@ export const radius = {
   pill: 999,
 } as const;
 
-/** Тень только у карточек и шторок и только в светлой теме: в тёмной глубину даёт surface на background. */
-export const shadows = {
-  card: { boxShadow: '0 2px 12px rgba(23,21,15,0.06)' },
-  none: {},
-} as const;
-
-/** Длительности в мс. Кривая: Easing.out(Easing.cubic), на уход Easing.in(Easing.cubic). */
-export const motion = {
-  press: 70,
-  quick: 140,
-  base: 180,
-  exit: 130,
-} as const;
-
 export const fonts = {
   regular: 'Inter_400Regular',
   medium: 'Inter_500Medium',
@@ -153,7 +124,6 @@ export const typeScale = {
   h3: { fontSize: 17, lineHeight: 22, fontFamily: fonts.semibold, letterSpacing: -0.2 },
   body: { fontSize: 15, lineHeight: 21, fontFamily: fonts.regular, letterSpacing: 0 },
   bodyMedium: { fontSize: 15, lineHeight: 21, fontFamily: fonts.medium, letterSpacing: 0 },
-  button: { fontSize: 15, lineHeight: 20, fontFamily: fonts.semibold, letterSpacing: -0.1 },
   caption: { fontSize: 13, lineHeight: 17, fontFamily: fonts.medium, letterSpacing: 0 },
   label: { fontSize: 11, lineHeight: 14, fontFamily: fonts.semibold, letterSpacing: 0.6 },
   mono: { fontSize: 17, lineHeight: 22, fontFamily: fonts.semibold, letterSpacing: -0.2 },

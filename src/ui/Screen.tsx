@@ -39,42 +39,38 @@ export function Header({ title, subtitle, large, backButton, right, left, largeR
   const handleBackPress = onBack ?? goBackOrHome;
   const showsSmallTitle = !large && title;
   const showsLargeTitle = large && title;
-  // Пустую строку над крупным заголовком не рисуем: она только съедает место.
-  const hasTopRowContent = !!backButton || !!left || !!right || !!showsSmallTitle;
   return (
     <View style={[styles.header, large ? styles.headerLarge : null]}>
-      {hasTopRowContent ? (
-        <View style={styles.headerRow}>
-          <View style={styles.headerSide}>
-            {backButton ? (
-              <Pressable
-                onPress={handleBackPress}
-                hitSlop={12}
-                style={[styles.backButton, { backgroundColor: colors.surfaceAlt }]}
-              >
-                <Icon icon={backButton === 'close' ? X : ArrowLeft} size={20} />
-              </Pressable>
-            ) : (
-              left
-            )}
-          </View>
-          {showsSmallTitle ? (
-            <View style={styles.headerCenter}>
-              <Text variant="h3" numberOfLines={1}>
-                {title}
-              </Text>
-              {subtitle ? (
-                <Text variant="caption" color="muted" numberOfLines={1}>
-                  {subtitle}
-                </Text>
-              ) : null}
-            </View>
+      <View style={styles.headerRow}>
+        <View style={styles.headerSide}>
+          {backButton ? (
+            <Pressable
+              onPress={handleBackPress}
+              hitSlop={12}
+              style={[styles.backButton, { backgroundColor: colors.surfaceAlt }]}
+            >
+              <Icon icon={backButton === 'close' ? X : ArrowLeft} size={20} />
+            </Pressable>
           ) : (
-            <View style={styles.headerCenter} />
+            left
           )}
-          <View style={[styles.headerSide, styles.headerRight]}>{right}</View>
         </View>
-      ) : null}
+        {showsSmallTitle ? (
+          <View style={styles.headerCenter}>
+            <Text variant="h3" numberOfLines={1}>
+              {title}
+            </Text>
+            {subtitle ? (
+              <Text variant="caption" color="muted" numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+        ) : (
+          <View style={styles.headerCenter} />
+        )}
+        <View style={[styles.headerSide, styles.headerRight]}>{right}</View>
+      </View>
       {showsLargeTitle ? (
         <View style={styles.largeTitleRow}>
           <View style={styles.largeTitleColumn}>
@@ -164,6 +160,7 @@ const styles = StyleSheet.create({
   headerRight: { justifyContent: 'flex-end', flexShrink: 0 },
   headerCenter: { flex: 1, alignItems: 'center' },
   largeTitleRow: {
+    marginTop: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
