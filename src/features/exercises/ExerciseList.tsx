@@ -1,24 +1,24 @@
 import { FlashList } from '@shopify/flash-list';
-import { Check, Plus, Search, X } from 'lucide-react-native';
+import { Check, Plus, Search } from 'lucide-react-native';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable as NativePressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { exerciseName, getExerciseUsage, listExercises } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import { useQuery } from '@/db/version';
 import { MUSCLE_GROUPS, type MuscleGroup } from '@/domain/types';
 import { MuscleThumbnail } from '@/features/muscles/MuscleThumbnail';
+import { ExerciseSearchBox } from './ExerciseSearchBox';
 import {
-  Chip,
+  DropdownFilterBar,
   EmptyState,
   FastPressable,
   Icon,
   Pressable,
   Text,
-  fonts,
-  radius,
   spacing,
   useColors,
+  type DropdownFilter,
   type ThemeColors,
 } from '@/ui';
 
@@ -37,6 +37,11 @@ interface ExerciseListItem {
   name: string;
   subtitle: string;
 }
+
+const ALL_MUSCLES_ID = 'all';
+const MUSCLE_FIELD_WIDTH = 150;
+// Список шире поля: длинным названиям мышц в поле тесно рядом с галочкой.
+const MUSCLE_LIST_WIDTH = 200;
 
 /** Стабильная пустая ссылка для мемоизированных строк списка. */
 const NO_SECONDARY_MUSCLES: MuscleGroup[] = [];
@@ -185,84 +190,52 @@ export function ExerciseList({
     [selectedIds, isSelectable, colors, onPress],
   );
 
+  const muscleDropdown: DropdownFilter = {
+    key: 'muscle',
+    items: [
+      { id: ALL_MUSCLES_ID, name: translate('exercise.allMuscles') },
+      ...MUSCLE_GROUPS.map((muscle) => ({ id: muscle, name: translate(`muscles.${muscle}`) })),
+    ],
+    selectedId: muscleFilter ?? ALL_MUSCLES_ID,
+    fieldWidth: MUSCLE_FIELD_WIDTH,
+    listWidth: MUSCLE_LIST_WIDTH,
+    onSelect: (id) => setMuscleFilter(MUSCLE_GROUPS.find((muscle) => muscle === id) ?? null),
+  };
+
   return (
-    <FlashList
-      data={visibleItems}
-      // Запас отрисовки вперёд больше стандартного, чтобы быстрая прокрутка не показывала пустые строки.
-      drawDistance={600}
-      keyExtractor={(item) => item.exercise.id}
-      keyboardShouldPersistTaps="handled"
-      extraData={selectedIds}
-      contentContainerStyle={{ paddingBottom: bottomPadding + spacing.xxl }}
-      ListHeaderComponent={
-        <View>
-          {header}
-          <View style={[styles.searchBox, { backgroundColor: colors.inputBackground }]}>
-            <Icon icon={Search} size={18} color="faint" />
-            <TextInput
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholder={translate('exercise.searchPlaceholder')}
-              placeholderTextColor={colors.textFaint}
-              selectionColor={colors.accent}
-              style={[styles.searchInput, { color: colors.text }]}
-              autoCorrect={false}
-              returnKeyType="search"
-            />
-            {searchText ? (
-              <NativePressable onPress={() => setSearchText('')} hitSlop={10}>
-                <Icon icon={X} size={18} color="muted" />
-              </NativePressable>
+    <DropdownFilterBar
+      filters={[muscleDropdown]}
+      leading={<ExerciseSearchBox value={searchText} onChange={setSearchText} />}
+    >
+      <FlashList
+        data={visibleItems}
+        // Запас отрисовки вперёд больше стандартного, чтобы быстрая прокрутка не показывала пустые строки.
+        drawDistance={600}
+        keyExtractor={(item) => item.exercise.id}
+        keyboardShouldPersistTaps="handled"
+        extraData={selectedIds}
+        contentContainerStyle={{ paddingBottom: bottomPadding + spacing.xxl }}
+        ListHeaderComponent={
+          <View>
+            {header}
+            {onCreate ? (
+              <Pressable onPress={onCreate} style={styles.createRow} haptic="light">
+                <View style={[styles.createIcon, { backgroundColor: colors.accent }]}>
+                  <Icon icon={Plus} size={18} color="onAccent" strokeWidth={2.5} />
+                </View>
+                <Text variant="bodyMedium">{translate('exercise.create')}</Text>
+              </Pressable>
             ) : null}
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.muscleChips}
-            keyboardShouldPersistTaps="handled"
-          >
-            <Chip
-              label={translate('common.all')}
-              selected={muscleFilter == null}
-              onPress={() => setMuscleFilter(null)}
-            />
-            {MUSCLE_GROUPS.map((muscle) => (
-              <Chip
-                key={muscle}
-                label={translate(`muscles.${muscle}`)}
-                selected={muscleFilter === muscle}
-                onPress={() => setMuscleFilter(muscleFilter === muscle ? null : muscle)}
-              />
-            ))}
-          </ScrollView>
-          {onCreate ? (
-            <Pressable onPress={onCreate} style={styles.createRow} haptic="light">
-              <View style={[styles.createIcon, { backgroundColor: colors.accent }]}>
-                <Icon icon={Plus} size={18} color="onAccent" strokeWidth={2.5} />
-              </View>
-              <Text variant="bodyMedium">{translate('exercise.create')}</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      }
-      ListEmptyComponent={<EmptyState icon={Search} title={translate('common.noResults')} />}
-      renderItem={renderItem}
-    />
+        }
+        ListEmptyComponent={<EmptyState icon={Search} title={translate('common.noResults')} />}
+        renderItem={renderItem}
+      />
+    </DropdownFilterBar>
   );
 }
 
 const styles = StyleSheet.create({
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    height: 46,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    marginHorizontal: spacing.lg,
-  },
-  searchInput: { flex: 1, fontFamily: fonts.medium, fontSize: 16, paddingVertical: 0 },
-  muscleChips: { gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   createRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -216,7 +216,8 @@ const en = {
   exercise: {
     title: 'Exercise',
     library: 'Exercises',
-    searchPlaceholder: 'Search exercises',
+    searchPlaceholder: 'Search',
+    allMuscles: 'All muscles',
     create: 'Create exercise',
     new: 'New exercise',
     edit: 'Edit exercise',

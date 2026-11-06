@@ -222,7 +222,8 @@ const ru = {
   exercise: {
     title: 'Упражнение',
     library: 'Упражнения',
-    searchPlaceholder: 'Поиск упражнений',
+    searchPlaceholder: 'Поиск',
+    allMuscles: 'Все мышцы',
     create: 'Создать упражнение',
     new: 'Новое упражнение',
     edit: 'Редактировать упражнение',

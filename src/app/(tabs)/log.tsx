@@ -11,16 +11,16 @@ import {
 } from '@/db/repo/exercises';
 import { useQuery } from '@/db/version';
 import { ExerciseLogTable, naturalLogTableWidth } from '@/features/log/ExerciseLogTable';
-import { LogFilterBar } from '@/features/log/LogFilterBar';
-import { filterEntriesByPeriod, type LogPeriod } from '@/features/log/logPeriod';
+import { filterEntriesByPeriod, LOG_PERIODS, type LogPeriod } from '@/features/log/logPeriod';
 import { ZoomPanCanvas } from '@/features/log/ZoomPanCanvas';
 import { useNow } from '@/lib/useNow';
 import { useActiveWorkout } from '@/store/activeWorkout';
 import { useSettings } from '@/store/settings';
-import { Button, EmptyState, Screen, Text, spacing } from '@/ui';
+import { Button, DropdownFilterBar, EmptyState, Screen, Text, spacing, type DropdownFilter } from '@/ui';
 
 /** Особый пункт фильтра: вместо одного упражнения показывает их все по порядку имени. */
 const ALL_EXERCISES_ID = 'all';
+const PERIOD_FIELD_WIDTH = 132;
 const CANVAS_PADDING = spacing.sm;
 // Плашка свёрнутой тренировки висит над нижним краем: последние строки можно поднять над ней.
 const WORKOUT_PILL_SPACE = 88;
@@ -120,16 +120,28 @@ export default function LogTab() {
     ...shownTables.map((table) => naturalLogTableWidth(table.entries, table.exercise.type)),
   );
 
+  const exerciseDropdown: DropdownFilter = {
+    key: 'exercise',
+    items: selectItems,
+    selectedId: selectedExerciseId,
+    placeholder: translate('log.selectExercise'),
+    onSelect: setChosenExerciseId,
+  };
+  const periodDropdown: DropdownFilter = {
+    key: 'period',
+    items: LOG_PERIODS.map((option) => ({ id: option, name: translate(`log.periods.${option}`) })),
+    selectedId: period,
+    fieldWidth: PERIOD_FIELD_WIDTH,
+    onSelect: (id) => {
+      const selectedPeriod = LOG_PERIODS.find((option) => option === id);
+      if (selectedPeriod) setPeriod(selectedPeriod);
+    },
+  };
+
   return (
     // Страница не прокручивается: внутри ScrollView жесты холста отменялись бы прокруткой.
     <Screen header={{ title: translate('log.title'), large: true }} scrollable={false} padded={false}>
-      <LogFilterBar
-        exerciseItems={selectItems}
-        selectedExerciseId={selectedExerciseId}
-        onSelectExercise={setChosenExerciseId}
-        period={period}
-        onSelectPeriod={setPeriod}
-      >
+      <DropdownFilterBar filters={[exerciseDropdown, periodDropdown]}>
         {shownTables.length === 0 ? (
           <EmptyState
             icon={Table2}
@@ -169,7 +181,7 @@ export default function LogTab() {
             </View>
           </ZoomPanCanvas>
         )}
-      </LogFilterBar>
+      </DropdownFilterBar>
     </Screen>
   );
 }

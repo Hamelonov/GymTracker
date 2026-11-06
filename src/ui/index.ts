@@ -3,6 +3,7 @@ export * from './Card';
 export * from './Checkbox';
 export * from './Chip';
 export * from './Dialog';
+export * from './DropdownFilterBar';
 export * from './EmptyState';
 export * from './FastPressable';
 export * from './Icon';
