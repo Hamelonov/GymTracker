@@ -6,7 +6,7 @@ import { create } from 'zustand';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
-import { radius, spacing } from './tokens';
+import { motion, radius, spacing } from './tokens';
 
 interface ToastItem {
   id: number;
@@ -80,8 +80,8 @@ export function ToastHost({ bottomOffset = 0 }: { bottomOffset?: number }) {
     >
       <Animated.View
         key={current.id}
-        entering={FadeInDown.duration(120)}
-        exiting={FadeOutDown.duration(100)}
+        entering={FadeInDown.duration(motion.quick)}
+        exiting={FadeOutDown.duration(motion.exit)}
         style={[styles.toast, { backgroundColor: colors.text }]}
       >
         <Text variant="bodyMedium" color={colors.background} style={styles.message} numberOfLines={2}>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     maxWidth: 480,
     width: '100%',
   },

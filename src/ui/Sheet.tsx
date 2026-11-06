@@ -18,8 +18,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from './Text';
-import { useColors } from './ThemeProvider';
-import { radius, spacing } from './tokens';
+import { useTheme } from './ThemeProvider';
+import { motion, radius, shadows, spacing } from './tokens';
 
 export interface SheetProps {
   visible: boolean;
@@ -30,8 +30,8 @@ export interface SheetProps {
   unpadded?: boolean;
 }
 
-const SLIDE_IN_TIMING = { duration: 170, easing: Easing.out(Easing.cubic) };
-const SLIDE_OUT_TIMING = { duration: 130, easing: Easing.in(Easing.cubic) };
+const SLIDE_IN_TIMING = { duration: motion.base, easing: Easing.out(Easing.cubic) };
+const SLIDE_OUT_TIMING = { duration: motion.exit, easing: Easing.in(Easing.cubic) };
 /** Далеко за нижним краем экрана: означает «ещё не измерено» и прячет шторку до этого момента. */
 const OFFSCREEN_POSITION = 4000;
 
@@ -41,7 +41,7 @@ const OFFSCREEN_POSITION = 4000;
  * она проходит ровно свою длину, даже если содержимое меняет размер.
  */
 export function Sheet({ visible, onClose, title, children, unpadded }: SheetProps) {
-  const colors = useColors();
+  const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const [isMounted, setIsMounted] = useState(visible);
   if (visible && !isMounted) setIsMounted(true);
@@ -138,6 +138,7 @@ export function Sheet({ visible, onClose, title, children, unpadded }: SheetProp
               backgroundColor: colors.background,
               paddingBottom: keyboardHeight + insets.bottom + spacing.lg,
             },
+            isDark ? null : shadows.card,
             sheetStyle,
           ]}
         >

@@ -6,6 +6,7 @@ export * from './Dialog';
 export * from './EmptyState';
 export * from './FastPressable';
 export * from './Icon';
+export * from './IconCircle';
 export * from './IconButton';
 export * from './Input';
 export * from './ListItem';

@@ -24,7 +24,7 @@ export interface ButtonProps extends Omit<AnimatedPressableProps, 'children' | '
   contentAlign?: 'center' | 'start';
 }
 
-const buttonHeightBySize: Record<Size, number> = { sm: 36, md: 48, lg: 56 };
+const buttonHeightBySize: Record<Size, number> = { sm: 40, md: 50, lg: 56 };
 
 function getBackgroundColor(variant: Variant, colors: ThemeColors): string {
   const backgroundColorByVariant: Record<Variant, string> = {
@@ -75,7 +75,7 @@ export function Button({
         {
           backgroundColor,
           height: buttonHeightBySize[size],
-          borderRadius: size === 'lg' ? radius.lg : radius.md,
+          borderRadius: radius.pill,
           opacity: disabled ? 0.45 : 1,
           borderWidth: variant === 'outline' ? 1.5 : 0,
           borderColor: colors.borderStrong,
