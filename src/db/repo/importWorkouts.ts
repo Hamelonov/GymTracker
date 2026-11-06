@@ -75,7 +75,7 @@ function createExerciseResolver(): {
   ) => { id: string; type: ExerciseType };
   createdNames: string[];
 } {
-  const rows = listExercises({ includeArchived: true });
+  const rows = listExercises();
   const usage = getExerciseUsage();
   let candidates = prepareCandidates(
     rows.map((row, order) => ({

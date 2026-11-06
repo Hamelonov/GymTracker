@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { Ellipsis } from 'lucide-react-native';
+import { Pencil } from 'lucide-react-native';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
@@ -9,8 +9,8 @@ import { recordTypesForExercise } from '@/domain/records';
 import { ExerciseAboutTab } from '@/features/exercises/ExerciseAboutTab';
 import { ExerciseChartsTab, isChartMetric, type ChartMetric } from '@/features/exercises/ExerciseChartsTab';
 import { ExerciseHistoryTab } from '@/features/exercises/ExerciseHistoryTab';
-import { ExerciseMenuSheet } from '@/features/exercises/ExerciseMenuSheet';
 import { ExerciseRecordsTab } from '@/features/exercises/ExerciseRecordsTab';
+import { push } from '@/lib/nav';
 import { useSettings } from '@/store/settings';
 import { IconButton, Screen, Segmented, spacing, useColors } from '@/ui';
 
@@ -22,7 +22,6 @@ export default function ExerciseDetailScreen() {
   const { t: translate, i18n } = useTranslation();
   const settings = useSettings();
   const [activeTab, setActiveTab] = useState<ExerciseTab>('about');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const exercise = useQuery(() => (id ? getExercise(id) : undefined), [id]);
   const history = useQuery(() => (id ? getExerciseHistory(id) : []), [id]);
   const records = useQuery(() => (id ? getRecordDetails(id) : []), [id]);
@@ -42,19 +41,17 @@ export default function ExerciseDetailScreen() {
   );
 
   if (!exercise) return <Screen header={{ backButton: true }} />;
-  const displayName = exerciseName(exercise, i18n.language);
 
   return (
     <Screen
       header={{
         backButton: true,
-        title: displayName,
-        subtitle: `${translate(`muscles.${exercise.muscleGroup}`)} · ${translate(`equipment.${exercise.equipment}`)}`,
+        title: exerciseName(exercise, i18n.language),
         right: (
           <IconButton
-            icon={Ellipsis}
+            icon={Pencil}
             variant="filled"
-            onPress={() => setIsMenuOpen(true)}
+            onPress={() => push({ pathname: '/exercise/edit', params: { id: exercise.id } })}
             haptic="selection"
           />
         ),
@@ -93,13 +90,6 @@ export default function ExerciseDetailScreen() {
       ) : null}
 
       {activeTab === 'records' ? <ExerciseRecordsTab records={records} units={units} /> : null}
-
-      <ExerciseMenuSheet
-        visible={isMenuOpen}
-        exercise={exercise}
-        exerciseDisplayName={displayName}
-        onClose={() => setIsMenuOpen(false)}
-      />
     </Screen>
   );
 }

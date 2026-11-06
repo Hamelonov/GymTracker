@@ -1,24 +1,19 @@
-import { Check, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import {
   BackHandler,
   Pressable as NativePressable,
-  ScrollView,
   StyleSheet,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { DropdownOptions, type DropdownItem } from './DropdownOptions';
 import { Icon } from './Icon';
 import { Pressable } from './Pressable';
 import { Text } from './Text';
 import { useColors } from './ThemeProvider';
 import { radius, spacing } from './tokens';
-
-export interface DropdownItem {
-  id: string;
-  name: string;
-}
 
 export interface DropdownFilter {
   key: string;
@@ -41,10 +36,7 @@ interface DropdownFilterBarProps {
   children: React.ReactNode;
 }
 
-const LIST_ROW_HEIGHT = 44;
 const LIST_MAX_HEIGHT = 320;
-// Сколько строк оставить над выбранной: как у <select>, она видна сразу, а не где-то внизу списка.
-const ROWS_ABOVE_SELECTED = 2;
 
 function SelectField({
   label,
@@ -87,29 +79,14 @@ function DropdownList({
   style: StyleProp<ViewStyle>;
 }) {
   const colors = useColors();
-  const selectedIndex = filter.items.findIndex((item) => item.id === filter.selectedId);
-  const initialOffset = Math.max(0, selectedIndex - ROWS_ABOVE_SELECTED) * LIST_ROW_HEIGHT;
 
   return (
     <View style={[styles.list, { backgroundColor: colors.surfaceRaised, borderColor: colors.border }, style]}>
-      <ScrollView
-        contentOffset={{ x: 0, y: initialOffset }}
-        persistentScrollbar
-        keyboardShouldPersistTaps="handled"
-      >
-        {filter.items.map((item) => (
-          <NativePressable
-            key={item.id}
-            onPress={() => onSelect(item.id)}
-            style={({ pressed }) => [styles.listRow, pressed ? { backgroundColor: colors.surfaceAlt } : null]}
-          >
-            <Text variant="bodyMedium" numberOfLines={1} style={styles.label}>
-              {item.name}
-            </Text>
-            {item.id === filter.selectedId ? <Icon icon={Check} size={18} /> : null}
-          </NativePressable>
-        ))}
-      </ScrollView>
+      <DropdownOptions
+        items={filter.items}
+        selectedIds={filter.selectedId ? [filter.selectedId] : []}
+        onSelect={onSelect}
+      />
     </View>
   );
 }
@@ -220,11 +197,4 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   fullWidthList: { left: spacing.lg, right: spacing.lg },
-  listRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    height: LIST_ROW_HEIGHT,
-    paddingHorizontal: spacing.md,
-  },
 });

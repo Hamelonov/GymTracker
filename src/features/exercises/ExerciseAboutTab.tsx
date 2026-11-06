@@ -1,4 +1,3 @@
-import { Pencil } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
@@ -6,8 +5,7 @@ import { exerciseDescription } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import { formatDuration } from '@/domain/units';
 import { MuscleMapCard } from '@/features/muscles/MuscleMapCard';
-import { push } from '@/lib/nav';
-import { Button, Card, Chip, Icon, SectionTitle, Text, spacing } from '@/ui';
+import { Card, Chip, SectionTitle, Text, spacing } from '@/ui';
 
 interface ExerciseAboutTabProps {
   exercise: ExerciseRow;
@@ -37,14 +35,6 @@ export function ExerciseAboutTab({ exercise, timesPerformed }: ExerciseAboutTabP
           {translate('exercise.descriptionHint')}
         </Text>
       </Card>
-      <Button
-        title={translate('common.edit')}
-        variant="secondary"
-        fullWidth
-        icon={<Icon icon={Pencil} size={16} />}
-        onPress={() => push({ pathname: '/exercise/edit', params: { id: exercise.id } })}
-        style={{ marginTop: spacing.md }}
-      />
       {timesPerformed > 0 ? (
         <Text variant="caption" color="muted" align="center" style={{ marginTop: spacing.lg }}>
           {translate('exercise.timesPerformed', { count: timesPerformed })}

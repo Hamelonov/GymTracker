@@ -26,7 +26,7 @@ export async function createProgressExcelFile(
   onProgress?: (progress: number, current: number, total: number) => void,
 ): Promise<ProgressExcelFile | null> {
   const usageByExerciseId = getExerciseUsage();
-  const performedExercises = listExercises({ includeArchived: true })
+  const performedExercises = listExercises()
     .filter((row) => usageByExerciseId.has(row.id))
     .sort(
       (left, right) =>

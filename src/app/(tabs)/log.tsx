@@ -30,7 +30,7 @@ export default function LogTab() {
   const now = useNow();
   const weightUnit = useSettings((state) => state.weightUnit);
   const distanceUnit = useSettings((state) => state.distanceUnit);
-  const exerciseRows = useQuery(() => listExercises({ includeArchived: true }), []);
+  const exerciseRows = useQuery(() => listExercises(), []);
   const usageByExerciseId = useQuery(() => getExerciseUsage(), []);
   const [period, setPeriod] = useState<LogPeriod>('all');
 

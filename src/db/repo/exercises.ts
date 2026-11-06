@@ -31,10 +31,8 @@ export function exerciseDescription(
   return language.startsWith('ru') ? exercise.descriptionRu : exercise.descriptionEn;
 }
 
-export function listExercises(options: { includeArchived?: boolean } = {}): ExerciseRow[] {
-  const query = database.select().from(exercises);
-  if (options.includeArchived) return query.all();
-  return query.where(eq(exercises.archived, false)).all();
+export function listExercises(): ExerciseRow[] {
+  return database.select().from(exercises).all();
 }
 
 export function getExercise(id: string): ExerciseRow | undefined {
@@ -98,11 +96,6 @@ export function updateExercise(id: string, patch: Partial<ExerciseInput>): void 
   if (patch.restSeconds !== undefined) values.restSeconds = patch.restSeconds;
   if (patch.rememberedExtraFields != null) values.rememberedExtraFields = patch.rememberedExtraFields;
   database.update(exercises).set(values).where(eq(exercises.id, id)).run();
-  notifyDatabaseChanged();
-}
-
-export function setExerciseArchived(id: string, archived: boolean): void {
-  database.update(exercises).set({ archived }).where(eq(exercises.id, id)).run();
   notifyDatabaseChanged();
 }
 
