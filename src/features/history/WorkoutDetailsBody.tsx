@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { exerciseName } from '@/db/repo/exercises';
+import { mergeRepeatedExercises } from '@/db/repo/mergeExerciseHistory';
 import type { WorkoutDetail } from '@/db/repo/workouts';
 import { MuscleThumbnail } from '@/features/muscles/MuscleThumbnail';
 import { formatSetLineWithExtras } from '@/features/workout/format';
@@ -18,12 +19,13 @@ export function WorkoutDetailsBody({ workout }: { workout: WorkoutDetail }) {
   const weightUnit = useSettings((state) => state.weightUnit);
   const distanceUnit = useSettings((state) => state.distanceUnit);
   const units = useMemo(() => ({ weight: weightUnit, distance: distanceUnit }), [weightUnit, distanceUnit]);
+  const exercises = useMemo(() => mergeRepeatedExercises(workout.exercises), [workout.exercises]);
 
   return (
     <View>
       <WorkoutStats
         durationSec={workout.durationSec}
-        exerciseCount={workout.exercises.length}
+        exerciseCount={exercises.length}
         setCount={workout.setCount}
         style={{ marginBottom: spacing.lg }}
       />
@@ -33,7 +35,7 @@ export function WorkoutDetailsBody({ workout }: { workout: WorkoutDetail }) {
         </Text>
       ) : null}
 
-      {workout.exercises.map((workoutExercise) => (
+      {exercises.map((workoutExercise) => (
         <Card key={workoutExercise.id} raised style={{ marginBottom: spacing.md }}>
           <Pressable
             onPress={() => push({ pathname: '/exercise/[id]', params: { id: workoutExercise.exerciseId } })}

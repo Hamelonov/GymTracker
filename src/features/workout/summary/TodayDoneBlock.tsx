@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { exerciseName } from '@/db/repo/exercises';
+import { mergeRepeatedExercises } from '@/db/repo/mergeExerciseHistory';
 import type { WorkoutDetail } from '@/db/repo/workouts';
 import { buildPenGroups, penTimesSign } from '@/domain/pen/serializeWorkout';
 import { useSettings } from '@/store/settings';
@@ -48,7 +49,7 @@ export function TodayDoneBlock({ workoutDetail }: TodayDoneBlockProps) {
   );
 
   const exerciseRows = useMemo<ExerciseRow[]>(() => {
-    return (workoutDetail?.exercises ?? []).map((workoutExercise) => {
+    return mergeRepeatedExercises(workoutDetail?.exercises ?? []).map((workoutExercise) => {
       // Разминочные подходы остаются в списке с суффиксом «р», как и в тексте «Ручки».
       // Знак «+» у добавленного веса здесь не нужен — это таблица с историей, а не текст «Ручки».
       const lines = buildPenGroups(workoutExercise.sets, workoutExercise.exercise.type, penOptions, {

@@ -1,6 +1,6 @@
 import type { SetRow } from '@/db/schema';
 import type { ExerciseHistoryEntry } from '../exercises';
-import { mergeEntriesOfSameWorkout } from '../mergeExerciseHistory';
+import { mergeEntriesOfSameWorkout, mergeRepeatedExercises } from '../mergeExerciseHistory';
 
 function makeEntry(workoutId: string, reps: number[], note = ''): ExerciseHistoryEntry {
   return {
@@ -68,5 +68,43 @@ describe('mergeEntriesOfSameWorkout', () => {
     mergeEntriesOfSameWorkout([firstRound, makeEntry('circuit', [4])]);
 
     expect(firstRound.sets).toHaveLength(1);
+  });
+});
+
+describe('mergeRepeatedExercises', () => {
+  const makeRound = (id: string, exerciseId: string, reps: number[], note = '') => ({
+    id,
+    exerciseId,
+    note,
+    sets: reps.map((repCount) => ({ reps: repCount })),
+  });
+
+  it('собирает круги упражнения в один блок на месте первого круга', () => {
+    const merged = mergeRepeatedExercises([
+      makeRound('first', 'pull-up', [5]),
+      makeRound('second', 'squat', [20]),
+      makeRound('third', 'pull-up', [4]),
+      makeRound('fourth', 'squat', [18]),
+      makeRound('fifth', 'pull-up', [3]),
+    ]);
+
+    expect(merged.map((exercise) => exercise.id)).toEqual(['first', 'second']);
+    expect(merged[0]?.sets.map((set) => set.reps)).toEqual([5, 4, 3]);
+    expect(merged[1]?.sets.map((set) => set.reps)).toEqual([20, 18]);
+  });
+
+  it('заметку кругов показывает один раз', () => {
+    const merged = mergeRepeatedExercises([
+      makeRound('first', 'pull-up', [5], 'Плавно'),
+      makeRound('second', 'pull-up', [4], 'Плавно'),
+    ]);
+
+    expect(merged[0]?.note).toBe('Плавно');
+  });
+
+  it('обычную тренировку оставляет как есть', () => {
+    const rounds = [makeRound('first', 'pull-up', [5, 4]), makeRound('second', 'squat', [20])];
+
+    expect(mergeRepeatedExercises(rounds)).toEqual(rounds);
   });
 });
