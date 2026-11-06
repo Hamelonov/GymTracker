@@ -10,11 +10,9 @@ import {
   type ExerciseHistoryEntry,
 } from '@/db/repo/exercises';
 import { useQuery } from '@/db/version';
-import { EQUIPMENT, MUSCLE_GROUPS } from '@/domain/types';
 import { ExerciseLogTable, naturalLogTableWidth } from '@/features/log/ExerciseLogTable';
-import { ExerciseSelect } from '@/features/log/ExerciseSelect';
-import { LogFilterButton } from '@/features/log/LogFilterButton';
-import { DEFAULT_LOG_FILTERS, filterLogEntries, matchesExerciseFilters } from '@/features/log/logFilters';
+import { LogFilterBar } from '@/features/log/LogFilterBar';
+import { filterEntriesByPeriod, type LogPeriod } from '@/features/log/logPeriod';
 import { ZoomPanCanvas } from '@/features/log/ZoomPanCanvas';
 import { useNow } from '@/lib/useNow';
 import { useActiveWorkout } from '@/store/activeWorkout';
@@ -34,7 +32,7 @@ export default function LogTab() {
   const distanceUnit = useSettings((state) => state.distanceUnit);
   const exerciseRows = useQuery(() => listExercises({ includeArchived: true }), []);
   const usageByExerciseId = useQuery(() => getExerciseUsage(), []);
-  const [filters, setFilters] = useState(DEFAULT_LOG_FILTERS);
+  const [period, setPeriod] = useState<LogPeriod>('all');
 
   // Только упражнения, которые хоть раз делали; недавние — первыми.
   const performedExercises = useMemo(
@@ -47,35 +45,20 @@ export default function LogTab() {
         ),
     [exerciseRows, usageByExerciseId],
   );
-  const availableMuscleGroups = useMemo(
-    () =>
-      MUSCLE_GROUPS.filter((muscleGroup) =>
-        performedExercises.some((row) => row.muscleGroup === muscleGroup),
-      ),
-    [performedExercises],
-  );
-  const availableEquipment = useMemo(
-    () => EQUIPMENT.filter((equipment) => performedExercises.some((row) => row.equipment === equipment)),
-    [performedExercises],
-  );
-  const matchingExercises = useMemo(
-    () => performedExercises.filter((row) => matchesExerciseFilters(row, filters)),
-    [performedExercises, filters],
-  );
   // Для пункта «Все»: те же упражнения, но по алфавиту, а не по давности.
   const exercisesByName = useMemo(
     () =>
-      [...matchingExercises].sort((left, right) =>
+      [...performedExercises].sort((left, right) =>
         exerciseName(left, i18n.language).localeCompare(exerciseName(right, i18n.language), i18n.language),
       ),
-    [matchingExercises, i18n.language],
+    [performedExercises, i18n.language],
   );
   const selectItems = useMemo(
     () => [
       { id: ALL_EXERCISES_ID, name: translate('log.allExercises') },
-      ...matchingExercises.map((row) => ({ id: row.id, name: exerciseName(row, i18n.language) })),
+      ...performedExercises.map((row) => ({ id: row.id, name: exerciseName(row, i18n.language) })),
     ],
-    [matchingExercises, i18n.language, translate],
+    [performedExercises, i18n.language, translate],
   );
 
   const [chosenExerciseId, setChosenExerciseId] = useState<string | null>(null);
@@ -83,7 +66,7 @@ export default function LogTab() {
   // Пока пользователь ничего не выбрал (или выбранное исчезло), показывается самое недавнее упражнение.
   const selectedExercise = isAllSelected
     ? null
-    : (matchingExercises.find((row) => row.id === chosenExerciseId) ?? matchingExercises[0] ?? null);
+    : (performedExercises.find((row) => row.id === chosenExerciseId) ?? performedExercises[0] ?? null);
   const selectedExerciseId = isAllSelected ? ALL_EXERCISES_ID : (selectedExercise?.id ?? null);
 
   const history = useQuery(
@@ -109,7 +92,7 @@ export default function LogTab() {
     (state) => !!state.workout && state.minimized && state.session.mode !== 'edit',
   );
 
-  if (performedExercises.length === 0) {
+  if (performedExercises.length === 0 || (!selectedExercise && !isAllSelected)) {
     return (
       <Screen header={{ title: translate('log.title'), large: true }}>
         <EmptyState icon={Table2} title={translate('log.empty')} hint={translate('log.emptyHint')} />
@@ -117,7 +100,7 @@ export default function LogTab() {
     );
   }
 
-  const buildTablesBeforeFilters = () => {
+  const buildTablesForAllTime = () => {
     if (isAllSelected) {
       return exercisesByName.map((row) => ({
         exercise: row,
@@ -127,9 +110,9 @@ export default function LogTab() {
     if (selectedExercise) return [{ exercise: selectedExercise, entries: history }];
     return [];
   };
-  const shownTables = buildTablesBeforeFilters()
-    .map((table) => ({ ...table, entries: filterLogEntries(table.entries, filters, now) }))
-    // В режиме «Все» упражнение без подходящих дней прячем, иначе остаются пустые таблицы.
+  const shownTables = buildTablesForAllTime()
+    .map((table) => ({ ...table, entries: filterEntriesByPeriod(table.entries, period, now) }))
+    // В режиме «Все» упражнение без записей за период прячем, иначе остаются пустые таблицы.
     .filter((table) => table.entries.length > 0);
   // Все таблицы одной ширины — по самой широкой, чтобы в режиме «Все» правые края шли ровно.
   const tableWidth = Math.max(
@@ -140,72 +123,58 @@ export default function LogTab() {
   return (
     // Страница не прокручивается: внутри ScrollView жесты холста отменялись бы прокруткой.
     <Screen header={{ title: translate('log.title'), large: true }} scrollable={false} padded={false}>
-      <View style={styles.filterBar}>
-        <View style={styles.exerciseSelect}>
-          <ExerciseSelect
-            items={selectItems}
-            selectedId={selectedExerciseId}
-            onSelect={setChosenExerciseId}
+      <LogFilterBar
+        exerciseItems={selectItems}
+        selectedExerciseId={selectedExerciseId}
+        onSelectExercise={setChosenExerciseId}
+        period={period}
+        onSelectPeriod={setPeriod}
+      >
+        {shownTables.length === 0 ? (
+          <EmptyState
+            icon={Table2}
+            title={translate('log.noMatches')}
+            hint={translate('log.noMatchesHint')}
+            action={
+              <Button
+                title={translate('log.periods.all')}
+                variant="secondary"
+                onPress={() => setPeriod('all')}
+              />
+            }
           />
-        </View>
-        <LogFilterButton
-          filters={filters}
-          muscleGroups={availableMuscleGroups}
-          equipmentOptions={availableEquipment}
-          onChange={setFilters}
-        />
-      </View>
-      {shownTables.length === 0 ? (
-        <EmptyState
-          icon={Table2}
-          title={translate('log.noMatches')}
-          hint={translate('log.noMatchesHint')}
-          action={
-            <Button
-              title={translate('log.resetFilters')}
-              variant="secondary"
-              onPress={() => setFilters(DEFAULT_LOG_FILTERS)}
-            />
-          }
-        />
-      ) : (
-        <ZoomPanCanvas
-          // Новый ключ сбрасывает положение холста: после фильтра таблица короче и могла бы уехать за край.
-          key={`${selectedExerciseId ?? 'none'}:${JSON.stringify(filters)}`}
-          contentWidth={tableWidth + 2 * CANVAS_PADDING}
-          bottomInset={isWorkoutPillVisible ? WORKOUT_PILL_SPACE : 0}
-        >
-          <View style={styles.canvasContent}>
-            {shownTables.map((table, index) => (
-              <View key={table.exercise.id} style={index > 0 ? styles.nextTable : null}>
-                {isAllSelected ? (
-                  <Text variant="h3" style={styles.exerciseTitle}>
-                    {exerciseName(table.exercise, i18n.language)}
-                  </Text>
-                ) : null}
-                <ExerciseLogTable
-                  entries={table.entries}
-                  exerciseType={table.exercise.type}
-                  units={units}
-                  width={tableWidth}
-                />
-              </View>
-            ))}
-          </View>
-        </ZoomPanCanvas>
-      )}
+        ) : (
+          <ZoomPanCanvas
+            // Новый ключ сбрасывает положение холста: за короткий период таблица меньше и могла бы уехать за край.
+            key={`${selectedExerciseId ?? 'none'}:${period}`}
+            contentWidth={tableWidth + 2 * CANVAS_PADDING}
+            bottomInset={isWorkoutPillVisible ? WORKOUT_PILL_SPACE : 0}
+          >
+            <View style={styles.canvasContent}>
+              {shownTables.map((table, index) => (
+                <View key={table.exercise.id} style={index > 0 ? styles.nextTable : null}>
+                  {isAllSelected ? (
+                    <Text variant="h3" style={styles.exerciseTitle}>
+                      {exerciseName(table.exercise, i18n.language)}
+                    </Text>
+                  ) : null}
+                  <ExerciseLogTable
+                    entries={table.entries}
+                    exerciseType={table.exercise.type}
+                    units={units}
+                    width={tableWidth}
+                  />
+                </View>
+              ))}
+            </View>
+          </ZoomPanCanvas>
+        )}
+      </LogFilterBar>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  filterBar: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
-  exerciseSelect: { flex: 1 },
   canvasContent: { padding: CANVAS_PADDING },
   nextTable: { marginTop: spacing.xl },
   exerciseTitle: { marginBottom: spacing.sm },
