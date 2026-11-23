@@ -315,6 +315,8 @@ const en = {
   history: {
     empty: 'No workouts yet',
     emptyHint: 'Your finished workouts will show up here.',
+    noWorkoutsOnDay: 'No workouts on this day',
+    logWorkout: 'Log workout',
     viewMonth: 'Month',
     viewYear: 'Year',
     list: 'List',

@@ -1,13 +1,16 @@
 import { addDays, parseISO } from 'date-fns';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
+import { Plus } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { getWorkout, listWorkouts, type WorkoutDetail } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
 import { formatFullDate } from '@/domain/dates';
+import { EmptyDay } from '@/features/history/EmptyDay';
+import { logWorkoutOnDay } from '@/features/history/logWorkoutOnDay';
 import { WorkoutSection } from '@/features/history/WorkoutSection';
-import { Screen, spacing, useColors } from '@/ui';
+import { Icon, Pressable, Screen, spacing, useColors } from '@/ui';
 
 /** Тренировки дня по порядку: утренняя первой. */
 function loadDayWorkouts(dayStart: Date): WorkoutDetail[] {
@@ -18,21 +21,32 @@ function loadDayWorkouts(dayStart: Date): WorkoutDetail[] {
     .sort((left, right) => left.startedAt - right.startedAt);
 }
 
-/** День из календаря истории: в шапке дата, ниже все тренировки этого дня одна за другой. */
+/**
+ * День из календаря истории: в шапке дата и «+», ниже тренировки этого дня одна за другой.
+ * Если тренировок не было, вместо них пустой вид с кнопкой записать тренировку.
+ */
 export default function HistoryDayScreen() {
   const { day } = useLocalSearchParams<{ day: string }>();
-  const { i18n } = useTranslation();
+  const { t: translate, i18n } = useTranslation();
   const colors = useColors();
   const dayStart = parseISO(day);
   const dayWorkouts = useQuery(() => loadDayWorkouts(dayStart), [day]);
 
-  // Удалили последнюю тренировку дня — показывать больше нечего.
-  const handleWorkoutDeleted = () => {
-    if (dayWorkouts.length <= 1) router.back();
-  };
+  const logWorkout = () => void logWorkoutOnDay(dayStart, translate);
 
   return (
-    <Screen header={{ backButton: true, title: formatFullDate(dayStart.getTime(), i18n.language) }}>
+    <Screen
+      header={{
+        backButton: true,
+        title: formatFullDate(dayStart.getTime(), i18n.language),
+        right: (
+          <Pressable onPress={logWorkout} hitSlop={12} style={styles.addButton} haptic="light">
+            <Icon icon={Plus} size={28} />
+          </Pressable>
+        ),
+      }}
+    >
+      {dayWorkouts.length === 0 ? <EmptyDay onLogWorkout={logWorkout} /> : null}
       {dayWorkouts.map((workout, index) => (
         <View
           key={workout.id}
@@ -41,7 +55,7 @@ export default function HistoryDayScreen() {
             index > 0 ? [styles.workoutDivider, { borderTopColor: colors.border }] : null,
           ]}
         >
-          <WorkoutSection workout={workout} onDeleted={handleWorkoutDeleted} />
+          <WorkoutSection workout={workout} />
         </View>
       ))}
     </Screen>
@@ -49,6 +63,7 @@ export default function HistoryDayScreen() {
 }
 
 const styles = StyleSheet.create({
+  addButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   workoutSection: { paddingBottom: spacing.md },
   workoutDivider: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.lg },
 });

@@ -325,6 +325,8 @@ const ru = {
   history: {
     empty: 'Тренировок пока нет',
     emptyHint: 'Завершённые тренировки появятся здесь.',
+    noWorkoutsOnDay: 'В этот день тренировок нет',
+    logWorkout: 'Записать тренировку',
     viewMonth: 'Месяц',
     viewYear: 'Год',
     list: 'Список',

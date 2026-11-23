@@ -244,7 +244,11 @@ export default function ActiveWorkoutScreen() {
     closeSheet();
     useRestTimer.getState().skip();
     if (session.mode === 'edit') {
-      saveWorkout(workout, session.finishedAt, { existingId: session.workoutId });
+      saveWorkout(
+        workout,
+        session.finishedAt,
+        session.isNewEntry ? { isBackdated: true } : { existingId: session.workoutId },
+      );
       getWorkoutStore().clear();
       toast(translate('workout.saved'));
       router.back();

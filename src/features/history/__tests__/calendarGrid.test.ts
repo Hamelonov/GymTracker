@@ -4,6 +4,7 @@ import {
   countRestDays,
   listMonthsNewestFirst,
   listYearsNewestFirst,
+  startTimeOnDay,
 } from '../calendarGrid';
 
 describe('buildMonthWeeks', () => {
@@ -85,5 +86,13 @@ describe('buildWorkoutDayKeys', () => {
     const evening = new Date(2026, 10, 20, 19).getTime();
     const nextDay = new Date(2026, 10, 21, 7).getTime();
     expect(buildWorkoutDayKeys([evening, morning, nextDay])).toEqual(new Set(['2026-11-20', '2026-11-21']));
+  });
+});
+
+describe('startTimeOnDay', () => {
+  it('берёт день из календаря, а время суток от текущего момента', () => {
+    const day = new Date(2026, 4, 5);
+    const now = new Date(2026, 10, 23, 21, 43, 30).getTime();
+    expect(startTimeOnDay(day, now)).toBe(new Date(2026, 4, 5, 21, 43, 0).getTime());
   });
 });

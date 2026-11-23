@@ -32,12 +32,14 @@ export interface SaveResult {
 export function saveWorkout(
   workout: ActiveWorkout,
   finishedAt: number,
-  options: { existingId?: string } = {},
+  options: { existingId?: string; isBackdated?: boolean } = {},
 ): SaveResult {
   const exerciseIds = [...new Set(workout.exercises.map((exercise) => exercise.exerciseId))];
   const exercisesById = getExercisesByIds(exerciseIds);
-  // При редактировании сохранённой тренировки рекорды пересобираются с нуля после транзакции.
-  const recordTables = options.existingId ? new Map<string, RecordTable>() : getRecordTables(exerciseIds);
+  // При правке сохранённой тренировки и при вводе задним числом рекорды пересобираются с нуля после транзакции:
+  // таблица рекордов хранит лучшее на сейчас и не знает, что тренировка была раньше других.
+  const rebuildsRecords = Boolean(options.existingId) || Boolean(options.isBackdated);
+  const recordTables = rebuildsRecords ? new Map<string, RecordTable>() : getRecordTables(exerciseIds);
   const workoutId = options.existingId ?? workout.id;
   const prs: SaveResult['prs'] = [];
   let volumeKg = 0;
@@ -157,7 +159,7 @@ export function saveWorkout(
     if (workout.routineId && !options.existingId) markRoutinePerformed(workout.routineId, finishedAt);
   });
 
-  if (options.existingId) rebuildRecords(exerciseIds);
+  if (rebuildsRecords) rebuildRecords(exerciseIds);
   notifyDatabaseChanged();
   const exerciseCount = workout.exercises.filter((exercise) =>
     exercise.sets.some((set) => set.completed),

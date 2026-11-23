@@ -38,7 +38,11 @@ function getInitialExtraFields(
   );
 }
 
-export type EditSession = { mode: 'new' } | { mode: 'edit'; workoutId: string; finishedAt: number };
+/**
+ * `isNewEntry` — тренировка вводится задним числом и ещё не лежит в базе: её нужно вставить, а не обновить.
+ */
+export type EditSession =
+  { mode: 'new' } | { mode: 'edit'; workoutId: string; finishedAt: number; isNewEntry?: boolean };
 
 /** «Стандарт» — карточки и кнопки, «Ручка» — вся тренировка одним текстом. */
 export type EntryMode = 'standard' | 'pen';

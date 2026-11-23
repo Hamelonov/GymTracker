@@ -60,3 +60,11 @@ export function countRestDays(lastWorkoutAt: number | null, now: number): number
 export function buildWorkoutDayKeys(workoutStartTimes: number[]): Set<string> {
   return new Set(workoutStartTimes.map((startTime) => toDayKey(startTime)));
 }
+
+/** Начало тренировки на выбранный день: время суток берётся от текущего момента. */
+export function startTimeOnDay(day: Date, now: number): number {
+  const startedAt = new Date(day);
+  const current = new Date(now);
+  startedAt.setHours(current.getHours(), current.getMinutes(), 0, 0);
+  return startedAt.getTime();
+}

@@ -9,11 +9,11 @@ import { ResumeWorkoutBanner } from '@/features/home/ResumeWorkoutBanner';
 import { RoutineMenuSheet } from '@/features/home/RoutineMenuSheet';
 import { WeekSummaryCard } from '@/features/home/WeekSummaryCard';
 import { RoutineCard } from '@/features/routines/RoutineCard';
+import { discardActiveWorkoutIfConfirmed } from '@/features/workout/discardActiveWorkout';
 import { useActiveWorkout } from '@/store/activeWorkout';
-import { useRestTimer } from '@/store/restTimer';
 import { nextWorkoutNumber, numberedWorkoutName } from '@/db/renameDefaultWorkoutNames';
 import { useNow } from '@/lib/useNow';
-import { Button, EmptyState, Icon, IconButton, Screen, SectionTitle, confirm, spacing } from '@/ui';
+import { Button, EmptyState, Icon, IconButton, Screen, SectionTitle, spacing } from '@/ui';
 
 /** Какой нижний лист открыт на главном экране (только один за раз). */
 type OpenSheet = { kind: 'none' } | { kind: 'routineMenu'; routineId: string };
@@ -23,7 +23,6 @@ export default function HomeTab() {
   const now = useNow();
   const [openSheet, setOpenSheet] = useState<OpenSheet>({ kind: 'none' });
   const activeWorkout = useActiveWorkout((state) => state.workout);
-  const session = useActiveWorkout((state) => state.session);
   // Только после ухода с экрана тренировки, но не во время его открытия.
   const isResumeBannerVisible = useActiveWorkout(
     (state) => !!state.workout && state.minimized && state.session.mode === 'new',
@@ -37,30 +36,14 @@ export default function HomeTab() {
 
   const closeSheet = () => setOpenSheet({ kind: 'none' });
 
-  /** Спрашивает, отбросить ли незавершённую тренировку перед началом новой. Возвращает false, если пользователь отменил. */
-  const discardActiveWorkoutIfConfirmed = async () => {
-    if (!activeWorkout || session.mode === 'edit') return true;
-    const isConfirmed = await confirm({
-      title: translate('home.inProgress'),
-      message: translate('workout.discardConfirm'),
-      destructive: true,
-      confirmLabel: translate('common.discard'),
-    });
-    if (isConfirmed) {
-      useRestTimer.getState().skip();
-      useActiveWorkout.getState().clear();
-    }
-    return isConfirmed;
-  };
-
   const startEmptyWorkout = async () => {
-    if (!(await discardActiveWorkoutIfConfirmed())) return;
+    if (!(await discardActiveWorkoutIfConfirmed(translate))) return;
     useActiveWorkout.getState().startEmpty(numberedWorkoutName(nextWorkoutNumber()));
     push('/workout/active');
   };
 
   const startRoutine = async (routineId: string) => {
-    if (!(await discardActiveWorkoutIfConfirmed())) return;
+    if (!(await discardActiveWorkoutIfConfirmed(translate))) return;
     const routine = getRoutine(routineId);
     if (!routine) return;
     useActiveWorkout.getState().startFromRoutine(routine);

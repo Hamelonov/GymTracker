@@ -9,7 +9,8 @@ import { WorkoutDetailsBody } from './WorkoutDetailsBody';
 
 interface WorkoutSectionProps {
   workout: WorkoutDetail;
-  onDeleted: () => void;
+  /** Нужен там, где после удаления надо уйти с экрана; в дне календаря экран сам покажет пустой вид. */
+  onDeleted?: () => void;
 }
 
 /** Одна тренировка на странице просмотра: название, время начала, меню «⋯» и её содержимое. */

@@ -13,7 +13,7 @@ interface WorkoutActionsSheetProps {
   visible: boolean;
   onClose: () => void;
   /** Вызывается после удаления: экран решает, куда уйти. */
-  onDeleted: () => void;
+  onDeleted?: () => void;
 }
 
 /** Меню завершённой тренировки: только исправить ошибочную запись или удалить её. */
@@ -59,7 +59,7 @@ export function WorkoutActionsSheet({ workout, visible, onClose, onDeleted }: Wo
     });
     if (!confirmed) return;
     deleteWorkout(workout.id);
-    onDeleted();
+    onDeleted?.();
   };
 
   return (

@@ -45,7 +45,6 @@ function MonthDayCellComponent({
     <Pressable
       style={[styles.cell, lineStyle]}
       onPress={() => onOpenDay(dayKey)}
-      disabled={!hasWorkout}
       haptic="selection"
       scaleTo={0.96}
     >
