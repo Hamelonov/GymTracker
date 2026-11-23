@@ -6,8 +6,9 @@ import { StyleSheet, View } from 'react-native';
 import type { WorkoutSummary } from '@/db/repo/workouts';
 import { dateLocale, toDayKey } from '@/domain/dates';
 import { calculateWeekStreak } from '@/features/stats/weekStreak';
-import { Text, spacing } from '@/ui';
-import { buildNamesByDay, countRestDays, listMonthsNewestFirst } from './calendarGrid';
+import { Text, spacing, useColors } from '@/ui';
+import { buildWorkoutDayKeys, countRestDays, listMonthsNewestFirst } from './calendarGrid';
+import { GRID_LINE_WIDTH } from './gridLine';
 import { HistoryStreaks } from './HistoryStreaks';
 import { MonthCalendarBlock } from './MonthCalendarBlock';
 
@@ -21,15 +22,16 @@ interface MonthCalendarViewProps {
 }
 
 /**
- * Календарь по месяцам, как в Hevy: сверху серии, потом дни недели, ниже месяцы от нового к старому.
- * Серии и дни недели лежат в самой прокрутке и уезжают вместе с ней, чтобы не занимать место.
+ * Календарь по месяцам, как в Hevy: под шапкой закреплены серии и дни недели,
+ * ниже прокручиваются месяцы от нового к старому.
  */
 export function MonthCalendarView({ workouts, now, onOpenDay }: MonthCalendarViewProps) {
+  const colors = useColors();
   const { t: translate, i18n } = useTranslation();
   const todayKey = toDayKey(now);
 
-  const namesByDay = useMemo(() => buildNamesByDay(workouts), [workouts]);
   const startTimes = useMemo(() => workouts.map((workout) => workout.startedAt), [workouts]);
+  const workoutDayKeys = useMemo(() => buildWorkoutDayKeys(startTimes), [startTimes]);
   const latestWorkoutAt = startTimes.length > 0 ? Math.max(...startTimes) : null;
   const earliestWorkoutAt = startTimes.length > 0 ? Math.min(...startTimes) : null;
   const months = useMemo(
@@ -53,44 +55,58 @@ export function MonthCalendarView({ workouts, now, onOpenDay }: MonthCalendarVie
     ({ item }: { item: Date }) => (
       <MonthCalendarBlock
         monthStart={item}
-        namesByDay={namesByDay}
+        workoutDayKeys={workoutDayKeys}
         todayKey={todayKey}
         onOpenDay={onOpenDay}
       />
     ),
-    [namesByDay, todayKey, onOpenDay],
+    [workoutDayKeys, todayKey, onOpenDay],
   );
 
-  const listHeader = (
-    <View>
+  return (
+    <View style={styles.container}>
       <HistoryStreaks
         weeklyStreakLabel={translate('history.weeklyStreak', { count: weeklyStreak })}
         restDaysLabel={translate('history.restDays', { count: restDays })}
       />
+      {/* Клетки дней недели стоят над колонками сетки и продолжают её линии. */}
       <View style={styles.weekdayRow}>
-        {weekdayLabels.map((label) => (
-          <Text key={label} variant="caption" color="muted" align="center" style={styles.weekdayLabel}>
-            {label}
-          </Text>
+        {weekdayLabels.map((label, labelIndex) => (
+          <View
+            key={label}
+            style={[
+              styles.weekdayCell,
+              {
+                borderColor: colors.border,
+                borderRightWidth: labelIndex === weekdayLabels.length - 1 ? GRID_LINE_WIDTH : 0,
+              },
+            ]}
+          >
+            <Text variant="caption" color="muted" align="center">
+              {label}
+            </Text>
+          </View>
         ))}
       </View>
+      <FlashList
+        data={months}
+        keyExtractor={(month) => toDayKey(month)}
+        extraData={workoutDayKeys}
+        renderItem={renderMonth}
+        contentContainerStyle={styles.content}
+      />
     </View>
-  );
-
-  return (
-    <FlashList
-      data={months}
-      keyExtractor={(month) => toDayKey(month)}
-      extraData={namesByDay}
-      ListHeaderComponent={listHeader}
-      renderItem={renderMonth}
-      contentContainerStyle={styles.content}
-    />
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1 },
   content: { paddingBottom: 140 },
-  weekdayRow: { flexDirection: 'row', paddingHorizontal: spacing.sm, paddingVertical: spacing.md },
-  weekdayLabel: { flex: 1 },
+  weekdayRow: { flexDirection: 'row', paddingHorizontal: spacing.sm },
+  weekdayCell: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    borderLeftWidth: GRID_LINE_WIDTH,
+    borderBottomWidth: GRID_LINE_WIDTH,
+  },
 });

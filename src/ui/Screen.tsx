@@ -19,6 +19,8 @@ import { spacing } from './tokens';
 export interface HeaderProps {
   title?: string;
   subtitle?: string;
+  /** На корневых вкладках заголовок стоит слева, как в Hevy; на вложенных экранах — по центру. */
+  titleAlign?: 'center' | 'start';
   backButton?: boolean | 'close';
   right?: React.ReactNode;
   left?: React.ReactNode;
@@ -31,39 +33,45 @@ function goBackOrHome() {
   else router.replace('/');
 }
 
-export function Header({ title, subtitle, backButton, right, left, onBack }: HeaderProps) {
+export function Header({
+  title,
+  subtitle,
+  titleAlign = 'center',
+  backButton,
+  right,
+  left,
+  onBack,
+}: HeaderProps) {
   const colors = useColors();
   const handleBackPress = onBack ?? goBackOrHome;
+  const isTitleAtStart = titleAlign === 'start';
+  const hasLeftContent = Boolean(backButton || left);
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { borderBottomColor: colors.border }]}>
       <View style={styles.headerRow}>
-        <View style={styles.headerSide}>
-          {backButton ? (
-            <Pressable
-              onPress={handleBackPress}
-              hitSlop={12}
-              style={[styles.backButton, { backgroundColor: colors.surfaceAlt }]}
-            >
-              <Icon icon={backButton === 'close' ? X : ArrowLeft} size={20} />
-            </Pressable>
-          ) : (
-            left
-          )}
-        </View>
-        {title ? (
-          <View style={styles.headerCenter}>
-            <Text variant="h3" numberOfLines={1}>
+        {hasLeftContent ? (
+          <View style={styles.headerSide}>
+            {backButton ? (
+              <Pressable onPress={handleBackPress} hitSlop={12} style={styles.backButton}>
+                <Icon icon={backButton === 'close' ? X : ArrowLeft} size={24} />
+              </Pressable>
+            ) : (
+              left
+            )}
+          </View>
+        ) : null}
+        <View style={isTitleAtStart ? styles.headerTitleStart : styles.headerCenter}>
+          {title ? (
+            <Text variant={isTitleAtStart ? 'h2' : 'h3'} numberOfLines={1}>
               {title}
             </Text>
-            {subtitle ? (
-              <Text variant="caption" color="muted" numberOfLines={1}>
-                {subtitle}
-              </Text>
-            ) : null}
-          </View>
-        ) : (
-          <View style={styles.headerCenter} />
-        )}
+          ) : null}
+          {subtitle ? (
+            <Text variant="caption" color="muted" numberOfLines={1}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
         <View style={[styles.headerSide, styles.headerRight]}>{right}</View>
       </View>
     </View>
@@ -100,6 +108,8 @@ export function Screen({
       {...rest}
       contentContainerStyle={[
         padded ? styles.padded : null,
+        // Первый блок не должен липнуть к линии под шапкой.
+        header ? styles.belowHeader : null,
         { paddingBottom: (bottomInset ? insets.bottom : 0) + spacing.xxl },
         contentStyle,
         rest.contentContainerStyle,
@@ -135,11 +145,18 @@ export function Screen({
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   padded: { paddingHorizontal: spacing.lg },
-  header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
-  headerRow: { flexDirection: 'row', alignItems: 'center', minHeight: 44 },
+  belowHeader: { paddingTop: spacing.sm },
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48 },
   headerSide: { minWidth: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerRight: { justifyContent: 'flex-end', flexShrink: 0 },
   headerCenter: { flex: 1, alignItems: 'center' },
-  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  headerTitleStart: { flex: 1, alignItems: 'flex-start' },
+  // Кнопка «назад» без фона, как в Hevy: у шапки теперь есть линия снизу, и кружок только перегружает её.
+  backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
 });

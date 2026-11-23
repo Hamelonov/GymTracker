@@ -9,7 +9,7 @@ import { HistoryList } from '@/features/history/HistoryList';
 import { MonthCalendarView } from '@/features/history/MonthCalendarView';
 import { YearCalendarView } from '@/features/history/YearCalendarView';
 import { useNow } from '@/lib/useNow';
-import { DropdownFilterBar, spacing, useColors, type DropdownFilter } from '@/ui';
+import { DropdownFilterBar, useColors, type DropdownFilter } from '@/ui';
 
 type HistoryViewMode = 'month' | 'year' | 'list';
 
@@ -48,11 +48,9 @@ export default function HistoryTab() {
   };
 
   return (
-    // Заголовка у экрана нет: режим выбирается списком в самом верху, а место отдано содержимому.
-    <View
-      style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top + spacing.sm }]}
-    >
-      <DropdownFilterBar filters={[viewModeDropdown]} isCentered>
+    // Шапка экрана — сам выбор режима: «Месяц», «Год» или «Список».
+    <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <DropdownFilterBar filters={[viewModeDropdown]} isHeader>
         {viewMode === 'list' ? <HistoryList workouts={allWorkouts} onOpenWorkout={openWorkout} /> : null}
         {viewMode === 'month' ? (
           <MonthCalendarView workouts={allWorkouts} now={now} onOpenDay={openDay} />

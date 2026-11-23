@@ -1,6 +1,6 @@
 import {
   buildMonthWeeks,
-  buildNamesByDay,
+  buildWorkoutDayKeys,
   countRestDays,
   listMonthsNewestFirst,
   listYearsNewestFirst,
@@ -79,14 +79,11 @@ describe('countRestDays', () => {
   });
 });
 
-describe('buildNamesByDay', () => {
-  it('группирует названия по дню в порядке начала', () => {
+describe('buildWorkoutDayKeys', () => {
+  it('сводит несколько тренировок одного дня в один ключ', () => {
     const morning = new Date(2026, 10, 20, 8).getTime();
     const evening = new Date(2026, 10, 20, 19).getTime();
-    const names = buildNamesByDay([
-      { startedAt: evening, name: 'Вечер' },
-      { startedAt: morning, name: 'Утро' },
-    ]);
-    expect(names.get('2026-11-20')).toEqual(['Утро', 'Вечер']);
+    const nextDay = new Date(2026, 10, 21, 7).getTime();
+    expect(buildWorkoutDayKeys([evening, morning, nextDay])).toEqual(new Set(['2026-11-20', '2026-11-21']));
   });
 });

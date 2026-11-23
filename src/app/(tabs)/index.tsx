@@ -84,7 +84,10 @@ export default function HomeTab() {
   );
 
   return (
-    <Screen contentStyle={{ paddingTop: spacing.sm, paddingBottom: 120 }}>
+    <Screen
+      header={{ title: translate('tabs.workout'), titleAlign: 'start' }}
+      contentStyle={{ paddingTop: spacing.md, paddingBottom: 120 }}
+    >
       {isResumeBannerVisible ? (
         <ResumeWorkoutBanner workoutName={activeWorkout?.name} onPress={() => push('/workout/active')} />
       ) : null}

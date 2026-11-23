@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native'
 import type { WorkoutSummary } from '@/db/repo/workouts';
 import { toDayKey } from '@/domain/dates';
 import { Text, spacing } from '@/ui';
-import { listYearsNewestFirst } from './calendarGrid';
+import { buildWorkoutDayKeys, listYearsNewestFirst } from './calendarGrid';
 import { YearMonthGrid } from './YearMonthGrid';
 
 const MONTHS_IN_ROW = 3;
@@ -25,7 +25,7 @@ export function YearCalendarView({ workouts, now }: YearCalendarViewProps) {
   );
 
   const workoutDayKeys = useMemo(
-    () => new Set(workouts.map((workout) => toDayKey(workout.startedAt))),
+    () => buildWorkoutDayKeys(workouts.map((workout) => workout.startedAt)),
     [workouts],
   );
   const years = useMemo(() => {

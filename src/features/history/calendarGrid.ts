@@ -56,15 +56,7 @@ export function countRestDays(lastWorkoutAt: number | null, now: number): number
   return Math.max(0, differenceInCalendarDays(now, lastWorkoutAt));
 }
 
-/** Названия тренировок по ключу дня; внутри дня — в порядке начала. */
-export function buildNamesByDay(workouts: { startedAt: number; name: string }[]): Map<string, string[]> {
-  const sortedWorkouts = [...workouts].sort((first, second) => first.startedAt - second.startedAt);
-  const namesByDay = new Map<string, string[]>();
-  for (const workout of sortedWorkouts) {
-    const dayKey = toDayKey(workout.startedAt);
-    const names = namesByDay.get(dayKey) ?? [];
-    names.push(workout.name);
-    namesByDay.set(dayKey, names);
-  }
-  return namesByDay;
+/** Ключи дней, в которые была хотя бы одна тренировка. */
+export function buildWorkoutDayKeys(workoutStartTimes: number[]): Set<string> {
+  return new Set(workoutStartTimes.map((startTime) => toDayKey(startTime)));
 }

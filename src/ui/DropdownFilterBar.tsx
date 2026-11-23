@@ -35,8 +35,8 @@ interface DropdownFilterBarProps {
   leading?: React.ReactNode;
   /** Содержимое под фильтрами: список открывается поверх него. */
   children: React.ReactNode;
-  /** Поле с фиксированной шириной стоит по центру, а не у края: так выглядит выбор режима в шапке. */
-  isCentered?: boolean;
+  /** Выбор режима прямо в шапке экрана: плоское поле по центру и тонкая линия снизу, как у Hevy. */
+  isHeader?: boolean;
 }
 
 const LIST_MAX_HEIGHT = 320;
@@ -44,15 +44,27 @@ const LIST_MAX_HEIGHT = 320;
 function SelectField({
   label,
   isOpen,
+  isHeader,
   onPress,
   style,
 }: {
   label: string;
   isOpen: boolean;
+  isHeader: boolean;
   onPress: () => void;
   style: StyleProp<ViewStyle>;
 }) {
   const colors = useColors();
+  if (isHeader) {
+    return (
+      <Pressable onPress={onPress} haptic="selection" debounceMs={0} style={styles.headerField}>
+        <Text variant="h3" numberOfLines={1}>
+          {label}
+        </Text>
+        <Icon icon={isOpen ? ChevronUp : ChevronDown} size={20} />
+      </Pressable>
+    );
+  }
   return (
     <Pressable
       onPress={onPress}
@@ -98,10 +110,10 @@ function getFieldStyle(filter: DropdownFilter): ViewStyle {
   return filter.fieldWidth ? { width: filter.fieldWidth } : styles.flexibleField;
 }
 
-function getListPosition(filter: DropdownFilter, isCentered: boolean, screenWidth: number): ViewStyle {
+function getListPosition(filter: DropdownFilter, isHeader: boolean, screenWidth: number): ViewStyle {
   if (!filter.fieldWidth) return styles.fullWidthList;
   const listWidth = filter.listWidth ?? filter.fieldWidth;
-  if (isCentered) return { left: (screenWidth - listWidth) / 2, width: listWidth };
+  if (isHeader) return { left: (screenWidth - listWidth) / 2, width: listWidth };
   return { right: spacing.lg, width: listWidth };
 }
 
@@ -109,19 +121,16 @@ function getListPosition(filter: DropdownFilter, isCentered: boolean, screenWidt
  * Ряд фильтров: список открывается прямо под полем, как <select>, без шторок и окон.
  * Список лежит в том же контейнере, что и содержимое: снаружи родителя Android не отдаёт ему нажатия.
  */
-export function DropdownFilterBar({
-  filters,
-  leading,
-  children,
-  isCentered = false,
-}: DropdownFilterBarProps) {
+export function DropdownFilterBar({ filters, leading, children, isHeader = false }: DropdownFilterBarProps) {
+  const colors = useColors();
   const { width: screenWidth } = useWindowDimensions();
   const [openFilterKey, setOpenFilterKey] = useState<string | null>(null);
   const [barHeight, setBarHeight] = useState(0);
   const openFilter = filters.find((filter) => filter.key === openFilterKey);
   const isListOpen = openFilter != null;
   // Список сразу под полем: нижний отступ ряда он перекрывает, чтобы не висеть в воздухе.
-  const listTop = barHeight - spacing.sm + spacing.xs;
+  // У шапки нижнего отступа нет, поэтому список начинается прямо под её линией.
+  const listTop = isHeader ? barHeight : barHeight - spacing.sm + spacing.xs;
 
   const closeList = () => setOpenFilterKey(null);
   const toggleList = (filterKey: string) =>
@@ -140,7 +149,7 @@ export function DropdownFilterBar({
   return (
     <View style={styles.container}>
       <View
-        style={[styles.bar, isCentered ? styles.centeredBar : null]}
+        style={[styles.bar, isHeader ? [styles.headerBar, { borderBottomColor: colors.border }] : null]}
         onLayout={(event) => setBarHeight(event.nativeEvent.layout.height)}
       >
         {leading}
@@ -151,6 +160,7 @@ export function DropdownFilterBar({
               key={filter.key}
               label={selectedName ?? filter.placeholder ?? ''}
               isOpen={filter.key === openFilterKey}
+              isHeader={isHeader}
               onPress={() => toggleList(filter.key)}
               style={getFieldStyle(filter)}
             />
@@ -173,7 +183,7 @@ export function DropdownFilterBar({
               openFilter.onSelect(id);
               closeList();
             }}
-            style={[getListPosition(openFilter, isCentered, screenWidth), { top: listTop }]}
+            style={[getListPosition(openFilter, isHeader, screenWidth), { top: listTop }]}
           />
         </>
       ) : null}
@@ -187,9 +197,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
-  centeredBar: { justifyContent: 'center' },
+  headerBar: {
+    minHeight: 56,
+    paddingTop: 0,
+    paddingBottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
   content: { flex: 1 },
   field: {
     flexDirection: 'row',

@@ -1,31 +1,53 @@
 import React, { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Pressable, Text, useColors } from '@/ui';
+import { GRID_LINE_WIDTH } from './gridLine';
 
 const CIRCLE_SIZE = 40;
+const CELL_HEIGHT = 54;
 
 interface MonthDayCellProps {
   day: Date | null;
   dayKey: string;
-  /** Названия тренировок этого дня; пусто — день без тренировок. */
-  workoutNames: string[];
+  hasWorkout: boolean;
   isToday: boolean;
+  /** Справа от дня нет соседней ячейки, поэтому правую линию рисует сам день. */
+  hasRightLine: boolean;
+  /** Под днём нет соседней ячейки, поэтому нижнюю линию рисует сам день. */
+  hasBottomLine: boolean;
   onOpenDay: (dayKey: string) => void;
 }
 
-/** День месяца: число в кружке (залитом, если была тренировка) и название тренировки под ним. */
-function MonthDayCellComponent({ day, dayKey, workoutNames, isToday, onOpenDay }: MonthDayCellProps) {
+/**
+ * День календаря в клетке с тонкими линиями решётки. Верхняя и левая линии есть у каждого дня,
+ * правая и нижняя — только на краю месяца: так линии между соседними днями не удваиваются.
+ */
+function MonthDayCellComponent({
+  day,
+  dayKey,
+  hasWorkout,
+  isToday,
+  hasRightLine,
+  hasBottomLine,
+  onOpenDay,
+}: MonthDayCellProps) {
   const colors = useColors();
   if (!day) return <View style={styles.cell} />;
 
-  const hasWorkout = workoutNames.length > 0;
+  const lineStyle = {
+    borderColor: colors.border,
+    borderTopWidth: GRID_LINE_WIDTH,
+    borderLeftWidth: GRID_LINE_WIDTH,
+    borderRightWidth: hasRightLine ? GRID_LINE_WIDTH : 0,
+    borderBottomWidth: hasBottomLine ? GRID_LINE_WIDTH : 0,
+  };
   return (
     <Pressable
-      style={styles.cell}
+      style={[styles.cell, lineStyle]}
       onPress={() => onOpenDay(dayKey)}
       disabled={!hasWorkout}
       haptic="selection"
-      scaleTo={0.92}
+      scaleTo={0.96}
     >
       <View
         style={[
@@ -40,11 +62,6 @@ function MonthDayCellComponent({ day, dayKey, workoutNames, isToday, onOpenDay }
           {day.getDate()}
         </Text>
       </View>
-      {hasWorkout ? (
-        <Text variant="label" color="muted" numberOfLines={1} style={styles.workoutName}>
-          {workoutNames[0]}
-        </Text>
-      ) : null}
     </Pressable>
   );
 }
@@ -52,7 +69,7 @@ function MonthDayCellComponent({ day, dayKey, workoutNames, isToday, onOpenDay }
 export const MonthDayCell = memo(MonthDayCellComponent);
 
 const styles = StyleSheet.create({
-  cell: { flex: 1, height: 68, alignItems: 'center', paddingTop: 6, paddingHorizontal: 2 },
+  cell: { flex: 1, height: CELL_HEIGHT, alignItems: 'center', justifyContent: 'center' },
   circle: {
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
@@ -61,5 +78,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  workoutName: { marginTop: 2, maxWidth: '100%' },
 });

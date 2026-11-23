@@ -33,14 +33,9 @@ export function ActiveWorkoutHeader({
   const { t: translate } = useTranslation();
 
   return (
-    <View style={styles.header}>
-      <Pressable
-        onPress={onMinimizePress}
-        hitSlop={10}
-        style={[styles.minimizeButton, { backgroundColor: colors.surfaceAlt }]}
-        haptic="selection"
-      >
-        {isEditing ? <Icon icon={ArrowLeft} size={20} /> : <Icon icon={ChevronDown} size={22} />}
+    <View style={[styles.header, { borderBottomColor: colors.border }]}>
+      <Pressable onPress={onMinimizePress} hitSlop={10} style={styles.minimizeButton} haptic="selection">
+        {isEditing ? <Icon icon={ArrowLeft} size={24} /> : <Icon icon={ChevronDown} size={26} />}
       </Pressable>
       <Pressable style={styles.nameColumn} onPress={onNamePress}>
         <WorkoutName
@@ -65,15 +60,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
     gap: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   nameColumn: { flex: 1, alignItems: 'center' },
-  minimizeButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  minimizeButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
 });
