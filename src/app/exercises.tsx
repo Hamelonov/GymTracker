@@ -7,15 +7,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ExerciseList } from '@/features/exercises/ExerciseList';
 import { Header, IconButton, useColors } from '@/ui';
 
-export default function ExercisesTab() {
+export default function ExercisesScreen() {
   const { t: translate } = useTranslation();
   const colors = useColors();
   const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
+      {/* Список упражнений — обычный экран из дашборда профиля: своей вкладки в панели больше нет. */}
       <Header
         title={translate('tabs.exercises')}
-        titleAlign="start"
+        backButton
         right={
           <IconButton icon={Plus} variant="accent" onPress={() => push('/exercise/edit')} haptic="light" />
         }

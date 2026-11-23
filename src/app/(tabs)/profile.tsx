@@ -4,6 +4,7 @@ import {
   ChartLine,
   ChevronRight,
   Database,
+  Dumbbell,
   Info,
   PersonStanding,
   Ruler,
@@ -28,6 +29,8 @@ export default function ProfileTab() {
   const profileName = useSettings((state) => state.profileName);
   const profileLinks: ProfileLink[] = [
     { icon: ChartLine, title: translate('profile.stats'), href: '/stats' },
+    // У упражнений нет своей вкладки: список открывается отсюда.
+    { icon: Dumbbell, title: translate('tabs.exercises'), href: '/exercises' },
     { icon: Ruler, title: translate('profile.measurements'), href: '/measurements' },
     { icon: Scale, title: translate('profile.plateCalculator'), href: '/tools/plates' },
     { icon: Calculator, title: translate('profile.oneRmCalculator'), href: '/tools/one-rm' },
