@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRestTimer } from '@/store/restTimer';
+import { getStopwatchElapsedMs, useStopwatch } from '@/store/stopwatch';
 
 /** Целые секунды с `startedAt`, обновляется каждую секунду. Возвращает 0, если времени начала нет. */
 export function useElapsedSeconds(startedAt: number | null | undefined): number {
@@ -29,4 +30,20 @@ export function useRestCountdown(): { remaining: number; total: number; running:
     if (endsAt != null && now >= endsAt) finishRest();
   }, [now, endsAt, finishRest]);
   return { remaining, total, running: endsAt != null };
+}
+
+/** Миллисекунды секундомера; обновляется часто, но только пока он идёт и компонент на экране. */
+export function useStopwatchElapsedMs(): { elapsedMs: number; isRunning: boolean } {
+  const runningSince = useStopwatch((state) => state.runningSince);
+  const accumulatedMs = useStopwatch((state) => state.accumulatedMs);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (runningSince == null) return undefined;
+    const intervalId = setInterval(() => setNow(Date.now()), 200);
+    return () => clearInterval(intervalId);
+  }, [runningSince]);
+  return {
+    elapsedMs: getStopwatchElapsedMs({ runningSince, accumulatedMs }, now),
+    isRunning: runningSince != null,
+  };
 }

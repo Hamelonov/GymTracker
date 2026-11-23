@@ -13,8 +13,11 @@ export interface WorkoutStatsProps {
   durationSec?: number;
   exerciseCount: number;
   setCount: number;
-  /** `inverse` — чёрная карточка, используемая на жёлтом экране итогов. */
-  variant?: 'surface' | 'inverse';
+  /**
+   * `inverse` — чёрная карточка, используемая на жёлтом экране итогов;
+   * `plain` — без фона, прямо на странице, только тонкая линия снизу (экран активной тренировки).
+   */
+  variant?: 'surface' | 'inverse' | 'plain';
   style?: StyleProp<ViewStyle>;
   /** Если задано, длительность нажимается и показывает карандаш: так задаётся длительность записи задним числом. */
   onDurationPress?: () => void;
@@ -53,7 +56,7 @@ export function WorkoutStats({
   );
 
   return (
-    <View style={[styles.card, { backgroundColor: isInverse ? colors.black : colors.surface }, style]}>
+    <View style={[styles.card, getVariantStyle(variant, colors), style]}>
       <StatCell label={translate('workout.duration')} labelColor={labelColor} onPress={onDurationPress}>
         {durationValue}
       </StatCell>
@@ -65,6 +68,16 @@ export function WorkoutStats({
       </StatCell>
     </View>
   );
+}
+
+/** Фон блока по варианту; у `plain` фона нет, а линия снизу отделяет статистику от упражнений. */
+function getVariantStyle(
+  variant: WorkoutStatsProps['variant'],
+  colors: ReturnType<typeof useColors>,
+): StyleProp<ViewStyle> {
+  if (variant === 'inverse') return { backgroundColor: colors.black };
+  if (variant === 'plain') return [styles.plainCard, { borderBottomColor: colors.border }];
+  return { backgroundColor: colors.surface };
 }
 
 function StatCell({
@@ -115,6 +128,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: radius.lg,
     padding: spacing.lg,
+  },
+  plainCard: {
+    borderRadius: 0,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   cell: { width: '33.333%', gap: 4, paddingRight: spacing.sm },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },

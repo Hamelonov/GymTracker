@@ -16,7 +16,9 @@ import type { ActiveExercise, ExtraField, SetType } from '@/domain/types';
 import { countWorkingSets } from '@/domain/volume';
 import { formatDateTime } from '@/domain/dates';
 import { ActiveWorkoutHeader } from '@/features/workout/ActiveWorkoutHeader';
+import { ClockSheet } from '@/features/workout/clock/ClockSheet';
 import { ExerciseCard } from '@/features/workout/ExerciseCard';
+import { exerciseDisplayName } from '@/features/workout/exerciseDisplayName';
 import { RestTimerBar } from '@/features/workout/RestTimerBar';
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
 import { ExerciseDescriptionSheet } from '@/features/workout/sheets/ExerciseDescriptionSheet';
@@ -57,6 +59,7 @@ type SheetState =
   | { kind: 'finish' }
   | { kind: 'name' }
   | { kind: 'time' }
+  | { kind: 'clock' }
   | { kind: 'extraFields'; workoutExerciseId: string };
 
 export default function ActiveWorkoutScreen() {
@@ -173,6 +176,10 @@ export default function ActiveWorkoutScreen() {
   );
   const openDescription = useCallback(
     (workoutExerciseId: string) => setSheet({ kind: 'description', workoutExerciseId }),
+    [],
+  );
+  const openRestPickerFor = useCallback(
+    (workoutExerciseId: string) => setSheet({ kind: 'rest', workoutExerciseId }),
     [],
   );
   const openNote = useCallback(
@@ -398,16 +405,18 @@ export default function ActiveWorkoutScreen() {
         canFinish={canFinish}
         onMinimizePress={() => router.back()}
         onNamePress={openRename}
+        onClockPress={() => setSheet({ kind: 'clock' })}
         onFinishPress={handleFinishPress}
       />
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 140 }]}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 140 }}
           showsVerticalScrollIndicator={false}
         >
           <WorkoutStats
+            variant="plain"
             startedAt={workout.startedAt}
             durationSec={fixedDurationSeconds}
             exerciseCount={exerciseCount}
@@ -416,7 +425,6 @@ export default function ActiveWorkoutScreen() {
             onDurationPress={
               session.mode === 'edit' && session.isNewEntry ? () => setSheet({ kind: 'time' }) : undefined
             }
-            style={{ marginBottom: spacing.md }}
           />
 
           {workout.exercises.map((workoutExercise) => {
@@ -428,8 +436,11 @@ export default function ActiveWorkoutScreen() {
                 exerciseDetails={exerciseDetails}
                 units={units}
                 supersetColor={supersetColorForGroup(workoutExercise.supersetGroup)}
+                restSeconds={restSecondsFor(workoutExercise.id)}
                 onMenu={openExerciseMenu}
                 onNotePress={openNote}
+                onDescriptionPress={openDescription}
+                onRestPress={openRestPickerFor}
                 onAddSet={addSet}
                 onSetChange={changeSet}
                 onSetToggle={toggleSet}
@@ -438,27 +449,28 @@ export default function ActiveWorkoutScreen() {
             );
           })}
 
-          <Button
-            title={translate('workout.addExercise')}
-            size="lg"
-            fullWidth
-            variant={hasNoExercises ? 'primary' : 'secondary'}
-            icon={
-              <Icon icon={Plus} size={20} color={hasNoExercises ? 'onAccent' : 'text'} strokeWidth={2.5} />
-            }
-            onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
-            style={{ marginTop: spacing.sm }}
-          />
-          {session.mode === 'new' ? (
+          <View style={styles.footerButtons}>
             <Button
-              title={translate('workout.discard')}
-              variant="ghost"
-              textColor={colors.danger}
+              title={translate('workout.addExercise')}
+              size="lg"
               fullWidth
-              onPress={discardWorkout}
-              style={{ marginTop: spacing.sm }}
+              variant={hasNoExercises ? 'primary' : 'secondary'}
+              icon={
+                <Icon icon={Plus} size={20} color={hasNoExercises ? 'onAccent' : 'text'} strokeWidth={2.5} />
+              }
+              onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
             />
-          ) : null}
+            {session.mode === 'new' ? (
+              <Button
+                title={translate('workout.discard')}
+                variant="ghost"
+                textColor={colors.danger}
+                fullWidth
+                onPress={discardWorkout}
+                style={{ marginTop: spacing.sm }}
+              />
+            ) : null}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -505,6 +517,7 @@ export default function ActiveWorkoutScreen() {
       <RestTimerPickerSheet
         visible={sheet.kind === 'rest'}
         onClose={closeSheet}
+        exerciseName={exerciseDisplayName(currentExerciseDetails, i18n.language)}
         selectedSeconds={currentRestSeconds}
         defaultRestSeconds={settings.defaultRestSeconds}
         onRestSelect={setCurrentExerciseRest}
@@ -552,6 +565,8 @@ export default function ActiveWorkoutScreen() {
         onSave={saveName}
       />
 
+      <ClockSheet visible={sheet.kind === 'clock'} onClose={closeSheet} />
+
       <WorkoutTimeSheet
         visible={sheet.kind === 'time'}
         onClose={closeSheet}
@@ -580,6 +595,7 @@ function KeepScreenAwake() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  // У списка нет боковых отступов: упражнения и статистика идут на всю ширину и отступают сами.
+  footerButtons: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   restTimerWrapper: { position: 'absolute', left: spacing.lg, right: spacing.lg },
 });

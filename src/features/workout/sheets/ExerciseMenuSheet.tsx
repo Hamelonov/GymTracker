@@ -2,12 +2,12 @@ import {
   ArrowDown,
   ArrowUp,
   BookOpen,
-  Link,
-  Replace,
+  Plus,
+  RefreshCw,
   SlidersHorizontal,
   Timer,
-  Trash2,
   Unlink,
+  X,
 } from 'lucide-react-native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +17,9 @@ import type { ActiveExercise } from '@/domain/types';
 import { formatDuration } from '@/domain/units';
 import { Icon, ListItem, Sheet, spacing, useColors } from '@/ui';
 import { exerciseDisplayName } from '../exerciseDisplayName';
+
+/** Крупные значки пунктов, как в меню Hevy: «обновить» для замены, «+» для суперсета, красный крест для удаления. */
+const MENU_ICON_SIZE = 26;
 
 interface ExerciseMenuSheetProps {
   visible: boolean;
@@ -66,50 +69,50 @@ export function ExerciseMenuSheet({
         <View style={styles.menuList}>
           <ListItem
             title={translate('workout.description')}
-            left={<Icon icon={BookOpen} />}
+            left={<Icon icon={BookOpen} size={MENU_ICON_SIZE} />}
             onPress={onDescriptionPress}
           />
           <ListItem
             title={translate('workout.extraFieldsTitle')}
-            left={<Icon icon={SlidersHorizontal} />}
+            left={<Icon icon={SlidersHorizontal} size={MENU_ICON_SIZE} />}
             onPress={onExtraFieldsPress}
           />
           <ListItem
             title={translate('workout.restTimer')}
             subtitle={restSeconds > 0 ? formatDuration(restSeconds) : translate('workout.restOff')}
-            left={<Icon icon={Timer} />}
+            left={<Icon icon={Timer} size={MENU_ICON_SIZE} />}
             onPress={onRestTimerPress}
           />
           <ListItem
             title={translate('workout.replaceExercise')}
-            left={<Icon icon={Replace} />}
+            left={<Icon icon={RefreshCw} size={MENU_ICON_SIZE} />}
             onPress={onReplacePress}
           />
           <ListItem
             title={
               isInSuperset ? translate('workout.removeFromSuperset') : translate('workout.createSuperset')
             }
-            left={<Icon icon={isInSuperset ? Unlink : Link} />}
+            left={<Icon icon={isInSuperset ? Unlink : Plus} size={MENU_ICON_SIZE} />}
             onPress={onSupersetPress}
           />
           {canMoveUp ? (
             <ListItem
               title={`${translate('workout.reorder')} ↑`}
-              left={<Icon icon={ArrowUp} />}
+              left={<Icon icon={ArrowUp} size={MENU_ICON_SIZE} />}
               onPress={onMoveUpPress}
             />
           ) : null}
           {canMoveDown ? (
             <ListItem
               title={`${translate('workout.reorder')} ↓`}
-              left={<Icon icon={ArrowDown} />}
+              left={<Icon icon={ArrowDown} size={MENU_ICON_SIZE} />}
               onPress={onMoveDownPress}
             />
           ) : null}
           <ListItem
             title={translate('workout.removeExercise')}
             titleColor={colors.danger}
-            left={<Icon icon={Trash2} color="danger" />}
+            left={<Icon icon={X} size={MENU_ICON_SIZE} color="danger" />}
             onPress={onRemovePress}
           />
         </View>

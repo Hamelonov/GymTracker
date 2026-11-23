@@ -1,15 +1,15 @@
-import { Ellipsis, Link, Plus, StickyNote } from 'lucide-react-native';
+import { Plus } from 'lucide-react-native';
 import React, { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { exerciseName } from '@/db/repo/exercises';
-import { MuscleThumbnail } from '@/features/muscles/MuscleThumbnail';
 import type { ExerciseRow } from '@/db/schema';
 import type { ActiveExercise, SetType, SetValues, DistanceUnit, WeightUnit } from '@/domain/types';
 import { getSetFieldsForExerciseType } from '@/domain/types';
-import { Button, Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
+import { Button, Icon, Text, spacing } from '@/ui';
 import { unitLabels } from '@/domain/units';
+import { ExerciseCardHeader } from './ExerciseCardHeader';
 import { NARROW_COLUMN_FLEX, SET_COLUMN_WIDTHS, SetRow } from './SetRow';
 
 export interface ExerciseCardProps {
@@ -18,9 +18,13 @@ export interface ExerciseCardProps {
   units: { weight: WeightUnit; distance: DistanceUnit };
   readOnly?: boolean;
   supersetColor?: string | null;
+  /** Отдых после подхода у этого упражнения, секунды; 0 — таймер выключен. */
+  restSeconds: number;
   /** Все обработчики получают id активного упражнения; передавайте стабильные ссылки. */
   onMenu: (workoutExerciseId: string) => void;
   onNotePress: (workoutExerciseId: string) => void;
+  onDescriptionPress: (workoutExerciseId: string) => void;
+  onRestPress: (workoutExerciseId: string) => void;
   onAddSet: (workoutExerciseId: string) => void;
   onSetChange: (workoutExerciseId: string, setId: string, patch: Partial<SetValues>) => void;
   onSetToggle: (workoutExerciseId: string, setId: string) => void;
@@ -40,14 +44,16 @@ export const ExerciseCard = memo(function ExerciseCard({
   units,
   readOnly,
   supersetColor,
+  restSeconds,
   onMenu,
   onNotePress,
+  onDescriptionPress,
+  onRestPress,
   onAddSet,
   onSetChange,
   onSetToggle,
   onSetTypePress,
 }: ExerciseCardProps) {
-  const colors = useColors();
   const { t: translate, i18n } = useTranslation();
   const fields = getSetFieldsForExerciseType(exerciseDetails?.type ?? 'weight_reps');
   const name = exerciseDetails ? exerciseName(exerciseDetails, i18n.language) : '…';
@@ -64,55 +70,20 @@ export const ExerciseCard = memo(function ExerciseCard({
   const distanceColumnLabel = (unitLabels[units.distance] ?? units.distance).toUpperCase();
 
   return (
-    <Animated.View
-      layout={LinearTransition.duration(110)}
-      style={[styles.card, { backgroundColor: colors.surface }]}
-    >
+    <Animated.View layout={LinearTransition.duration(110)} style={styles.card}>
       {supersetColor ? <View style={[styles.supersetBar, { backgroundColor: supersetColor }]} /> : null}
-      <View style={styles.header}>
-        {exerciseDetails ? (
-          <MuscleThumbnail
-            primary={exerciseDetails.muscleGroup}
-            secondary={exerciseDetails.secondaryMuscles}
-            size={36}
-          />
-        ) : null}
-        <View style={styles.titleWrapper}>
-          <Text variant="h3" numberOfLines={2}>
-            {name}
-          </Text>
-          {workoutExercise.supersetGroup != null ? (
-            <View style={styles.supersetTag}>
-              <Icon icon={Link} size={12} color={supersetColor ?? 'muted'} />
-              <Text variant="label" color={supersetColor ?? 'muted'}>
-                {translate('workout.superset').toUpperCase()} {workoutExercise.supersetGroup}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-        <View style={styles.headerActions}>
-          {!readOnly ? (
-            <Pressable
-              onPress={() => onNotePress(workoutExercise.id)}
-              haptic="selection"
-              hitSlop={6}
-              style={[styles.iconButton, { backgroundColor: hasNote ? colors.accent : colors.surfaceAlt }]}
-            >
-              <Icon icon={StickyNote} size={17} color={hasNote ? 'onAccent' : 'text'} />
-            </Pressable>
-          ) : null}
-          {!readOnly ? (
-            <Pressable
-              onPress={() => onMenu(workoutExercise.id)}
-              haptic="selection"
-              hitSlop={6}
-              style={[styles.iconButton, { backgroundColor: colors.surfaceAlt }]}
-            >
-              <Icon icon={Ellipsis} size={18} />
-            </Pressable>
-          ) : null}
-        </View>
-      </View>
+      <ExerciseCardHeader
+        name={name}
+        supersetGroup={workoutExercise.supersetGroup}
+        supersetColor={supersetColor}
+        hasNote={hasNote}
+        restSeconds={restSeconds}
+        readOnly={readOnly}
+        onDescriptionPress={() => onDescriptionPress(workoutExercise.id)}
+        onMenuPress={() => onMenu(workoutExercise.id)}
+        onRestPress={() => onRestPress(workoutExercise.id)}
+        onNotePress={() => onNotePress(workoutExercise.id)}
+      />
 
       <View style={styles.columnHeader}>
         <Text
@@ -193,19 +164,12 @@ export const ExerciseCard = memo(function ExerciseCard({
 });
 
 const styles = StyleSheet.create({
+  // Фона у карточки нет: упражнения идут прямо по странице на всю ширину, как в Hevy.
   card: {
-    borderRadius: radius.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
-    marginBottom: spacing.md,
-    overflow: 'hidden',
   },
   supersetBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
-  header: { flexDirection: 'row', alignItems: 'flex-start', paddingHorizontal: spacing.lg, gap: spacing.sm },
-  titleWrapper: { flex: 1, paddingTop: 4 },
-  supersetTag: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
-  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  iconButton: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   columnHeader: {
     flexDirection: 'row',
     alignItems: 'center',

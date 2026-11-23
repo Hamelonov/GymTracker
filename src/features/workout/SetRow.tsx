@@ -143,7 +143,8 @@ export const SetRow = memo(function SetRow({
   const colors = useColors();
   const hapticsEnabled = useSettings((state) => state.haptics);
   // Фон светлее жёлтого квадрата с галочкой, иначе квадрат сливается со строкой.
-  const rowBackgroundStyle = { backgroundColor: set.completed ? colors.accentFaint : colors.surface };
+  // У невыполненной строки фона нет: она лежит прямо на странице (или на карточке в редакторе программы).
+  const rowBackgroundStyle = { backgroundColor: set.completed ? colors.accentFaint : 'transparent' };
   const previousSetText = set.previous
     ? formatSetValues(set.previous, fields, units, { unitLabel: false })
     : '—';
