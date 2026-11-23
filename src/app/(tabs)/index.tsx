@@ -13,7 +13,7 @@ import { useActiveWorkout } from '@/store/activeWorkout';
 import { useRestTimer } from '@/store/restTimer';
 import { nextWorkoutNumber, numberedWorkoutName } from '@/db/renameDefaultWorkoutNames';
 import { useNow } from '@/lib/useNow';
-import { Button, EmptyState, Icon, IconButton, Screen, SectionTitle, confirm } from '@/ui';
+import { Button, EmptyState, Icon, IconButton, Screen, SectionTitle, confirm, spacing } from '@/ui';
 
 /** Какой нижний лист открыт на главном экране (только один за раз). */
 type OpenSheet = { kind: 'none' } | { kind: 'routineMenu'; routineId: string };
@@ -84,7 +84,7 @@ export default function HomeTab() {
   );
 
   return (
-    <Screen header={{ title: translate('home.title'), large: true }} contentStyle={{ paddingBottom: 120 }}>
+    <Screen contentStyle={{ paddingTop: spacing.sm, paddingBottom: 120 }}>
       {isResumeBannerVisible ? (
         <ResumeWorkoutBanner workoutName={activeWorkout?.name} onPress={() => push('/workout/active')} />
       ) : null}

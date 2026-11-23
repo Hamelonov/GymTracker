@@ -19,13 +19,10 @@ import { spacing } from './tokens';
 export interface HeaderProps {
   title?: string;
   subtitle?: string;
-  large?: boolean;
   backButton?: boolean | 'close';
   right?: React.ReactNode;
   left?: React.ReactNode;
   onBack?: () => void;
-  /** Элемент в одной строке с крупным заголовком (`large`), справа от текста, а не над ним. */
-  largeRight?: React.ReactNode;
 }
 
 /** Возвращает назад или на главную вкладку, если экран открыт напрямую (возвращаться некуда). */
@@ -34,13 +31,11 @@ function goBackOrHome() {
   else router.replace('/');
 }
 
-export function Header({ title, subtitle, large, backButton, right, left, largeRight, onBack }: HeaderProps) {
+export function Header({ title, subtitle, backButton, right, left, onBack }: HeaderProps) {
   const colors = useColors();
   const handleBackPress = onBack ?? goBackOrHome;
-  const showsSmallTitle = !large && title;
-  const showsLargeTitle = large && title;
   return (
-    <View style={[styles.header, large ? styles.headerLarge : null]}>
+    <View style={styles.header}>
       <View style={styles.headerRow}>
         <View style={styles.headerSide}>
           {backButton ? (
@@ -55,7 +50,7 @@ export function Header({ title, subtitle, large, backButton, right, left, largeR
             left
           )}
         </View>
-        {showsSmallTitle ? (
+        {title ? (
           <View style={styles.headerCenter}>
             <Text variant="h3" numberOfLines={1}>
               {title}
@@ -71,19 +66,6 @@ export function Header({ title, subtitle, large, backButton, right, left, largeR
         )}
         <View style={[styles.headerSide, styles.headerRight]}>{right}</View>
       </View>
-      {showsLargeTitle ? (
-        <View style={styles.largeTitleRow}>
-          <View style={styles.largeTitleColumn}>
-            <Text variant="h1">{title}</Text>
-            {subtitle ? (
-              <Text variant="body" color="muted" style={styles.largeSubtitle}>
-                {subtitle}
-              </Text>
-            ) : null}
-          </View>
-          {largeRight}
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -154,20 +136,10 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   padded: { paddingHorizontal: spacing.lg },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.sm },
-  headerLarge: { paddingBottom: spacing.md },
   headerRow: { flexDirection: 'row', alignItems: 'center', minHeight: 44 },
   headerSide: { minWidth: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerRight: { justifyContent: 'flex-end', flexShrink: 0 },
   headerCenter: { flex: 1, alignItems: 'center' },
-  largeTitleRow: {
-    marginTop: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  largeTitleColumn: { flex: 1 },
-  largeSubtitle: { marginTop: 2 },
   backButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
 });

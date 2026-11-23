@@ -57,7 +57,6 @@ const en = {
     profile: 'Profile',
   },
   log: {
-    title: 'Training progress',
     columnDay: 'Date',
     selectExercise: 'Exercise',
     allExercises: 'All',
@@ -72,7 +71,6 @@ const en = {
     emptyHint: 'Finish your first workout and a table for every exercise will appear here.',
   },
   home: {
-    title: 'Workout',
     quickStart: 'Quick start',
     startEmpty: 'Start an empty workout',
     routines: 'Routines',
@@ -215,7 +213,6 @@ const en = {
   },
   exercise: {
     title: 'Exercise',
-    library: 'Exercises',
     searchPlaceholder: 'Search',
     allMuscles: 'All muscles',
     create: 'Create exercise',
@@ -316,11 +313,16 @@ const en = {
     badge: 'PR',
   },
   history: {
-    title: 'History',
     empty: 'No workouts yet',
     emptyHint: 'Your finished workouts will show up here.',
-    calendar: 'Calendar',
+    viewMonth: 'Month',
+    viewYear: 'Year',
     list: 'List',
+    monthTitle: '{{month}} {{year}}',
+    weeklyStreak_one: '{{count}} week streak',
+    weeklyStreak_other: '{{count}} week streak',
+    restDays_one: '{{count}} rest day',
+    restDays_other: '{{count}} rest days',
     workoutsInMonth_one: '{{count}} workout',
     workoutsInMonth_other: '{{count}} workouts',
     deleteConfirm: 'Delete this workout? This cannot be undone.',
@@ -381,7 +383,6 @@ const en = {
     deleteConfirm: 'Delete this entry?',
   },
   profile: {
-    title: 'Profile',
     stats: 'Statistics',
     measurements: 'Measurements',
     tools: 'Tools',

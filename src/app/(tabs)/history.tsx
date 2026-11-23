@@ -1,17 +1,20 @@
-import { addDays, addMonths, endOfMonth, startOfMonth } from 'date-fns';
 import { push } from '@/lib/nav';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { listWorkouts, countWorkoutsByDay } from '@/db/repo/workouts';
+import { listWorkouts } from '@/db/repo/workouts';
 import { useQuery } from '@/db/version';
-import { HistoryCalendar } from '@/features/history/HistoryCalendar';
 import { HistoryList } from '@/features/history/HistoryList';
+import { MonthCalendarView } from '@/features/history/MonthCalendarView';
+import { YearCalendarView } from '@/features/history/YearCalendarView';
 import { useNow } from '@/lib/useNow';
-import { Header, Segmented, spacing, useColors } from '@/ui';
+import { DropdownFilterBar, spacing, useColors, type DropdownFilter } from '@/ui';
 
-type HistoryViewMode = 'list' | 'calendar';
+type HistoryViewMode = 'month' | 'year' | 'list';
+
+const VIEW_MODES: HistoryViewMode[] = ['month', 'year', 'list'];
+const VIEW_MODE_FIELD_WIDTH = 150;
 
 export default function HistoryTab() {
   const colors = useColors();
@@ -19,59 +22,47 @@ export default function HistoryTab() {
   const insets = useSafeAreaInsets();
   const now = useNow();
   const [viewMode, setViewMode] = useState<HistoryViewMode>('list');
-  const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const allWorkouts = useQuery(() => listWorkouts(), []);
-  const monthEnd = endOfMonth(month);
-  const workoutCountByDay = useQuery(
-    () => countWorkoutsByDay(month.getTime(), addDays(monthEnd, 1).getTime()),
-    [month.getTime()],
-  );
-  const monthWorkoutCount = [...workoutCountByDay.values()].reduce((sum, count) => sum + count, 0);
-
-  const changeMonthBy = (monthCount: number) => {
-    setMonth((currentMonth) => addMonths(currentMonth, monthCount));
-  };
 
   const openWorkout = useCallback((workoutId: string) => {
     push({ pathname: '/workout/[id]', params: { id: workoutId } });
   }, []);
+  const openDay = useCallback((day: string) => {
+    push({ pathname: '/history/[day]', params: { day } });
+  }, []);
+
+  const viewModeNames: Record<HistoryViewMode, string> = {
+    month: translate('history.viewMonth'),
+    year: translate('history.viewYear'),
+    list: translate('history.list'),
+  };
+  const viewModeDropdown: DropdownFilter = {
+    key: 'viewMode',
+    items: VIEW_MODES.map((mode) => ({ id: mode, name: viewModeNames[mode] })),
+    selectedId: viewMode,
+    fieldWidth: VIEW_MODE_FIELD_WIDTH,
+    onSelect: (id) => {
+      const selectedMode = VIEW_MODES.find((mode) => mode === id);
+      if (selectedMode) setViewMode(selectedMode);
+    },
+  };
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top }]}>
-      <Header title={translate('history.title')} large />
-      {/* Вкладки вне списка: при прокрутке они остаются на месте вместе с шапкой. */}
-      <View style={styles.viewModeTabs}>
-        <Segmented
-          options={[
-            { value: 'list', label: translate('history.list') },
-            { value: 'calendar', label: translate('history.calendar') },
-          ]}
-          value={viewMode}
-          onChange={setViewMode}
-        />
-      </View>
-      {viewMode === 'list' ? (
-        <HistoryList workouts={allWorkouts} onOpenWorkout={openWorkout} />
-      ) : (
-        <ScrollView contentContainerStyle={styles.calendarContent}>
-          <HistoryCalendar
-            month={month}
-            monthEnd={monthEnd}
-            now={now}
-            workoutCountByDay={workoutCountByDay}
-            monthWorkoutCount={monthWorkoutCount}
-            onShowPreviousMonth={() => changeMonthBy(-1)}
-            onShowNextMonth={() => changeMonthBy(1)}
-            onOpenDay={(day) => push({ pathname: '/history/[day]', params: { day } })}
-          />
-        </ScrollView>
-      )}
+    // Заголовка у экрана нет: режим выбирается списком в самом верху, а место отдано содержимому.
+    <View
+      style={[styles.screen, { backgroundColor: colors.background, paddingTop: insets.top + spacing.sm }]}
+    >
+      <DropdownFilterBar filters={[viewModeDropdown]} isCentered>
+        {viewMode === 'list' ? <HistoryList workouts={allWorkouts} onOpenWorkout={openWorkout} /> : null}
+        {viewMode === 'month' ? (
+          <MonthCalendarView workouts={allWorkouts} now={now} onOpenDay={openDay} />
+        ) : null}
+        {viewMode === 'year' ? <YearCalendarView workouts={allWorkouts} now={now} /> : null}
+      </DropdownFilterBar>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  viewModeTabs: { paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
-  calendarContent: { paddingBottom: 140 },
 });

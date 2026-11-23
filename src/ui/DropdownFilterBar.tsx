@@ -5,6 +5,7 @@ import {
   Pressable as NativePressable,
   StyleSheet,
   View,
+  useWindowDimensions,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
@@ -34,6 +35,8 @@ interface DropdownFilterBarProps {
   leading?: React.ReactNode;
   /** Содержимое под фильтрами: список открывается поверх него. */
   children: React.ReactNode;
+  /** Поле с фиксированной шириной стоит по центру, а не у края: так выглядит выбор режима в шапке. */
+  isCentered?: boolean;
 }
 
 const LIST_MAX_HEIGHT = 320;
@@ -95,16 +98,24 @@ function getFieldStyle(filter: DropdownFilter): ViewStyle {
   return filter.fieldWidth ? { width: filter.fieldWidth } : styles.flexibleField;
 }
 
-function getListPosition(filter: DropdownFilter): ViewStyle {
+function getListPosition(filter: DropdownFilter, isCentered: boolean, screenWidth: number): ViewStyle {
   if (!filter.fieldWidth) return styles.fullWidthList;
-  return { right: spacing.lg, width: filter.listWidth ?? filter.fieldWidth };
+  const listWidth = filter.listWidth ?? filter.fieldWidth;
+  if (isCentered) return { left: (screenWidth - listWidth) / 2, width: listWidth };
+  return { right: spacing.lg, width: listWidth };
 }
 
 /**
  * Ряд фильтров: список открывается прямо под полем, как <select>, без шторок и окон.
  * Список лежит в том же контейнере, что и содержимое: снаружи родителя Android не отдаёт ему нажатия.
  */
-export function DropdownFilterBar({ filters, leading, children }: DropdownFilterBarProps) {
+export function DropdownFilterBar({
+  filters,
+  leading,
+  children,
+  isCentered = false,
+}: DropdownFilterBarProps) {
+  const { width: screenWidth } = useWindowDimensions();
   const [openFilterKey, setOpenFilterKey] = useState<string | null>(null);
   const [barHeight, setBarHeight] = useState(0);
   const openFilter = filters.find((filter) => filter.key === openFilterKey);
@@ -128,7 +139,10 @@ export function DropdownFilterBar({ filters, leading, children }: DropdownFilter
 
   return (
     <View style={styles.container}>
-      <View style={styles.bar} onLayout={(event) => setBarHeight(event.nativeEvent.layout.height)}>
+      <View
+        style={[styles.bar, isCentered ? styles.centeredBar : null]}
+        onLayout={(event) => setBarHeight(event.nativeEvent.layout.height)}
+      >
         {leading}
         {filters.map((filter) => {
           const selectedName = filter.items.find((item) => item.id === filter.selectedId)?.name;
@@ -159,7 +173,7 @@ export function DropdownFilterBar({ filters, leading, children }: DropdownFilter
               openFilter.onSelect(id);
               closeList();
             }}
-            style={[getListPosition(openFilter), { top: listTop }]}
+            style={[getListPosition(openFilter, isCentered, screenWidth), { top: listTop }]}
           />
         </>
       ) : null}
@@ -175,6 +189,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
   },
+  centeredBar: { justifyContent: 'center' },
   content: { flex: 1 },
   field: {
     flexDirection: 'row',

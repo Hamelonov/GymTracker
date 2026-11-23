@@ -94,7 +94,7 @@ export default function LogTab() {
 
   if (performedExercises.length === 0 || (!selectedExercise && !isAllSelected)) {
     return (
-      <Screen header={{ title: translate('log.title'), large: true }}>
+      <Screen contentStyle={{ paddingTop: spacing.sm }}>
         <EmptyState icon={Table2} title={translate('log.empty')} hint={translate('log.emptyHint')} />
       </Screen>
     );
@@ -140,7 +140,7 @@ export default function LogTab() {
 
   return (
     // Страница не прокручивается: внутри ScrollView жесты холста отменялись бы прокруткой.
-    <Screen header={{ title: translate('log.title'), large: true }} scrollable={false} padded={false}>
+    <Screen scrollable={false} padded={false} contentStyle={{ paddingTop: spacing.sm }}>
       <DropdownFilterBar filters={[exerciseDropdown, periodDropdown]}>
         {shownTables.length === 0 ? (
           <EmptyState
