@@ -21,3 +21,4 @@ export * from './ThemeProvider';
 export * from './Toast';
 export * from './tokens';
 export * from './SectionTitle';
+export * from './WheelPicker';

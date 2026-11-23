@@ -2,7 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 import { formatDuration } from '@/domain/units';
-import { Text, radius, spacing, useColors } from '@/ui';
+import { Pencil } from 'lucide-react-native';
+import { Icon, Pressable, Text, radius, spacing, useColors } from '@/ui';
 import { ElapsedTimer } from './ElapsedTimer';
 
 export interface WorkoutStatsProps {
@@ -15,6 +16,8 @@ export interface WorkoutStatsProps {
   /** `inverse` — чёрная карточка, используемая на жёлтом экране итогов. */
   variant?: 'surface' | 'inverse';
   style?: StyleProp<ViewStyle>;
+  /** Если задано, длительность нажимается и показывает карандаш: так задаётся длительность записи задним числом. */
+  onDurationPress?: () => void;
 }
 
 /**
@@ -31,6 +34,7 @@ export function WorkoutStats({
   setCount,
   variant = 'surface',
   style,
+  onDurationPress,
 }: WorkoutStatsProps) {
   const colors = useColors();
   const { t: translate } = useTranslation();
@@ -50,7 +54,7 @@ export function WorkoutStats({
 
   return (
     <View style={[styles.card, { backgroundColor: isInverse ? colors.black : colors.surface }, style]}>
-      <StatCell label={translate('workout.duration')} labelColor={labelColor}>
+      <StatCell label={translate('workout.duration')} labelColor={labelColor} onPress={onDurationPress}>
         {durationValue}
       </StatCell>
       <StatCell label={translate('history.exercisesDone')} labelColor={labelColor}>
@@ -67,18 +71,34 @@ function StatCell({
   label,
   labelColor,
   children,
+  onPress,
 }: {
   label: string;
   labelColor: string;
   children: React.ReactNode;
+  onPress?: () => void;
 }) {
-  return (
-    <View style={styles.cell}>
+  const labelRow = (
+    <View style={styles.labelRow}>
       <Text variant="label" color={labelColor} numberOfLines={1}>
         {label.toUpperCase()}
       </Text>
-      {children}
+      {onPress ? <Icon icon={Pencil} size={12} color={labelColor} /> : null}
     </View>
+  );
+  if (!onPress) {
+    return (
+      <View style={styles.cell}>
+        {labelRow}
+        {children}
+      </View>
+    );
+  }
+  return (
+    <Pressable style={styles.cell} onPress={onPress} haptic="selection" hitSlop={8}>
+      {labelRow}
+      {children}
+    </Pressable>
   );
 }
 
@@ -97,4 +117,5 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   cell: { width: '33.333%', gap: 4, paddingRight: spacing.sm },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

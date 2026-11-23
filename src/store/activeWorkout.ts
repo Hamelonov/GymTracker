@@ -68,6 +68,10 @@ interface ActiveWorkoutState {
   rename: (name: string) => void;
   setNotes: (notes: string) => void;
   setStartedAt: (startedAt: number) => void;
+  /** Меняет длительность правки: конец отсчитывается от времени начала. У живой тренировки не действует. */
+  setSessionDuration: (durationSec: number) => void;
+  /** Двигает время начала правки и переносит конец следом: длительность остаётся прежней. */
+  setSessionStartedAt: (startedAt: number) => void;
   addExercises: (exerciseIds: string[]) => void;
   replaceExercise: (workoutExerciseId: string, exerciseId: string) => void;
   removeExercise: (workoutExerciseId: string) => ActiveExercise | null;
@@ -217,6 +221,20 @@ export const useActiveWorkout = create<ActiveWorkoutState>()(
         rename: (name) => updateWorkout((workout) => ({ ...workout, name })),
         setNotes: (notes) => updateWorkout((workout) => ({ ...workout, notes })),
         setStartedAt: (startedAt) => updateWorkout((workout) => ({ ...workout, startedAt })),
+        setSessionStartedAt: (startedAt) => {
+          const { workout, session } = get();
+          if (!workout || session.mode !== 'edit') return;
+          const durationMs = session.finishedAt - workout.startedAt;
+          set({
+            workout: { ...workout, startedAt },
+            session: { ...session, finishedAt: startedAt + durationMs },
+          });
+        },
+        setSessionDuration: (durationSec) => {
+          const { workout, session } = get();
+          if (!workout || session.mode !== 'edit') return;
+          set({ session: { ...session, finishedAt: workout.startedAt + durationSec * 1000 } });
+        },
         setPenText: (penText) => set({ penText }),
         switchToPen: (penText) => set({ penText, entryMode: 'pen' }),
         applyPenResult: (exercises) => {

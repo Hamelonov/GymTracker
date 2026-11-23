@@ -29,6 +29,7 @@ import { ExerciseMenuSheet } from '@/features/workout/sheets/ExerciseMenuSheet';
 import { ExerciseNoteSheet } from '@/features/workout/sheets/ExerciseNoteSheet';
 import { FinishWorkoutSheet } from '@/features/workout/sheets/FinishWorkoutSheet';
 import { RenameWorkoutSheet } from '@/features/workout/sheets/RenameWorkoutSheet';
+import { WorkoutTimeSheet } from '@/features/workout/sheets/WorkoutTimeSheet';
 import { RestTimerPickerSheet } from '@/features/workout/sheets/RestTimerPickerSheet';
 import { SetTypePickerSheet } from '@/features/workout/sheets/SetTypePickerSheet';
 import { SupersetPickerSheet } from '@/features/workout/sheets/SupersetPickerSheet';
@@ -59,6 +60,7 @@ type SheetState =
   | { kind: 'note'; workoutExerciseId: string }
   | { kind: 'finish' }
   | { kind: 'name' }
+  | { kind: 'time' }
   | { kind: 'penRest' }
   | { kind: 'extraFields'; workoutExerciseId: string };
 
@@ -428,6 +430,10 @@ export default function ActiveWorkoutScreen() {
             durationSec={fixedDurationSeconds}
             exerciseCount={exerciseCount}
             setCount={workingSetCount}
+            // Время правится только у записи задним числом: у живой тренировки его считает таймер.
+            onDurationPress={
+              session.mode === 'edit' && session.isNewEntry ? () => setSheet({ kind: 'time' }) : undefined
+            }
             style={{ marginBottom: spacing.md }}
           />
 
@@ -594,6 +600,15 @@ export default function ActiveWorkoutScreen() {
         nameDraft={nameDraft}
         onNameDraftChange={setNameDraft}
         onSave={saveName}
+      />
+
+      <WorkoutTimeSheet
+        visible={sheet.kind === 'time'}
+        onClose={closeSheet}
+        startedAt={workout.startedAt}
+        durationSec={fixedDurationSeconds ?? 0}
+        onStartedAtChange={(startedAt) => getWorkoutStore().setSessionStartedAt(startedAt)}
+        onDurationChange={(durationSec) => getWorkoutStore().setSessionDuration(durationSec)}
       />
 
       <FinishWorkoutSheet
