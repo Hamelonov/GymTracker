@@ -1,6 +1,6 @@
 import type { ExerciseHistoryEntry } from '@/db/repo/exercises';
 import type { SetRow } from '@/db/schema';
-import { buildPenGroups, formatPenSetValue, type PenFormatOptions } from '@/domain/pen/serializeWorkout';
+import { buildSetGroups, formatSetValue, type SetFormatOptions } from '@/domain/setFormatting';
 import type { ExerciseType } from '@/domain/types';
 import { formatNumberWithoutTrailingZeros, roundForDisplay } from '@/domain/units';
 
@@ -20,21 +20,20 @@ export interface WeightLine {
 
 /**
  * Строки одного дня — как в «Сегодня сделано»: каждый новый вес на своей строке, «70кг х 9/8», «65кг х 10».
- * У упражнений со своим весом добавленный груз показан обычным числом, без знака «+»: это таблица
- * с историей, а не текст «Ручки», где знак нужен парсеру. Подробнее — в комментарии к `formatPenWeight`.
+ * У упражнений со своим весом добавленный груз показан обычным числом, без знака «+».
  */
 export function buildWeightLines(
   sets: SetRow[],
   exerciseType: ExerciseType,
-  options: PenFormatOptions,
+  options: SetFormatOptions,
 ): WeightLine[] {
-  const lines = buildPenGroups(sets, exerciseType, options, { includeWeightSign: false }).map((group) => ({
+  const lines = buildSetGroups(sets, exerciseType, options).map((group) => ({
     weightKg: group.weightKg,
     weight: group.weightText,
     // RIR стоит в своей колонке, поэтому в подходах его скобок нет: иначе одно и то же написано дважды.
     sets:
       group.sets
-        .map((set) => formatPenSetValue({ ...set, rir: null }, exerciseType, options))
+        .map((set) => formatSetValue({ ...set, rir: null }, exerciseType, options))
         .filter((value) => value.length > 0)
         .join('/') || '—',
   }));

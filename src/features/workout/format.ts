@@ -1,4 +1,4 @@
-import { formatPenSetValue, formatPenWeight, penTimesSign } from '@/domain/pen/serializeWorkout';
+import { formatSetValue, formatSetWeight, getTimesSign } from '@/domain/setFormatting';
 import type { ExerciseType, SetType, SetValues, SetFields, WeightUnit, DistanceUnit } from '@/domain/types';
 import {
   formatDistance,
@@ -26,8 +26,7 @@ export function formatSetValues(
     parts.push(`${weightText} × ${repsText}`);
   } else if (fields.reps) {
     if (values.reps == null) return '—';
-    // Дополнительный вес у упражнений со своим весом: «10 kg × 8». Без знака «+» — это просто число,
-    // не текст «Ручки»: там он нужен парсеру, здесь был бы лишним на фоне обычных значений.
+    // Дополнительный вес у упражнений со своим весом: «10 kg × 8». Без знака «+» — это просто число.
     const extraWeightText =
       values.weightKg != null ? `${formatWeight(values.weightKg, units.weight, showUnitLabel)} × ` : '';
     parts.push(`${extraWeightText}${values.reps}`);
@@ -42,9 +41,9 @@ export function formatSetValues(
 }
 
 /**
- * Строка подхода для истории в записи режима «Ручка»: «70кг х 8(1)», «10кг х 8», «1:00»;
+ * Строка подхода для истории: «70кг х 8(1)», «10кг х 8», «1:00»;
  * RPE дописывается как «@8». Пустые дополнительные поля не показываются вовсе.
- * Знака «+»/«-» у добавленного веса нет: это просмотр истории, а не редактируемый текст «Ручки».
+ * Знака «+»/«-» у добавленного веса нет.
  */
 export function formatSetLineWithExtras(
   set: SetValues & { type: SetType },
@@ -53,13 +52,10 @@ export function formatSetLineWithExtras(
   language: string,
 ): string {
   const options = { weightUnit: units.weight, distanceUnit: units.distance, language };
-  const value = formatPenSetValue(set, exerciseType, options);
-  const weight =
-    set.weightKg != null
-      ? formatPenWeight(set.weightKg, exerciseType, options, { includeWeightSign: false })
-      : null;
+  const value = formatSetValue(set, exerciseType, options);
+  const weight = set.weightKg != null ? formatSetWeight(set.weightKg, options) : null;
   let text = value || '—';
-  if (weight && value) text = `${weight} ${penTimesSign(language)} ${value}`;
+  if (weight && value) text = `${weight} ${getTimesSign(language)} ${value}`;
   else if (weight) text = weight;
   if (set.rpe != null) text = `${text} @${formatNumberWithoutTrailingZeros(set.rpe)}`;
   return text;

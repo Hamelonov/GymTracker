@@ -6,7 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { exerciseName } from '@/db/repo/exercises';
 import type { SaveResult, WorkoutDetail } from '@/db/repo/workouts';
 import { pickRecordMetric, recordGain, type ValueFormatters, type RecordMetric } from '@/domain/summary';
-import { formatPenSetValue, formatPenWeight, penTimesSign } from '@/domain/pen/serializeWorkout';
+import { formatSetValue, formatSetWeight, getTimesSign } from '@/domain/setFormatting';
 import { getSetFieldsForExerciseType, type SetValues } from '@/domain/types';
 import { useSettings } from '@/store/settings';
 import { Card, Text, spacing, useColors } from '@/ui';
@@ -111,7 +111,7 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
   const { t: translate, i18n } = useTranslation();
   const weightUnit = useSettings((state) => state.weightUnit);
   const distanceUnit = useSettings((state) => state.distanceUnit);
-  const penOptions = useMemo(
+  const formatOptions = useMemo(
     () => ({ weightUnit, distanceUnit, language: i18n.language }),
     [weightUnit, distanceUnit, i18n.language],
   );
@@ -132,10 +132,10 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
       if (!recordSet) continue;
 
       const gain = recordGain(hits, metric);
-      // Без знака «+»/«-»: его на отдельной строке ниже уже добавляет «прибавка», дважды он не нужен.
+      // Знак «+» перед прибавкой дописывается ниже, поэтому сам вес пишется просто числом.
       const formatGainValue = (value: number) =>
         metric === 'weight'
-          ? formatPenWeight(value, workoutExercise.exercise.type, penOptions, { includeWeightSign: false })
+          ? formatSetWeight(value, formatOptions)
           : formatRecordValue(value, metric, formatters);
       let change: RecordChange | null = null;
       if (gain && gain.previous != null && gain.best > gain.previous) {
@@ -154,16 +154,11 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
           id: workoutExercise.id,
           name,
           weight: {
-            value:
-              recordSet.weightKg != null
-                ? formatPenWeight(recordSet.weightKg, workoutExercise.exercise.type, penOptions, {
-                    includeWeightSign: false,
-                  })
-                : '—',
+            value: recordSet.weightKg != null ? formatSetWeight(recordSet.weightKg, formatOptions) : '—',
             change: metric === 'weight' ? change : null,
           },
           result: {
-            value: formatPenSetValue(recordSet, workoutExercise.exercise.type, penOptions) || '—',
+            value: formatSetValue(recordSet, workoutExercise.exercise.type, formatOptions) || '—',
             change: metric === 'reps' ? change : null,
           },
         });
@@ -175,14 +170,14 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
         weight: null,
         result: {
           value:
-            formatPenSetValue(recordSet, workoutExercise.exercise.type, penOptions) ||
+            formatSetValue(recordSet, workoutExercise.exercise.type, formatOptions) ||
             formatRecordValue(setValueForMetric(recordSet, metric), metric, formatters),
           change,
         },
       });
     }
     return rows;
-  }, [saveResult, workoutDetail, formatters, penOptions, i18n.language]);
+  }, [saveResult, workoutDetail, formatters, formatOptions, i18n.language]);
 
   if (recordRows.length === 0) return null;
 
@@ -217,7 +212,7 @@ export function NewRecordsBlock({ saveResult, workoutDetail, formatters }: NewRe
                       color={SUMMARY_MUTED_TEXT_COLOR}
                       style={summaryTableStyles.timesSignColumn}
                     >
-                      {row.weight ? penTimesSign(i18n.language) : ''}
+                      {row.weight ? getTimesSign(i18n.language) : ''}
                     </Text>
                   </>
                 ) : null}

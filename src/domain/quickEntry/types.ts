@@ -23,7 +23,7 @@ export interface ParsedLine {
   sets: ParsedSet[];
 }
 
-export type LineErrorReason = 'missingName' | 'unexpectedText' | 'repsExpected';
+export type LineErrorReason = 'missingName' | 'unexpectedText';
 
 export interface LineError {
   lineIndex: number;

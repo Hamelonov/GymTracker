@@ -1,5 +1,5 @@
 import type { ExerciseHistoryEntry } from '@/db/repo/exercises';
-import { penTimesSign, weightUnitToken, type PenFormatOptions } from '@/domain/pen/serializeWorkout';
+import { getTimesSign, weightUnitToken, type SetFormatOptions } from '@/domain/setFormatting';
 import type { ExerciseType } from '@/domain/types';
 import { kgToUnit, roundForDisplay } from '@/domain/units';
 import type { XlsxCell, XlsxCellStyle, XlsxRow, XlsxSheet, XlsxWorkbook } from '@/domain/xlsx/types';
@@ -12,7 +12,7 @@ export interface ExerciseProgress {
   entries: ExerciseHistoryEntry[];
 }
 
-export interface ProgressWorkbookOptions extends PenFormatOptions {
+export interface ProgressWorkbookOptions extends SetFormatOptions {
   translate: (key: string) => string;
 }
 
@@ -75,9 +75,9 @@ function headerTitle(column: ColumnKey, translate: (key: string) => string): str
 
 /**
  * Вес хранится числом, а «кг» дописывает формат ячейки: в Excel видно «70кг», но по колонке
- * можно считать и строить графики. Без знака «+»/«-»: это таблица с историей, а не текст «Ручки».
+ * можно считать и строить графики.
  */
-function weightNumberFormat(options: PenFormatOptions): string {
+function weightNumberFormat(options: SetFormatOptions): string {
   const unit = weightUnitToken(options.weightUnit, options.language);
   return `General"${unit}"`;
 }
@@ -117,7 +117,7 @@ function dayRows(
           };
         case 'timesSign':
           return {
-            value: line.weightKg != null ? penTimesSign(options.language) : null,
+            value: line.weightKg != null ? getTimesSign(options.language) : null,
             style: { ...baseStyle, fontColor: MUTED_TEXT_COLOR, horizontalAlign: 'center' },
           };
         case 'sets':

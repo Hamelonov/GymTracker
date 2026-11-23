@@ -28,7 +28,7 @@ test('дополнительный вес у подтягиваний и пла�
   ).toBe('20 kg · 1:00');
 });
 
-test('строка истории пишется как в «Ручке», RPE — через @, но без знака «+» у добавленного веса', () => {
+test('строка истории: «70кг х 8(1)», RPE — через @, без знака «+» у добавленного веса', () => {
   const set = (partial: Partial<SetValues>) => ({ ...values(partial), type: 'normal' as const });
   expect(
     formatSetLineWithExtras(set({ weightKg: 100, reps: 8, rir: 1, rpe: 8.5 }), 'weight_reps', units, 'ru'),

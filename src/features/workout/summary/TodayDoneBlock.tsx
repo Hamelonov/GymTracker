@@ -6,7 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { exerciseName } from '@/db/repo/exercises';
 import { mergeRepeatedExercises } from '@/db/repo/mergeExerciseHistory';
 import type { WorkoutDetail } from '@/db/repo/workouts';
-import { buildPenGroups, penTimesSign } from '@/domain/pen/serializeWorkout';
+import { buildSetGroups, getTimesSign } from '@/domain/setFormatting';
 import { useSettings } from '@/store/settings';
 import { Card, Text, spacing, useColors } from '@/ui';
 import { SUMMARY_MUTED_TEXT_COLOR, SummaryBlockHeader, summaryStyles } from './SummaryBlockHeader';
@@ -42,29 +42,28 @@ export function TodayDoneBlock({ workoutDetail }: TodayDoneBlockProps) {
   const { t: translate, i18n } = useTranslation();
   const weightUnit = useSettings((state) => state.weightUnit);
   const distanceUnit = useSettings((state) => state.distanceUnit);
-  // Подходы пишутся так же, как в режиме «Ручка»: «70кг х 9(1)/8/8».
-  const penOptions = useMemo(
+  // Подходы пишутся одной строкой на вес: «70кг х 9(1)/8/8».
+  const formatOptions = useMemo(
     () => ({ weightUnit, distanceUnit, language: i18n.language }),
     [weightUnit, distanceUnit, i18n.language],
   );
 
   const exerciseRows = useMemo<ExerciseRow[]>(() => {
     return mergeRepeatedExercises(workoutDetail?.exercises ?? []).map((workoutExercise) => {
-      // Разминочные подходы остаются в списке с суффиксом «р», как и в тексте «Ручки».
-      // Знак «+» у добавленного веса здесь не нужен — это таблица с историей, а не текст «Ручки».
-      const lines = buildPenGroups(workoutExercise.sets, workoutExercise.exercise.type, penOptions, {
-        includeWeightSign: false,
-      }).map((group) => ({
-        weight: group.weightText,
-        setsAndReps: group.valuesText || '—',
-      }));
+      // Разминочные подходы остаются в списке с суффиксом «р».
+      const lines = buildSetGroups(workoutExercise.sets, workoutExercise.exercise.type, formatOptions).map(
+        (group) => ({
+          weight: group.weightText,
+          setsAndReps: group.valuesText || '—',
+        }),
+      );
       return {
         id: workoutExercise.id,
         name: exerciseName(workoutExercise.exercise, i18n.language),
         lines: lines.length > 0 ? lines : [{ weight: null, setsAndReps: '—' }],
       };
     });
-  }, [workoutDetail, penOptions, i18n.language]);
+  }, [workoutDetail, formatOptions, i18n.language]);
 
   const anyExerciseHasWeight = exerciseRows.some((row) => row.lines.some((line) => line.weight != null));
 
@@ -103,7 +102,7 @@ export function TodayDoneBlock({ workoutDetail }: TodayDoneBlockProps) {
                         color={SUMMARY_MUTED_TEXT_COLOR}
                         style={summaryTableStyles.timesSignColumn}
                       >
-                        {line.weight != null ? penTimesSign(i18n.language) : ''}
+                        {line.weight != null ? getTimesSign(i18n.language) : ''}
                       </Text>
                     </>
                   ) : null}

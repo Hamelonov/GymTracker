@@ -89,7 +89,7 @@ function parsePerSet(value: XlsxCellValue): (number | null)[] {
     });
 }
 
-/** Вес строки в записи «Ручки»: число в единицах из настроек или текст «70кг», «+10кг», «67,5кг». */
+/** Вес строки журнала: число в единицах из настроек или текст «70кг», «+10кг», «67,5кг». */
 function weightText(value: XlsxCellValue): string {
   if (value == null) return '';
   if (typeof value === 'number') return String(value);
@@ -161,7 +161,7 @@ function readExerciseSheet(
     const setsText = String(cellOf(row, 'sets') ?? '').trim();
     if (setsText === '' || setsText === '—') continue;
     const weight = weightText(cellOf(row, 'weight'));
-    // Строка собирается в запись «Ручки» и разбирается тем же парсером: «x: 70 x 9/8о».
+    // Строка собирается в запись быстрого ввода и разбирается тем же парсером: «x: 70 x 9/8о».
     const parsed = parseLine(`x: ${weight ? `${weight} x ` : ''}${setsText}`, 0, options);
     if (!parsed.ok) {
       skippedRowCount += 1;

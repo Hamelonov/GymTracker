@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { StyleSheet, type StyleProp, type TextStyle, View } from 'react-native';
 import type { ExerciseHistoryEntry } from '@/db/repo/exercises';
 import { dateLocale } from '@/domain/dates';
-import { penTimesSign } from '@/domain/pen/serializeWorkout';
+import { getTimesSign } from '@/domain/setFormatting';
 import type { DistanceUnit, ExerciseType, WeightUnit } from '@/domain/types';
 import { buildWeightLines, describeLogColumns, formatPerSet } from './logLines';
 import { Card, Text, spacing, useColors } from '@/ui';
@@ -72,8 +72,8 @@ function ColumnDivider() {
 export function ExerciseLogTable({ entries, exerciseType, units, width }: ExerciseLogTableProps) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
-  const penOptions = { weightUnit: units.weight, distanceUnit: units.distance, language: i18n.language };
-  const timesSign = penTimesSign(i18n.language);
+  const formatOptions = { weightUnit: units.weight, distanceUnit: units.distance, language: i18n.language };
+  const timesSign = getTimesSign(i18n.language);
   const { hasWeight, hasRir, hasRpe } = describeLogColumns(entries);
   const dividerStyle = { borderTopColor: colors.border };
 
@@ -107,7 +107,7 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
             {formatDay(entry.startedAt, i18n.language)}
           </Text>,
           <View key="weight-group" style={styles.weightLines}>
-            {buildWeightLines(entry.sets, exerciseType, penOptions).map((line, lineIndex) => (
+            {buildWeightLines(entry.sets, exerciseType, formatOptions).map((line, lineIndex) => (
               <View key={lineIndex} style={styles.innerRow}>
                 {hasWeight ? (
                   <>

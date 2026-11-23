@@ -221,12 +221,3 @@ export function parseLine(rawText: string, lineIndex: number, options: ParseOpti
   }
   return { ok: true, line: { lineIndex, rawText, name, sets } };
 }
-
-/** Весь текст поля: пустые строки пропускаются, остальные разбираются по порядку. */
-export function parseEntryText(text: string, options: ParseOptions): LineParseResult[] {
-  return text
-    .split('\n')
-    .map((lineText, lineIndex) => ({ lineText, lineIndex }))
-    .filter(({ lineText }) => lineText.trim().length > 0)
-    .map(({ lineText, lineIndex }) => parseLine(lineText, lineIndex, options));
-}

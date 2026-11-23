@@ -16,10 +16,6 @@ import type { ActiveExercise, ExtraField, SetType } from '@/domain/types';
 import { countWorkingSets } from '@/domain/volume';
 import { formatDateTime } from '@/domain/dates';
 import { ActiveWorkoutHeader } from '@/features/workout/ActiveWorkoutHeader';
-import { EntryModeTabs } from '@/features/workout/EntryModeTabs';
-import { useEntryMode } from '@/features/workout/pen/useEntryMode';
-import { PenEditor } from '@/features/workout/pen/PenEditor';
-import { usePenText } from '@/features/workout/pen/usePenText';
 import { ExerciseCard } from '@/features/workout/ExerciseCard';
 import { RestTimerBar } from '@/features/workout/RestTimerBar';
 import { WorkoutStats } from '@/features/workout/WorkoutStats';
@@ -61,7 +57,6 @@ type SheetState =
   | { kind: 'finish' }
   | { kind: 'name' }
   | { kind: 'time' }
-  | { kind: 'penRest' }
   | { kind: 'extraFields'; workoutExerciseId: string };
 
 export default function ActiveWorkoutScreen() {
@@ -76,8 +71,6 @@ export default function ActiveWorkoutScreen() {
   const [sheet, setSheet] = useState<SheetState>({ kind: 'none' });
   const [nameDraft, setNameDraft] = useState('');
   const [noteDraft, setNoteDraft] = useState('');
-  const entryMode = useActiveWorkout((state) => state.entryMode);
-  const penText = useActiveWorkout((state) => state.penText);
   const startRest = useRestTimer((state) => state.start);
   useEffect(() => {
     if (settings.restNotifications) void ensureNotificationPermission();
@@ -95,7 +88,6 @@ export default function ActiveWorkoutScreen() {
     [workout?.exercises],
   );
   const exercisesById = useQuery(() => getExercisesByIds(exerciseIds), [exerciseIds.join(',')]);
-  const penState = usePenText(penText, exerciseIds);
   const lastNoteByExerciseId = useQuery(() => {
     const lastPerformanceByExerciseId = getLastPerformances(exerciseIds);
     const notes = new Map<string, string>();
@@ -109,7 +101,6 @@ export default function ActiveWorkoutScreen() {
     () => ({ weight: settings.weightUnit, distance: settings.distanceUnit }),
     [settings.weightUnit, settings.distanceUnit],
   );
-  const { applyPenNow, switchEntryMode } = useEntryMode({ workout, penText, penState, units, exercisesById });
   // Отдых, заданный для этого упражнения в тренировке, иначе для самого упражнения, иначе значение по умолчанию в приложении.
   // Читает стор напрямую: карточка, только что добавленная, ещё не попала в отрендеренный workout.
   const restSecondsFor = useCallback(
@@ -293,23 +284,14 @@ export default function ActiveWorkoutScreen() {
   }
 
   const completedSets = workout.exercises.flatMap((exercise) => exercise.sets.filter((set) => set.completed));
-  // При редактировании сохранённой тренировки «Ручки» нет, даже если режим остался в хранилище.
-  const isPenMode = entryMode === 'pen' && session.mode === 'new';
-  // В «Ручке» текст ещё не применён, поэтому счётчики и доступность «Завершить» берутся из разобранных строк.
-  const workingSetCount = isPenMode ? penState.setCount : countWorkingSets(completedSets);
-  const exerciseCount = isPenMode ? penState.exerciseCount : workout.exercises.length;
-  // В «Ручке» завершать можно только то, что записано в тексте: карточки при применении будут заменены.
-  const canFinish = isPenMode ? penState.setCount > 0 : completedSets.length > 0;
+  const workingSetCount = countWorkingSets(completedSets);
+  const exerciseCount = workout.exercises.length;
+  const canFinish = completedSets.length > 0;
 
-  const openFinishSheet = async () => {
-    // Из «Ручки» сначала применяем текст: шторка завершения считает статистику по карточкам.
-    if (isPenMode && !(await applyPenNow())) return;
-    setSheet({ kind: 'finish' });
-  };
   // Правка завершённой тренировки сохраняется сразу: шторка завершения нужна только новой тренировке.
   const handleFinishPress = () => {
     if (session.mode === 'edit') void finishWorkout();
-    else void openFinishSheet();
+    else setSheet({ kind: 'finish' });
   };
   // При редактировании завершённой тренировки показывается сохранённая длительность вместо живого таймера.
   const fixedDurationSeconds =
@@ -437,54 +419,36 @@ export default function ActiveWorkoutScreen() {
             style={{ marginBottom: spacing.md }}
           />
 
-          {session.mode === 'new' ? (
-            <View style={{ marginBottom: spacing.md }}>
-              <EntryModeTabs value={entryMode} onChange={(mode) => void switchEntryMode(mode)} />
-            </View>
-          ) : null}
+          {workout.exercises.map((workoutExercise) => {
+            const exerciseDetails = exercisesById.get(workoutExercise.exerciseId);
+            return (
+              <ExerciseCard
+                key={workoutExercise.id}
+                workoutExercise={workoutExercise}
+                exerciseDetails={exerciseDetails}
+                units={units}
+                supersetColor={supersetColorForGroup(workoutExercise.supersetGroup)}
+                onMenu={openExerciseMenu}
+                onNotePress={openNote}
+                onAddSet={addSet}
+                onSetChange={changeSet}
+                onSetToggle={toggleSet}
+                onSetTypePress={openSetTypePicker}
+              />
+            );
+          })}
 
-          {isPenMode ? (
-            <PenEditor
-              text={penText}
-              onTextChange={(text) => getWorkoutStore().setPenText(text)}
-              penState={penState}
-              onRestTimerPress={() => setSheet({ kind: 'penRest' })}
-            />
-          ) : null}
-
-          {!isPenMode &&
-            workout.exercises.map((workoutExercise) => {
-              const exerciseDetails = exercisesById.get(workoutExercise.exerciseId);
-              return (
-                <ExerciseCard
-                  key={workoutExercise.id}
-                  workoutExercise={workoutExercise}
-                  exerciseDetails={exerciseDetails}
-                  units={units}
-                  supersetColor={supersetColorForGroup(workoutExercise.supersetGroup)}
-                  onMenu={openExerciseMenu}
-                  onNotePress={openNote}
-                  onAddSet={addSet}
-                  onSetChange={changeSet}
-                  onSetToggle={toggleSet}
-                  onSetTypePress={openSetTypePicker}
-                />
-              );
-            })}
-
-          {!isPenMode ? (
-            <Button
-              title={translate('workout.addExercise')}
-              size="lg"
-              fullWidth
-              variant={hasNoExercises ? 'primary' : 'secondary'}
-              icon={
-                <Icon icon={Plus} size={20} color={hasNoExercises ? 'onAccent' : 'text'} strokeWidth={2.5} />
-              }
-              onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
-              style={{ marginTop: spacing.sm }}
-            />
-          ) : null}
+          <Button
+            title={translate('workout.addExercise')}
+            size="lg"
+            fullWidth
+            variant={hasNoExercises ? 'primary' : 'secondary'}
+            icon={
+              <Icon icon={Plus} size={20} color={hasNoExercises ? 'onAccent' : 'text'} strokeWidth={2.5} />
+            }
+            onPress={() => push({ pathname: '/exercise/picker', params: { mode: 'workout' } })}
+            style={{ marginTop: spacing.sm }}
+          />
           {session.mode === 'new' ? (
             <Button
               title={translate('workout.discard')}
@@ -578,20 +542,6 @@ export default function ActiveWorkoutScreen() {
         weightUnit={units.weight}
         onToggleField={toggleExtraFieldForCurrent}
         onRememberChange={setRememberExtraFields}
-      />
-
-      <RestTimerPickerSheet
-        visible={sheet.kind === 'penRest'}
-        onClose={closeSheet}
-        selectedSeconds={null}
-        defaultRestSeconds={settings.defaultRestSeconds}
-        onRestSelect={(seconds) => {
-          // В «Ручке» таймер запускается только вручную: выбранное время стартует сразу, «Выкл» останавливает.
-          const restSeconds = seconds ?? settings.defaultRestSeconds;
-          closeSheet();
-          if (restSeconds > 0) startRest(restSeconds);
-          else useRestTimer.getState().skip();
-        }}
       />
 
       <RenameWorkoutSheet

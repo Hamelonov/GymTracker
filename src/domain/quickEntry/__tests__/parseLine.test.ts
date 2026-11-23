@@ -1,4 +1,4 @@
-import { parseEntryText, parseLine } from '../parseLine';
+import { parseLine } from '../parseLine';
 import type { ParseOptions, ParsedSet } from '../types';
 
 const options: ParseOptions = { weightUnit: 'kg', distanceUnit: 'km' };
@@ -100,12 +100,6 @@ test('ошибки', () => {
     ok: false,
     error: { lineIndex: 0, rawText: 'Присед 70х7 ура', reason: 'unexpectedText', fragment: 'ура' },
   });
-});
-
-test('несколько строк, пустые пропускаются', () => {
-  const results = parseEntryText('Присед 70х7\n\nЖим 60х8', options);
-  expect(results.map((result) => result.ok && result.line.name)).toEqual(['Присед', 'Жим']);
-  expect(results.map((result) => result.ok && result.line.lineIndex)).toEqual([0, 2]);
 });
 
 test('группы через запятую без пробела', () => {
