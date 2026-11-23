@@ -11,6 +11,7 @@ import {
 } from '@/db/repo/backup';
 import { importWorkoutsAsync } from '@/db/repo/importWorkouts';
 import { mergeBackupAsync } from '@/db/repo/mergeBackup';
+import { detectImportFormat } from '@/domain/detectImportFormat';
 import { parseWorkoutsCsv } from '@/domain/workoutsCsv';
 import { XLSX_MIME_TYPE } from '@/domain/xlsx/buildXlsx';
 import { readXlsx } from '@/domain/xlsx/readXlsx';
@@ -25,7 +26,7 @@ import { buildExportFileName } from './exportFileName';
 import { nextExportSequence, saveExportFile, shareExportFile } from './shareExportFile';
 
 export type DataFormat = 'json' | 'csv' | 'xlsx';
-export type BusyAction = `${'export' | 'import'}:${DataFormat}`;
+export type BusyAction = `export:${DataFormat}` | 'import';
 export type ExportDestination = 'share' | 'device';
 
 export interface TransferProgressState {
@@ -34,13 +35,6 @@ export interface TransferProgressState {
   titleText: string;
   stageText: string;
 }
-
-// Мессенджеры и облака часто отдают файл без правильного типа, поэтому в конце всегда «любой файл».
-const PICKER_TYPES: Record<DataFormat, string[]> = {
-  json: ['application/json', 'text/plain', '*/*'],
-  csv: ['text/csv', 'text/comma-separated-values', 'text/plain', '*/*'],
-  xlsx: [XLSX_MIME_TYPE, 'application/octet-stream', '*/*'],
-};
 
 // Файл Excel мог быть выгружен на любом языке интерфейса: колонки ищутся по подписям обоих словарей.
 const DICTIONARIES = [ru, en];
@@ -252,8 +246,8 @@ export function useDataTransfer() {
     };
   };
 
-  const planXlsxImport = async (file: File): Promise<ImportPlan> => {
-    const parsed = parseProgressWorkbook(readXlsx(await file.bytes()), {
+  const planXlsxImport = async (fileBytes: Uint8Array): Promise<ImportPlan> => {
+    const parsed = parseProgressWorkbook(readXlsx(fileBytes), {
       aliases: PROGRESS_HEADER_ALIASES,
       weightUnit,
       distanceUnit,
@@ -272,24 +266,32 @@ export function useDataTransfer() {
     };
   };
 
-  const importData = async (format: DataFormat) => {
+  const planImport = (format: DataFormat, file: File, fileBytes: Uint8Array): Promise<ImportPlan> => {
+    if (format === 'xlsx') return planXlsxImport(fileBytes);
+    if (format === 'json') return planJsonImport(file);
+    return planCsvImport(file);
+  };
+
+  const importData = async () => {
+    // Формат определяется по содержимому, поэтому выбираем любой файл: тип от мессенджеров и облаков ненадёжен.
     const pickerResult = await DocumentPicker.getDocumentAsync({
-      type: PICKER_TYPES[format],
+      type: '*/*',
       copyToCacheDirectory: true,
       multiple: false,
     });
     const pickedFile = pickerResult.canceled ? undefined : pickerResult.assets[0];
     if (!pickedFile) return;
 
-    setBusyAction(`import:${format}`);
+    setBusyAction('import');
     try {
       const file = new File(pickedFile.uri);
-      const planByFormat = { json: planJsonImport, csv: planCsvImport, xlsx: planXlsxImport };
-      const plan = await planByFormat[format](file);
+      const fileBytes = await file.bytes();
+      const format = detectImportFormat(fileBytes);
+      const plan = await planImport(format, file, fileBytes);
       if (plan.workoutCount === 0) throw new Error('nothing to import');
 
       const isConfirmed = await confirm({
-        title: translate(IMPORT_TITLE_KEYS[format]),
+        title: translate('settings.importButton'),
         message: translate('settings.importMergeConfirm', { count: plan.workoutCount }),
         confirmLabel: translate('settings.importMergeAction'),
       });
@@ -373,18 +375,6 @@ export function useDataTransfer() {
 
   return { busyAction, transferProgress, exportData, importData, deleteAllData };
 }
-
-export const EXPORT_TITLE_KEYS: Record<DataFormat, string> = {
-  json: 'settings.exportJson',
-  csv: 'settings.exportCsv',
-  xlsx: 'settings.exportXlsx',
-};
-
-export const IMPORT_TITLE_KEYS: Record<DataFormat, string> = {
-  json: 'settings.importJson',
-  csv: 'settings.importCsv',
-  xlsx: 'settings.importXlsx',
-};
 
 function toImportResult(summary: {
   importedCount: number;
