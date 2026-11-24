@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import { ScrollView, type ScrollViewInstance, StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { WorkoutSummary } from '@/db/repo/workouts';
 import { toDayKey } from '@/domain/dates';
 import { Text, spacing } from '@/ui';
-import { buildWorkoutDayKeys, listYearsNewestFirst } from './calendarGrid';
+import { buildWorkoutDayKeys, listYearsOldestFirst } from './calendarGrid';
 import { YearMonthGrid } from './YearMonthGrid';
 
 const MONTHS_IN_ROW = 3;
@@ -15,9 +15,13 @@ interface YearCalendarViewProps {
   now: number;
 }
 
-/** Год целиком: 12 мини-месяцев по три в ряд. Годы идут от нового к старому. */
+/** Год целиком: 12 мини-месяцев по три в ряд. Годы идут сверху вниз от старого к новому. */
 export function YearCalendarView({ workouts, now }: YearCalendarViewProps) {
   const { width: screenWidth } = useWindowDimensions();
+  const scrollViewRef = useRef<ScrollViewInstance>(null);
+  // Открываем на текущем годе один раз; дальше пользователь прокручивает сам.
+  const hasScrolledToCurrentYear = useRef(false);
+  const currentYear = new Date(now).getFullYear();
   const todayKey = toDayKey(now);
   // Округляем вниз: при дробной ширине третий месяц не помещался в ряд и переносился вниз.
   const monthWidth = Math.floor(
@@ -32,13 +36,29 @@ export function YearCalendarView({ workouts, now }: YearCalendarViewProps) {
     const startTimes = workouts.map((workout) => workout.startedAt);
     const earliestWorkoutAt = startTimes.length > 0 ? Math.min(...startTimes) : null;
     const latestWorkoutAt = startTimes.length > 0 ? Math.max(...startTimes) : null;
-    return listYearsNewestFirst(now, earliestWorkoutAt, latestWorkoutAt);
+    return listYearsOldestFirst(now, earliestWorkoutAt, latestWorkoutAt);
   }, [workouts, now]);
 
+  // Прокручиваем к началу года, а не в самый конец: иначе заголовок года уезжает за верхний край.
+  function scrollToCurrentYear(currentYearTop: number) {
+    if (hasScrolledToCurrentYear.current) return;
+    hasScrolledToCurrentYear.current = true;
+    scrollViewRef.current?.scrollTo({ y: currentYearTop, animated: false });
+  }
+
   return (
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      ref={scrollViewRef}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       {years.map((year) => (
-        <View key={year}>
+        <View
+          key={year}
+          onLayout={
+            year === currentYear ? (event) => scrollToCurrentYear(event.nativeEvent.layout.y) : undefined
+          }
+        >
           <Text variant="h1" style={styles.yearTitle}>
             {year}
           </Text>

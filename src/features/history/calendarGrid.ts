@@ -23,8 +23,8 @@ export function buildMonthWeeks(monthStart: Date): (Date | null)[][] {
   return weeks;
 }
 
-/** Месяцы от самого нового к самому старому: от текущего до месяца первой тренировки. */
-export function listMonthsNewestFirst(
+/** Месяцы от самого старого к самому новому: от месяца первой тренировки до текущего. */
+export function listMonthsOldestFirst(
   now: number,
   earliestWorkoutAt: number | null,
   latestWorkoutAt: number | null,
@@ -33,12 +33,12 @@ export function listMonthsNewestFirst(
   const newestMonth = startOfMonth(Math.max(now, latestWorkoutAt ?? now));
   const oldestMonth = startOfMonth(Math.min(now, earliestWorkoutAt ?? now));
   const months: Date[] = [];
-  for (let month = newestMonth; month >= oldestMonth; month = addMonths(month, -1)) months.push(month);
+  for (let month = oldestMonth; month <= newestMonth; month = addMonths(month, 1)) months.push(month);
   return months;
 }
 
-/** Годы от самого нового к самому старому, по тем же правилам, что и месяцы. */
-export function listYearsNewestFirst(
+/** Годы от самого старого к самому новому, по тем же правилам, что и месяцы. */
+export function listYearsOldestFirst(
   now: number,
   earliestWorkoutAt: number | null,
   latestWorkoutAt: number | null,
@@ -46,7 +46,7 @@ export function listYearsNewestFirst(
   const newestYear = new Date(Math.max(now, latestWorkoutAt ?? now)).getFullYear();
   const oldestYear = new Date(Math.min(now, earliestWorkoutAt ?? now)).getFullYear();
   const years: number[] = [];
-  for (let year = newestYear; year >= oldestYear; year -= 1) years.push(year);
+  for (let year = oldestYear; year <= newestYear; year += 1) years.push(year);
   return years;
 }
 

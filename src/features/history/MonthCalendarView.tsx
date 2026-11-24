@@ -7,7 +7,7 @@ import type { WorkoutSummary } from '@/db/repo/workouts';
 import { dateLocale, toDayKey } from '@/domain/dates';
 import { calculateWeekStreak } from '@/features/stats/weekStreak';
 import { Text, spacing, useColors } from '@/ui';
-import { buildWorkoutDayKeys, countRestDays, listMonthsNewestFirst } from './calendarGrid';
+import { buildWorkoutDayKeys, countRestDays, listMonthsOldestFirst } from './calendarGrid';
 import { GRID_LINE_WIDTH } from './gridLine';
 import { HistoryStreaks } from './HistoryStreaks';
 import { MonthCalendarBlock } from './MonthCalendarBlock';
@@ -23,7 +23,7 @@ interface MonthCalendarViewProps {
 
 /**
  * Календарь по месяцам: под шапкой закреплены серии и дни недели,
- * ниже прокручиваются месяцы от нового к старому.
+ * ниже прокручиваются месяцы сверху вниз от старого к новому. Открывается на текущем месяце внизу.
  */
 export function MonthCalendarView({ workouts, now, onOpenDay }: MonthCalendarViewProps) {
   const colors = useColors();
@@ -35,7 +35,7 @@ export function MonthCalendarView({ workouts, now, onOpenDay }: MonthCalendarVie
   const latestWorkoutAt = startTimes.length > 0 ? Math.max(...startTimes) : null;
   const earliestWorkoutAt = startTimes.length > 0 ? Math.min(...startTimes) : null;
   const months = useMemo(
-    () => listMonthsNewestFirst(now, earliestWorkoutAt, latestWorkoutAt),
+    () => listMonthsOldestFirst(now, earliestWorkoutAt, latestWorkoutAt),
     [now, earliestWorkoutAt, latestWorkoutAt],
   );
 
@@ -93,6 +93,8 @@ export function MonthCalendarView({ workouts, now, onOpenDay }: MonthCalendarVie
         keyExtractor={(month) => toDayKey(month)}
         extraData={workoutDayKeys}
         renderItem={renderMonth}
+        // Самый новый месяц стоит внизу, поэтому список сразу открывается на нём, а не на самом старом.
+        maintainVisibleContentPosition={{ startRenderingFromBottom: true }}
         contentContainerStyle={styles.content}
       />
     </View>

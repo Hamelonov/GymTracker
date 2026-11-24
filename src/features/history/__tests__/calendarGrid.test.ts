@@ -2,8 +2,8 @@ import {
   buildMonthWeeks,
   buildWorkoutDayKeys,
   countRestDays,
-  listMonthsNewestFirst,
-  listYearsNewestFirst,
+  listMonthsOldestFirst,
+  listYearsOldestFirst,
   startTimeOnDay,
 } from '../calendarGrid';
 
@@ -36,34 +36,35 @@ describe('buildMonthWeeks', () => {
   });
 });
 
-describe('listMonthsNewestFirst', () => {
+describe('listMonthsOldestFirst', () => {
   const now = new Date(2026, 10, 23).getTime();
 
   it('без тренировок показывает только текущий месяц', () => {
-    expect(listMonthsNewestFirst(now, null, null)).toEqual([new Date(2026, 10, 1)]);
+    expect(listMonthsOldestFirst(now, null, null)).toEqual([new Date(2026, 10, 1)]);
   });
 
-  it('идёт от текущего месяца назад до первой тренировки', () => {
+  it('идёт от месяца первой тренировки вперёд до текущего', () => {
     const earliest = new Date(2026, 7, 24).getTime();
-    expect(listMonthsNewestFirst(now, earliest, now)).toEqual([
-      new Date(2026, 10, 1),
-      new Date(2026, 9, 1),
-      new Date(2026, 8, 1),
+    expect(listMonthsOldestFirst(now, earliest, now)).toEqual([
       new Date(2026, 7, 1),
+      new Date(2026, 8, 1),
+      new Date(2026, 9, 1),
+      new Date(2026, 10, 1),
     ]);
   });
 
-  it('добавляет месяц тренировки из будущего', () => {
+  it('добавляет месяц тренировки из будущего в конец', () => {
     const future = new Date(2026, 11, 5).getTime();
-    expect(listMonthsNewestFirst(now, future, future)[0]).toEqual(new Date(2026, 11, 1));
+    const months = listMonthsOldestFirst(now, future, future);
+    expect(months[months.length - 1]).toEqual(new Date(2026, 11, 1));
   });
 });
 
-describe('listYearsNewestFirst', () => {
-  it('перечисляет годы от нового к старому', () => {
+describe('listYearsOldestFirst', () => {
+  it('перечисляет годы от старого к новому', () => {
     const now = new Date(2026, 10, 23).getTime();
     const earliest = new Date(2024, 2, 1).getTime();
-    expect(listYearsNewestFirst(now, earliest, now)).toEqual([2026, 2025, 2024]);
+    expect(listYearsOldestFirst(now, earliest, now)).toEqual([2024, 2025, 2026]);
   });
 });
 
