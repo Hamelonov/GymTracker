@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { ExerciseRow } from '@/db/schema';
@@ -39,6 +39,7 @@ export function ExerciseList({
   // Запросы и подготовка сотен строк занимают заметное время. Если делать их до анимации перехода,
   // нажатие «висит» и экран открывается рывком, поэтому сначала открываем экран, а список строим следом.
   const isListReady = useIsAfterFirstPaint();
+  const handleListReady = useCallback(() => setIsListLoaded(true), []);
 
   const muscleDropdown: DropdownFilter = {
     key: 'muscle',
@@ -68,7 +69,7 @@ export function ExerciseList({
             onCreate={onCreate}
             header={header}
             bottomPadding={bottomPadding}
-            onLoad={() => setIsListLoaded(true)}
+            onReady={handleListReady}
           />
         ) : null}
         {/* Загрузчик крутится на стороне системы, поэтому не замирает, пока JavaScript готовит строки. */}

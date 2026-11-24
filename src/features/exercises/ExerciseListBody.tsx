@@ -1,12 +1,13 @@
 import { FlashList } from '@shopify/flash-list';
 import { Plus, Search } from 'lucide-react-native';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import { exerciseName, getExerciseUsage, listExercises } from '@/db/repo/exercises';
 import type { ExerciseRow } from '@/db/schema';
 import { useQuery } from '@/db/version';
 import { EQUIPMENT, MUSCLE_GROUPS, type MuscleGroup } from '@/domain/types';
+import { useIsAfterFirstPaint } from '@/lib/useIsAfterFirstPaint';
 import { EmptyState, Icon, Pressable, Text, spacing, useColors } from '@/ui';
 import { ExerciseRowView, type ExerciseListItem } from './ExerciseRowView';
 
@@ -19,8 +20,8 @@ interface ExerciseListBodyProps {
   onCreate?: () => void;
   header?: React.ReactNode;
   bottomPadding: number;
-  /** Вызывается, когда список впервые нарисовал строки: после этого загрузчик можно убрать. */
-  onLoad?: () => void;
+  /** Вызывается, когда список уже нарисован на экране: после этого загрузчик можно убрать. */
+  onReady?: () => void;
 }
 
 function compareByName(first: ExerciseListItem, second: ExerciseListItem): number {
@@ -48,9 +49,15 @@ export function ExerciseListBody({
   onCreate,
   header,
   bottomPadding,
-  onLoad,
+  onReady,
 }: ExerciseListBodyProps) {
   const colors = useColors();
+  // Событие onLoad у FlashList приходит с заметным опозданием: загрузчик ещё крутился поверх готового списка.
+  // Поэтому о готовности сообщаем сами, через два кадра после того, как список появился.
+  const hasPainted = useIsAfterFirstPaint();
+  useEffect(() => {
+    if (hasPainted) onReady?.();
+  }, [hasPainted, onReady]);
   const { t: translate, i18n } = useTranslation();
   const allExercises = useQuery(() => listExercises(), []);
   const usageByExerciseId = useQuery(() => getExerciseUsage(), []);
@@ -119,7 +126,6 @@ export function ExerciseListBody({
   return (
     <FlashList
       data={visibleItems}
-      onLoad={onLoad}
       // Запас отрисовки вперёд больше стандартного, чтобы быстрая прокрутка не показывала пустые строки.
       drawDistance={600}
       keyExtractor={(item) => item.exercise.id}
