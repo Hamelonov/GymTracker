@@ -1,11 +1,11 @@
 import { Download, Trash2, Upload } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { ExportSheet } from '@/features/settings/ExportSheet';
 import { TransferProgressModal } from '@/features/settings/TransferProgressModal';
 import { useDataTransfer } from '@/features/settings/useDataTransfer';
-import { Button, Card, Screen, SectionTitle, spacing } from '@/ui';
+import { Button, Screen, SectionTitle, spacing } from '@/ui';
 
 export default function DataScreen() {
   const { t: translate } = useTranslation();
@@ -15,7 +15,7 @@ export default function DataScreen() {
   return (
     <Screen header={{ backButton: true, title: translate('profile.data') }}>
       <SectionTitle title={translate('settings.transferSection')} first />
-      <Card style={styles.buttonsCard}>
+      <View style={styles.transferButtons}>
         <Button
           title={translate('settings.exportButton')}
           variant="outline"
@@ -36,7 +36,7 @@ export default function DataScreen() {
           disabled={busyAction != null}
           onPress={importData}
         />
-      </Card>
+      </View>
 
       <SectionTitle title={translate('settings.clearSection')} />
       <Button
@@ -60,5 +60,5 @@ export default function DataScreen() {
 }
 
 const styles = StyleSheet.create({
-  buttonsCard: { gap: spacing.sm },
+  transferButtons: { gap: spacing.sm },
 });
