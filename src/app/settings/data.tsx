@@ -18,7 +18,7 @@ export default function DataScreen() {
       <Card style={styles.buttonsCard}>
         <Button
           title={translate('settings.exportButton')}
-          variant="secondary"
+          variant="outline"
           fullWidth
           contentAlign="start"
           // Стрелка из лотка — файл уходит из приложения.
