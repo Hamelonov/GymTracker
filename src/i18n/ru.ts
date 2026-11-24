@@ -330,7 +330,7 @@ const ru = {
     viewMonth: 'Месяц',
     viewYear: 'Год',
     list: 'Список',
-    monthTitle: '{{month}} {{year}} года',
+    monthTitle: '{{month}} {{year}}',
     weeklyStreak_one: '{{count}} неделя подряд',
     weeklyStreak_few: '{{count}} недели подряд',
     weeklyStreak_many: '{{count}} недель подряд',

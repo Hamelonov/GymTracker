@@ -1,10 +1,10 @@
 import { FlashList } from '@shopify/flash-list';
-import { addDays, format } from 'date-fns';
+import { addDays } from 'date-fns';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, View } from 'react-native';
 import type { WorkoutSummary } from '@/db/repo/workouts';
-import { dateLocale, toDayKey } from '@/domain/dates';
+import { toDayKey, weekdayShortName } from '@/domain/dates';
 import { calculateWeekStreak } from '@/features/stats/weekStreak';
 import { Text, spacing, useColors } from '@/ui';
 import { buildWorkoutDayKeys, countRestDays, listMonthsOldestFirst } from './calendarGrid';
@@ -44,10 +44,9 @@ export function MonthCalendarView({ workouts, now, onOpenDay }: MonthCalendarVie
 
   const weekdayLabels = useMemo(
     () =>
-      Array.from({ length: 7 }, (_, dayIndex) => {
-        const name = format(addDays(SOME_MONDAY, dayIndex), 'EEE', { locale: dateLocale(i18n.language) });
-        return name.charAt(0).toUpperCase() + name.slice(1);
-      }),
+      Array.from({ length: 7 }, (_, dayIndex) =>
+        weekdayShortName(addDays(SOME_MONDAY, dayIndex), i18n.language),
+      ),
     [i18n.language],
   );
 

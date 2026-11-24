@@ -40,6 +40,14 @@ export function weekdayName(timestamp: number, language: string): string {
   return name.charAt(0).toUpperCase() + name.slice(1);
 }
 
+/** Короткое название дня недели с заглавной буквы: «Пн», «Вт» по-русски и «Mon», «Tue» по-английски. */
+export function weekdayShortName(date: Date | number, language: string): string {
+  // На токене EEE date-fns даёт для русского редкие «пнд», «втр»; токен EEEEEE даёт привычные «пн», «вт».
+  const pattern = language.startsWith('ru') ? 'EEEEEE' : 'EEE';
+  const name = format(date, pattern, { locale: dateLocale(language) });
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
+
 export function formatLongDate(timestamp: number, language: string): string {
   return format(timestamp, 'EEEE, d MMMM', { locale: dateLocale(language) });
 }
