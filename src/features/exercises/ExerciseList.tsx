@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { ExerciseRow } from '@/db/schema';
 import { MUSCLE_GROUPS, type MuscleGroup } from '@/domain/types';
 import { useIsAfterFirstPaint } from '@/lib/useIsAfterFirstPaint';
-import { DropdownFilterBar, type DropdownFilter } from '@/ui';
+import { DropdownFilterBar, spacing, useColors, type DropdownFilter } from '@/ui';
 import { ExerciseListBody } from './ExerciseListBody';
 import { ExerciseSearchBox } from './ExerciseSearchBox';
 
@@ -30,9 +31,11 @@ export function ExerciseList({
   bottomPadding = 0,
   excludeIds,
 }: ExerciseListProps) {
+  const colors = useColors();
   const { t: translate } = useTranslation();
   const [searchText, setSearchText] = useState('');
   const [muscleFilter, setMuscleFilter] = useState<MuscleGroup | null>(null);
+  const [isListLoaded, setIsListLoaded] = useState(false);
   // Запросы и подготовка сотен строк занимают заметное время. Если делать их до анимации перехода,
   // нажатие «висит» и экран открывается рывком, поэтому сначала открываем экран, а список строим следом.
   const isListReady = useIsAfterFirstPaint();
@@ -54,18 +57,32 @@ export function ExerciseList({
       filters={[muscleDropdown]}
       leading={<ExerciseSearchBox value={searchText} onChange={setSearchText} />}
     >
-      {isListReady ? (
-        <ExerciseListBody
-          searchText={searchText}
-          muscleFilter={muscleFilter}
-          selectedIds={selectedIds}
-          excludeIds={excludeIds}
-          onPress={onPress}
-          onCreate={onCreate}
-          header={header}
-          bottomPadding={bottomPadding}
-        />
-      ) : null}
+      <View style={styles.listArea}>
+        {isListReady ? (
+          <ExerciseListBody
+            searchText={searchText}
+            muscleFilter={muscleFilter}
+            selectedIds={selectedIds}
+            excludeIds={excludeIds}
+            onPress={onPress}
+            onCreate={onCreate}
+            header={header}
+            bottomPadding={bottomPadding}
+            onLoad={() => setIsListLoaded(true)}
+          />
+        ) : null}
+        {/* Загрузчик крутится на стороне системы, поэтому не замирает, пока JavaScript готовит строки. */}
+        {isListLoaded ? null : (
+          <View style={styles.loader} pointerEvents="none">
+            <ActivityIndicator size="large" color={colors.text} />
+          </View>
+        )}
+      </View>
     </DropdownFilterBar>
   );
 }
+
+const styles = StyleSheet.create({
+  listArea: { flex: 1 },
+  loader: { ...StyleSheet.absoluteFill, alignItems: 'center', paddingTop: spacing.xxl * 2 },
+});

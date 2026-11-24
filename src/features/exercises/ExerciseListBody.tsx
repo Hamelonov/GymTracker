@@ -19,6 +19,8 @@ interface ExerciseListBodyProps {
   onCreate?: () => void;
   header?: React.ReactNode;
   bottomPadding: number;
+  /** Вызывается, когда список впервые нарисовал строки: после этого загрузчик можно убрать. */
+  onLoad?: () => void;
 }
 
 function compareByName(first: ExerciseListItem, second: ExerciseListItem): number {
@@ -46,6 +48,7 @@ export function ExerciseListBody({
   onCreate,
   header,
   bottomPadding,
+  onLoad,
 }: ExerciseListBodyProps) {
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
@@ -116,6 +119,7 @@ export function ExerciseListBody({
   return (
     <FlashList
       data={visibleItems}
+      onLoad={onLoad}
       // Запас отрисовки вперёд больше стандартного, чтобы быстрая прокрутка не показывала пустые строки.
       drawDistance={600}
       keyExtractor={(item) => item.exercise.id}
