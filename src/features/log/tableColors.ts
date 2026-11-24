@@ -1,9 +1,7 @@
 import type { ThemeColors } from '@/ui';
 
-/** Во сколько раз границы таблицы заметнее обычных границ приложения: 1.1 — на 10% контрастнее фона. */
-const BORDER_CONTRAST_FACTOR = 1.1;
-/** Какая часть цвета текста подмешивается к жёлтому заголовку для линий между его столбцами. */
-const HEADER_DIVIDER_STRENGTH = 0.25;
+/** Во сколько раз границы таблицы заметнее сильной границы приложения: 1.4 — на 40% контрастнее фона. */
+const BORDER_CONTRAST_FACTOR = 1.4;
 
 function parseHexColor(hexColor: string): [number, number, number] {
   const digits = hexColor.replace('#', '');
@@ -41,16 +39,16 @@ export interface LogTableColors {
   firstRowBackground: string;
   secondRowBackground: string;
   border: string;
-  headerDivider: string;
 }
 
-/** Цвета таблицы журнала: один цвет заголовка, два чередующихся цвета строк и заметные границы. */
+/** Цвета таблицы журнала: бледно-жёлтый заголовок, белые и светло-серые чередующиеся строки и заметные границы. */
 export function getLogTableColors(colors: ThemeColors): LogTableColors {
+  const firstRowBackground = colors.background;
   return {
-    headerBackground: colors.accent,
-    firstRowBackground: colors.surfaceRaised,
-    secondRowBackground: colors.accentFaint,
-    border: scaleColorDifference(colors.border, colors.surfaceRaised, BORDER_CONTRAST_FACTOR),
-    headerDivider: scaleColorDifference(colors.onAccent, colors.accent, HEADER_DIVIDER_STRENGTH),
+    // Яркий акцентный жёлтый на большой шапке слишком кричит, поэтому берём его бледный вариант.
+    headerBackground: colors.accentFaint,
+    firstRowBackground,
+    secondRowBackground: colors.surfaceAlt,
+    border: scaleColorDifference(colors.borderStrong, firstRowBackground, BORDER_CONTRAST_FACTOR),
   };
 }

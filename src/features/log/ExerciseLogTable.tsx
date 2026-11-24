@@ -17,8 +17,10 @@ const COLUMN_WIDTHS = { day: 100, weight: 64, timesSign: 14, sets: 110, rir: 80,
 // Между столбцами зазор шире, чтобы их было легче различать; внутри «вес х подходы» — уже, это одна фраза.
 const COLUMN_GAP = spacing.lg;
 const INNER_GAP = spacing.sm;
-const DIVIDER_WIDTH = StyleSheet.hairlineWidth;
+// Линия в один пиксель экрана (hairline) на телефоне почти не видна, поэтому берём целый 1 dp.
+const DIVIDER_WIDTH = 1;
 const TABLE_HORIZONTAL_PADDING = spacing.md;
+const ROW_VERTICAL_PADDING = spacing.md;
 
 /** Дата цифрами через точки: «28.03.2026». */
 function formatDay(timestamp: number): string {
@@ -114,7 +116,7 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
   return (
     <Card raised padded={false} style={[styles.tableCard, { width, borderColor: tableColors.border }]}>
       <View style={[styles.outerRow, styles.headerRow, { backgroundColor: tableColors.headerBackground }]}>
-        {joinWithDividers(headerCells, 'header', tableColors.headerDivider)}
+        {joinWithDividers(headerCells, 'header', tableColors.border)}
       </View>
 
       {entries.map((entry, entryIndex) => {
@@ -180,10 +182,10 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
   );
 }
 
-/** Подпись столбца на жёлтом заголовке: цвет текста подобран под акцентный фон. */
+/** Подпись столбца на бледно-жёлтом заголовке: обычный цвет текста темы, он читается и на светлом, и на тёмном фоне. */
 function HeaderCell({ title, style }: { title: string; style: StyleProp<TextStyle> }) {
   return (
-    <Text variant="label" color="onAccent" style={style}>
+    <Text variant="label" color="text" style={style}>
       {title.toUpperCase()}
     </Text>
   );
@@ -191,20 +193,23 @@ function HeaderCell({ title, style }: { title: string; style: StyleProp<TextStyl
 
 const styles = StyleSheet.create({
   // Углы таблицы прямые: у карточки по умолчанию скругление, а для таблицы оно не нужно.
-  tableCard: { borderRadius: 0 },
+  // Рамка той же толщины, что и линии внутри, чтобы таблица выглядела цельной сеткой.
+  tableCard: { borderRadius: 0, borderWidth: DIVIDER_WIDTH },
   // Между столбцами таблицы — широкий зазор с линией-разделителем между ними.
   outerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: COLUMN_GAP },
   // Внутри «вес х подходы» зазор у́же: это одна фраза, а не два разных столбца.
   innerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: INNER_GAP },
   // Фон рядов тянется от края до края карточки, поэтому поля заданы у самих рядов, а не у карточки.
-  headerRow: { paddingHorizontal: TABLE_HORIZONTAL_PADDING, paddingVertical: spacing.md },
+  headerRow: { paddingHorizontal: TABLE_HORIZONTAL_PADDING, paddingVertical: ROW_VERTICAL_PADDING },
   dayRow: {
     paddingHorizontal: TABLE_HORIZONTAL_PADDING,
-    paddingVertical: spacing.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingVertical: ROW_VERTICAL_PADDING,
+    borderTopWidth: DIVIDER_WIDTH,
   },
   weightLines: { gap: spacing.xs },
-  columnDivider: { width: DIVIDER_WIDTH, alignSelf: 'stretch' },
+  // Отрицательные поля вытягивают линию на вертикальные поля строки: иначе в каждой строке
+  // между линиями остаётся разрыв, а в таблице они должны смыкаться с горизонтальными, как в Excel.
+  columnDivider: { width: DIVIDER_WIDTH, alignSelf: 'stretch', marginVertical: -ROW_VERTICAL_PADDING },
   // Подпись и значения веса прижаты вправо, ближе к знаку «х».
   weightColumn: { width: COLUMN_WIDTHS.weight, textAlign: 'right' },
   timesSignColumn: { width: COLUMN_WIDTHS.timesSign, textAlign: 'center' },

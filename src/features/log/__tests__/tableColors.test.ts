@@ -17,17 +17,25 @@ describe('scaleColorDifference', () => {
 });
 
 describe('getLogTableColors', () => {
-  it('в светлой теме делает границы темнее обычных', () => {
-    expect(getLogTableColors(lightColors).border).toBe('#E4E4DF');
+  it('в светлой теме делает границы темнее сильной границы приложения', () => {
+    expect(getLogTableColors(lightColors).border).toBe('#BCBCB5');
   });
 
-  it('в тёмной теме делает границы светлее обычных', () => {
-    expect(getLogTableColors(darkColors).border).toBe('#272727');
+  it('в тёмной теме делает границы светлее сильной границы приложения', () => {
+    expect(getLogTableColors(darkColors).border).toBe('#4D4D4D');
   });
 
-  it('красит заголовок в акцентный цвет, а строки — в два разных цвета', () => {
+  it('красит заголовок в бледно-жёлтый, а строки — в два разных цвета', () => {
     const tableColors = getLogTableColors(lightColors);
-    expect(tableColors.headerBackground).toBe(lightColors.accent);
+    expect(tableColors.headerBackground).toBe(lightColors.accentFaint);
     expect(tableColors.firstRowBackground).not.toBe(tableColors.secondRowBackground);
+  });
+
+  it('в тёмной теме заголовок остаётся тёмно-жёлтым, а не ярким', () => {
+    expect(getLogTableColors(darkColors).headerBackground).toBe(darkColors.accentFaint);
+  });
+
+  it('красит чётные строки в светло-серый вместо жёлтого оттенка', () => {
+    expect(getLogTableColors(lightColors).secondRowBackground).toBe(lightColors.surfaceAlt);
   });
 });
