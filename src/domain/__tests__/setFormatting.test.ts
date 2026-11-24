@@ -104,3 +104,24 @@ test('группы для таблиц: строка на каждый вес, �
   expect(groups.map((group) => group.sets.length)).toEqual([3, 1]);
   expect(groups[1]?.sets[0]?.rpe).toBe(9);
 });
+
+describe('buildSetGroups с разделителем из настроек', () => {
+  const sets = [
+    set({ weightKg: 70, reps: 9 }),
+    set({ weightKg: 70, reps: 8 }),
+    set({ weightKg: 70, reps: 8 }),
+  ];
+
+  it('по умолчанию склеивает повторы слэшем', () => {
+    expect(buildSetGroups(sets, 'weight_reps', options)[0]?.valuesText).toBe('9/8/8');
+  });
+
+  it('использует свой символ вместо слэша', () => {
+    expect(buildSetGroups(sets, 'weight_reps', { ...options, setSeparator: '!' })[0]?.valuesText).toBe(
+      '9!8!8',
+    );
+    expect(buildSetGroups(sets, 'weight_reps', { ...options, setSeparator: '·' })[0]?.valuesText).toBe(
+      '9·8·8',
+    );
+  });
+});

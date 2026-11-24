@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { deferredStorage } from './kvStorage';
 import { DEFAULT_PLATES_KG } from '@/domain/plates';
+import { DEFAULT_SET_SEPARATOR } from '@/domain/setSeparator';
 import type { DistanceUnit, MeasurementUnit, WeightUnit } from '@/domain/types';
 import type { RestVibrationStrength } from '@/lib/restAlert';
 
@@ -21,6 +22,8 @@ export interface SettingsState {
   /** Сила вибрации в конце отдыха; не зависит от настроек вибрации телефона. */
   restVibration: RestVibrationStrength;
   keepAwake: boolean;
+  /** Символ между повторами подходов в журнале и итогах: «9/8/8». */
+  setSeparator: string;
   barWeightKg: number;
   /** Имя профиля; попадает в имена файлов экспорта. */
   profileName: string;
@@ -45,6 +48,7 @@ export const useSettings = create<SettingsState>()(
       haptics: true,
       restVibration: 'medium',
       keepAwake: true,
+      setSeparator: DEFAULT_SET_SEPARATOR,
       barWeightKg: 20,
       profileName: '',
       profileSetupCompleted: false,

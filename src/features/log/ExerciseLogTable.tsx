@@ -5,6 +5,7 @@ import { StyleSheet, type StyleProp, type TextStyle, View } from 'react-native';
 import type { ExerciseHistoryEntry } from '@/db/repo/exercises';
 import { getTimesSign } from '@/domain/setFormatting';
 import type { DistanceUnit, ExerciseType, WeightUnit } from '@/domain/types';
+import { useSettings } from '@/store/settings';
 import { buildWeightLines, describeLogColumns, formatPerSet } from './logLines';
 import { getLogTableColors } from './tableColors';
 import { Card, Text, spacing, useColors } from '@/ui';
@@ -80,7 +81,13 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
   const colors = useColors();
   const { t: translate, i18n } = useTranslation();
   const tableColors = getLogTableColors(colors);
-  const formatOptions = { weightUnit: units.weight, distanceUnit: units.distance, language: i18n.language };
+  const setSeparator = useSettings((state) => state.setSeparator);
+  const formatOptions = {
+    weightUnit: units.weight,
+    distanceUnit: units.distance,
+    language: i18n.language,
+    setSeparator,
+  };
   const timesSign = getTimesSign(i18n.language);
   const { hasWeight, hasRir, hasRpe } = describeLogColumns(entries);
 
@@ -105,7 +112,7 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
   ];
 
   return (
-    <Card raised padded={false} style={{ width, borderColor: tableColors.border }}>
+    <Card raised padded={false} style={[styles.tableCard, { width, borderColor: tableColors.border }]}>
       <View style={[styles.outerRow, styles.headerRow, { backgroundColor: tableColors.headerBackground }]}>
         {joinWithDividers(headerCells, 'header', tableColors.headerDivider)}
       </View>
@@ -136,21 +143,22 @@ export function ExerciseLogTable({ entries, exerciseType, units, width }: Exerci
           </View>,
           hasRir ? (
             <Text key="rir" variant="bodyMedium" tabular style={{ width: COLUMN_WIDTHS.rir }}>
-              {formatPerSet(entry.sets, (set) => set.rir)}
+              {formatPerSet(entry.sets, (set) => set.rir, setSeparator)}
             </Text>
           ) : null,
           hasRpe ? (
             <Text key="rpe" variant="bodyMedium" tabular style={{ width: COLUMN_WIDTHS.rpe }}>
-              {formatPerSet(entry.sets, (set) => set.rpe)}
+              {formatPerSet(entry.sets, (set) => set.rpe, setSeparator)}
             </Text>
           ) : null,
+          // Без записи пишем курсивом «отсутствует», а не длинное тире: так видно, что примечания нет, а не потерялось.
           <Text
             key="note"
             variant="bodyMedium"
             color={entry.note ? 'text' : 'faint'}
-            style={styles.noteColumn}
+            style={[styles.noteColumn, entry.note ? null : styles.emptyNote]}
           >
-            {entry.note || '—'}
+            {entry.note || translate('log.noNote')}
           </Text>,
         ];
         const rowBackground =
@@ -182,6 +190,8 @@ function HeaderCell({ title, style }: { title: string; style: StyleProp<TextStyl
 }
 
 const styles = StyleSheet.create({
+  // Углы таблицы прямые: у карточки по умолчанию скругление, а для таблицы оно не нужно.
+  tableCard: { borderRadius: 0 },
   // Между столбцами таблицы — широкий зазор с линией-разделителем между ними.
   outerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: COLUMN_GAP },
   // Внутри «вес х подходы» зазор у́же: это одна фраза, а не два разных столбца.
@@ -199,4 +209,5 @@ const styles = StyleSheet.create({
   weightColumn: { width: COLUMN_WIDTHS.weight, textAlign: 'right' },
   timesSignColumn: { width: COLUMN_WIDTHS.timesSign, textAlign: 'center' },
   noteColumn: { flex: 1, minWidth: COLUMN_WIDTHS.note },
+  emptyNote: { fontStyle: 'italic' },
 });

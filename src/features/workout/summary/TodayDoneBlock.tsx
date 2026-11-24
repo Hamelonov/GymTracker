@@ -42,10 +42,11 @@ export function TodayDoneBlock({ workoutDetail }: TodayDoneBlockProps) {
   const { t: translate, i18n } = useTranslation();
   const weightUnit = useSettings((state) => state.weightUnit);
   const distanceUnit = useSettings((state) => state.distanceUnit);
-  // Подходы пишутся одной строкой на вес: «70кг х 9(1)/8/8».
+  const setSeparator = useSettings((state) => state.setSeparator);
+  // Подходы пишутся одной строкой на вес: «70кг х 9(1)/8/8», разделитель берётся из настроек.
   const formatOptions = useMemo(
-    () => ({ weightUnit, distanceUnit, language: i18n.language }),
-    [weightUnit, distanceUnit, i18n.language],
+    () => ({ weightUnit, distanceUnit, language: i18n.language, setSeparator }),
+    [weightUnit, distanceUnit, i18n.language, setSeparator],
   );
 
   const exerciseRows = useMemo<ExerciseRow[]>(() => {

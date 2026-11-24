@@ -6,6 +6,7 @@ import {
   type SetValues,
   type WeightUnit,
 } from '@/domain/types';
+import { DEFAULT_SET_SEPARATOR } from '@/domain/setSeparator';
 import { formatNumberWithoutTrailingZeros, kgToUnit, metersToUnit, roundForDisplay } from '@/domain/units';
 
 /** Единицы и язык — всё, что нужно, чтобы записать подход текстом вроде «70кг х 9(1)/8». */
@@ -14,6 +15,8 @@ export interface SetFormatOptions {
   distanceUnit: DistanceUnit;
   /** 'ru' → суффиксы типов подхода р/о/д и знак «х», иначе w/f/d и «x». */
   language: string;
+  /** Символ между подходами: «9/8/8». Не задан — слэш; файлы экспорта всегда пишутся со слэшем. */
+  setSeparator?: string;
 }
 
 /** Любой подход, у которого есть значения и тип: из активной тренировки, из базы или из разбора. */
@@ -91,7 +94,7 @@ export interface SetGroup<Set extends FormattableSet = FormattableSet> {
   weightKg: number | null;
   /** «70кг» или null у группы без веса. */
   weightText: string | null;
-  /** «9(1)/8(1)/8(0)» — подходы группы через слэш. */
+  /** «9(1)/8(1)/8(0)» — подходы группы через разделитель из настроек (по умолчанию слэш). */
   valuesText: string;
   /** Сами подходы группы: по ним таблицы выводят RIR и RPE на той же строке, что и вес. */
   sets: Set[];
@@ -120,7 +123,9 @@ export function buildSetGroups<Set extends FormattableSet>(
   return groups.map((group) => ({
     weightKg: group.weightKg,
     weightText: group.weightKg == null ? null : formatSetWeight(group.weightKg, options),
-    valuesText: group.values.filter((value) => value.length > 0).join('/'),
+    valuesText: group.values
+      .filter((value) => value.length > 0)
+      .join(options.setSeparator ?? DEFAULT_SET_SEPARATOR),
     sets: group.sets,
   }));
 }

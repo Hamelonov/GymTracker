@@ -7,6 +7,7 @@ import { formatDuration, unitToKg } from '@/domain/units';
 import { PlateSettings } from '@/features/settings/PlateSettings';
 import { SettingSwitchRow } from '@/features/settings/SettingSwitchRow';
 import { RestVibrationSetting } from '@/features/settings/RestVibrationSetting';
+import { SetSeparatorSetting } from '@/features/settings/SetSeparatorSetting';
 import { useSettings } from '@/store/settings';
 import { Card, Chip, Screen, SectionTitle, Segmented, Text, spacing } from '@/ui';
 
@@ -122,6 +123,7 @@ export default function SettingsScreen() {
           onChange={(restNotifications) => settings.update({ restNotifications })}
         />
         <RestVibrationSetting />
+        <SetSeparatorSetting />
         <SettingSwitchRow
           title={translate('settings.haptics')}
           value={settings.haptics}

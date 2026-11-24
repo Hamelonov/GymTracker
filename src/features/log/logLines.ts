@@ -1,6 +1,7 @@
 import type { ExerciseHistoryEntry } from '@/db/repo/exercises';
 import type { SetRow } from '@/db/schema';
 import { buildSetGroups, formatSetValue, type SetFormatOptions } from '@/domain/setFormatting';
+import { DEFAULT_SET_SEPARATOR } from '@/domain/setSeparator';
 import type { ExerciseType } from '@/domain/types';
 import { formatNumberWithoutTrailingZeros, roundForDisplay } from '@/domain/units';
 
@@ -35,20 +36,27 @@ export function buildWeightLines(
       group.sets
         .map((set) => formatSetValue({ ...set, rir: null }, exerciseType, options))
         .filter((value) => value.length > 0)
-        .join('/') || '—',
+        .join(options.setSeparator ?? DEFAULT_SET_SEPARATOR) || '—',
   }));
   return lines.length > 0 ? lines : [{ weightKg: null, weight: null, sets: '—' }];
 }
 
-/** RIR или RPE всех подходов дня через слэш, как подходы: «0/1/1». Пустой подход — прочерк, чтобы позиции совпадали. */
-export function formatPerSet(sets: SetRow[], valueOf: (set: SetRow) => number | null): string {
+/**
+ * RIR или RPE всех подходов дня через тот же разделитель, что и подходы: «0/1/1».
+ * Пустой подход — прочерк, чтобы позиции совпадали.
+ */
+export function formatPerSet(
+  sets: SetRow[],
+  valueOf: (set: SetRow) => number | null,
+  setSeparator: string = DEFAULT_SET_SEPARATOR,
+): string {
   if (sets.every((set) => valueOf(set) == null)) return '—';
   return sets
     .map((set) => {
       const value = valueOf(set);
       return value != null ? formatNumberWithoutTrailingZeros(roundForDisplay(value, 2)) : '—';
     })
-    .join('/');
+    .join(setSeparator);
 }
 
 export interface LogColumns {
