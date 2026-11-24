@@ -2,7 +2,7 @@
   "expo": {
     "name": "GymTracker",
     "slug": "gymtracker",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "runtimeVersion": {
       "policy": "appVersion"
     },
@@ -18,7 +18,7 @@
     },
     "android": {
       "package": "io.github.hamelonov.gymtracker",
-      "versionCode": 8,
+      "versionCode": 9,
       "adaptiveIcon": {
         "backgroundColor": "#FFD400",
         "foregroundImage": "./assets/android-icon-foreground.png",
