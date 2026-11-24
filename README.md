@@ -4,10 +4,25 @@ A free, open-source workout log for strength training. Fast, offline, and entire
 
 Built with React Native (Expo), TypeScript and SQLite. Android first; the code is written to be portable to iOS and desktop later.
 
+## Как установить
+
+1. Открой [последний релиз](https://github.com/Hamelonov/GymTracker/releases/latest) с телефона.
+2. В разделе **Assets** нажми на файл `GymTracker-….apk`, и он скачается.
+3. Открой скачанный файл. Android спросит, можно ли устанавливать приложения из этого источника, то есть из браузера или менеджера файлов. Разреши.
+4. Нажми **Установить**. Если Play Защита предупредит о неизвестном приложении, выбери **Всё равно установить**: приложения нет в Google Play, поэтому так и должно быть.
+
+Нужен Android 7.0 или новее.
+
+## Как обновить
+
+Скачай APK из нового релиза и установи поверх старого. Тренировки сохранятся.
+
+На всякий случай перед обновлением можно сохранить копию: **Профиль → Данные → Экспорт**.
+
 ## Features
 
 - **Workout logging** with a live timer, previous-performance hints, one-tap set completion, warm-up / drop / failure sets, supersets, RPE, per-exercise rest timers with notifications, undo for deleted sets and exercises, and crash-safe autosave.
-- **Two kinds of exercise text**: a fixed *description* (how to perform the movement, edited only from the exercise page) and a per-session *note* (how it went today).
+- **Two kinds of exercise text**: a fixed _description_ (how to perform the movement, edited only from the exercise page) and a per-session _note_ (how it went today).
 - **Routines** with folders, planned sets, duplicate / move / update-from-workout.
 - **History** as a list or a calendar; edit or repeat any past workout; save a workout as a routine.
 - **Exercise library**: 120+ built-in exercises in English and Russian with descriptions, custom exercises, search and muscle filters, per-exercise history, charts (heaviest weight, estimated 1RM, volume, reps…) and personal records.
