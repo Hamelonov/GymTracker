@@ -19,7 +19,7 @@ import { spacing } from './tokens';
 export interface HeaderProps {
   title?: string;
   subtitle?: string;
-  /** На корневых вкладках заголовок стоит слева, как в Hevy; на вложенных экранах — по центру. */
+  /** На корневых вкладках заголовок стоит слева; на вложенных экранах — по центру. */
   titleAlign?: 'center' | 'start';
   backButton?: boolean | 'close';
   right?: React.ReactNode;
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   headerRight: { justifyContent: 'flex-end', flexShrink: 0 },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitleStart: { flex: 1, alignItems: 'flex-start' },
-  // Кнопка «назад» без фона, как в Hevy: у шапки теперь есть линия снизу, и кружок только перегружает её.
+  // Кнопка «назад» без фона: у шапки теперь есть линия снизу, и кружок только перегружает её.
   backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   footer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth },
 });

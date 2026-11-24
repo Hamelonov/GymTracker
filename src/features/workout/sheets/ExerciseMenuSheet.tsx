@@ -18,7 +18,7 @@ import { formatDuration } from '@/domain/units';
 import { Icon, ListItem, Sheet, spacing, useColors } from '@/ui';
 import { exerciseDisplayName } from '../exerciseDisplayName';
 
-/** Крупные значки пунктов, как в меню Hevy: «обновить» для замены, «+» для суперсета, красный крест для удаления. */
+/** Крупные значки пунктов: «обновить» для замены, «+» для суперсета, красный крест для удаления. */
 const MENU_ICON_SIZE = 26;
 
 interface ExerciseMenuSheetProps {

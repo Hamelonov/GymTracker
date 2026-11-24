@@ -14,7 +14,7 @@ const REST_OPTIONS_IN_SECONDS = Array.from(
   (_, step) => step * REST_STEP_SECONDS,
 );
 
-/** Подпись строки барабана: «45 s», «3 min 0 s» — минуты и секунды всегда вместе, как в Hevy. */
+/** Подпись строки барабана: «45 s», «3 min 0 s» — минуты и секунды всегда вместе. */
 function formatRestOption(seconds: number, offLabel: string): string {
   if (seconds === 0) return offLabel;
   if (seconds < SECONDS_IN_MINUTE) return `${seconds} ${unitLabels.s}`;
@@ -41,7 +41,7 @@ interface RestTimerPickerSheetProps {
 }
 
 /**
- * Выбор отдыха для одного упражнения, как в Hevy: барабан с шагом 15 секунд и кнопка «Готово».
+ * Выбор отдыха для одного упражнения: барабан с шагом 15 секунд и кнопка «Готово».
  * Выбранное значение применяется только по «Готово»; отдельная кнопка возвращает отдых по умолчанию.
  */
 export function RestTimerPickerSheet({

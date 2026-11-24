@@ -15,7 +15,7 @@ interface YearCalendarViewProps {
   now: number;
 }
 
-/** Год целиком, как в Hevy: 12 мини-месяцев по три в ряд. Годы идут от нового к старому. */
+/** Год целиком: 12 мини-месяцев по три в ряд. Годы идут от нового к старому. */
 export function YearCalendarView({ workouts, now }: YearCalendarViewProps) {
   const { width: screenWidth } = useWindowDimensions();
   const todayKey = toDayKey(now);

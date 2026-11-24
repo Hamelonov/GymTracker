@@ -164,7 +164,7 @@ export const ExerciseCard = memo(function ExerciseCard({
 });
 
 const styles = StyleSheet.create({
-  // Фона у карточки нет: упражнения идут прямо по странице на всю ширину, как в Hevy.
+  // Фона у карточки нет: упражнения идут прямо по странице на всю ширину.
   card: {
     paddingTop: spacing.md,
     paddingBottom: spacing.md,

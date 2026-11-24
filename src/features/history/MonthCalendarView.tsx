@@ -22,7 +22,7 @@ interface MonthCalendarViewProps {
 }
 
 /**
- * Календарь по месяцам, как в Hevy: под шапкой закреплены серии и дни недели,
+ * Календарь по месяцам: под шапкой закреплены серии и дни недели,
  * ниже прокручиваются месяцы от нового к старому.
  */
 export function MonthCalendarView({ workouts, now, onOpenDay }: MonthCalendarViewProps) {
