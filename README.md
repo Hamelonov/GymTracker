@@ -4,20 +4,20 @@ A free, open-source workout log for strength training. Fast, offline, and entire
 
 Built with React Native (Expo), TypeScript and SQLite. Android first; the code is written to be portable to iOS and desktop later.
 
-## Как установить
+## How to install
 
-1. Открой [последний релиз](https://github.com/Hamelonov/GymTracker/releases/latest) с телефона.
-2. В разделе **Assets** нажми на файл `GymTracker-….apk`, и он скачается.
-3. Открой скачанный файл. Android спросит, можно ли устанавливать приложения из этого источника, то есть из браузера или менеджера файлов. Разреши.
-4. Нажми **Установить**. Если Play Защита предупредит о неизвестном приложении, выбери **Всё равно установить**: приложения нет в Google Play, поэтому так и должно быть.
+1. Open the [latest release](https://github.com/Hamelonov/GymTracker/releases/latest) on your phone.
+2. Under **Assets**, tap the `GymTracker-….apk` file to download it.
+3. Open the downloaded file. Android will ask whether to allow installing apps from this source (your browser or file manager). Allow it.
+4. Tap **Install**. If Play Protect warns about an unknown app, choose **Install anyway**: the app is not on Google Play, so this is expected.
 
-Нужен Android 7.0 или новее.
+Requires Android 7.0 or newer.
 
-## Как обновить
+## How to update
 
-Скачай APK из нового релиза и установи поверх старого. Тренировки сохранятся.
+Download the APK from the new release and install it over the old one. Your workouts are kept.
 
-На всякий случай перед обновлением можно сохранить копию: **Профиль → Данные → Экспорт**.
+To be safe, you can save a backup before updating: **Profile → Data → Export → Full backup (JSON)**.
 
 ## Features
 
